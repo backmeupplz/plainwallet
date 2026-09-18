@@ -1,5 +1,10 @@
 import { createWalletClient, defineChain, formatEther, http, toHex, type TransactionSerializable } from 'viem'
+import { getTransactionCount } from 'viem/actions'
 import { load, save, secrets, type Network } from '@/lib/store'
+
+// An RPC may not redirect: a dapp-supplied https URL could otherwise bounce the extension's requests (sent with its
+// own host permissions) to a device on the user's network.
+const noRedirect = { redirect: 'error' } as const
 import { toAccount } from '@/lib/wallet'
 
 // EIP-1193 / EIP-1474 error shape
@@ -69,9 +74,11 @@ async function handle(origin: string, method: unknown, rawParams: unknown): Prom
         const rpc = c.rpcUrls?.[0]
         // https only (plain http just for local dev nodes): the extension fetches this URL with its own host
         // permissions, so a dapp must not be able to point it at devices on the user's network.
-        const okRpc = /^https:\/\/\S+$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/\S*)?$/.test(rpc)
+        const okRpc = typeof rpc === 'string' && /^https:\/\/\S+$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/\S*)?$/.test(rpc)
         if (!Number.isSafeInteger(id) || id <= 0 || typeof c.chainName !== 'string' || !okRpc) throw err(-32602, 'Invalid chain parameters')
-        const added = { id, name: c.chainName.slice(0, 40), rpc, symbol: String(c.nativeCurrency?.symbol ?? 'ETH').slice(0, 10) }
+        // collapse whitespace: newlines in a name could push the real chain id and RPC out of view in the approval
+        const clean = (v: unknown, max: number) => String(v).replace(/\s+/g, ' ').trim().slice(0, max)
+        const added = { id, name: clean(c.chainName, 40), rpc, symbol: clean(c.nativeCurrency?.symbol ?? 'ETH', 10) }
         await ask(added)
         await save({ networks: [...(await load()).networks, added], chainId: id })
         return null
@@ -113,7 +120,7 @@ async function handle(origin: string, method: unknown, rawParams: unknown): Prom
         nativeCurrency: { name: network.symbol, symbol: network.symbol, decimals: 18 },
         rpcUrls: { default: { http: [network.rpc] } },
       })
-      const client = createWalletClient({ account: address!, chain, transport: http(network.rpc) })
+      const client = createWalletClient({ account: address!, chain, transport: http(network.rpc, { fetchOptions: noRedirect }) })
       // Prepared BEFORE asking, and that exact request is what gets signed: the approval shows the real gas cost
       // (a dapp or a lying RPC could otherwise burn the balance as fees) and nothing can change after the click.
       // ponytail: nonce + fees always come from the RPC, dapp-suggested ones are ignored; pass them through if a dapp needs it
@@ -128,7 +135,10 @@ async function handle(origin: string, method: unknown, rawParams: unknown): Prom
       if (request.chainId !== network.id) throw err(-32603, `RPC serves chain ${request.chainId}, not ${network.name} (${network.id})`)
       const fee = request.gas * (request.maxFeePerGas ?? request.gasPrice ?? 0n)
       await ask({ to: request.to ?? null, value: formatEther(request.value ?? 0n), fee: formatEther(fee), data: request.data ?? '0x' })
-      const { account: _, ...unsigned } = request
+      // Only the nonce is refreshed after the click (it isn't shown and can't redirect funds): requests queued
+      // together were all prepared at the same nonce.
+      const nonce = await getTransactionCount(client, { address: address!, blockTag: 'pending' })
+      const { account: _, ...unsigned } = { ...request, nonce }
       return client.sendRawTransaction({ serializedTransaction: await (await sign()).signTransaction(unsigned as TransactionSerializable) })
     }
   }
@@ -137,6 +147,7 @@ async function handle(origin: string, method: unknown, rawParams: unknown): Prom
   // personal_, debug_ or a dev node's cheat methods enabled. Node-side signing and subscriptions are never forwarded.
   if (!/^(eth|net|web3)_/.test(method) || /^eth_(sign|sendTransaction|subscribe|unsubscribe)/.test(method)) throw err(4200, `${method} is not supported`)
   const res = await fetch(network.rpc, {
+    ...noRedirect,
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: rawParams ?? [] }),
@@ -149,7 +160,7 @@ async function handle(origin: string, method: unknown, rawParams: unknown): Prom
 export default defineBackground(() => {
   // Content scripts run inside the website's process. Keep the vault ciphertext and the permission/network/address
   // state out of their reach, so a renderer exploit can neither copy the vault nor rewrite them.
-  browser.storage.local.setAccessLevel?.({ accessLevel: 'TRUSTED_CONTEXTS' })
+  browser.storage.local.setAccessLevel?.({ accessLevel: 'TRUSTED_CONTEXTS' }).catch(console.error)
 
   // ...which means provider events have to be pushed to the bridges from here.
   browser.storage.onChanged.addListener(async (changes, area) => {
@@ -174,6 +185,8 @@ export default defineBackground(() => {
     }
     // Content script. The origin comes from the browser, never from the page.
     const origin = sender.origin ?? new URL(sender.url!).origin
+    // sandboxed pages all report the origin "null"; approving one would connect every such page on any site
+    if (!/^https?:\/\//.test(origin)) return respond({ error: err(4100, 'Unsupported origin') })
     handle(origin, msg.method, msg.params).then(
       (result) => respond({ result }),
       (e) => respond({ error: { code: e?.code ?? -32603, message: e?.shortMessage ?? e?.message ?? String(e) } }),

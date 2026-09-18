@@ -129,7 +129,7 @@ function mainScreen(s: State) {
     ...s.networks.map((n) => option(n.id, `${n.name} (${n.id})`, n.id === s.chainId)))
 
   const setNetworks = (list: Network[], chainId = s.chainId) => save({ networks: list, chainId })
-  const rpc = field(`RPC endpoint for ${network.name}`, { value: network.rpc })
+  const rpc = field(`RPC endpoint for ${network.name}`, { value: network.rpc, spellcheck: false }) // may hold an API key
   rpc.input.onchange = act(() => setNetworks(s.networks.map((n) => (n === network ? { ...n, rpc: httpUrl(rpc.input.value.trim()) } : n))))
 
   const name = field('Name'), id = field('Chain ID', { type: 'number', min: 1 }), url = field('RPC URL'), symbol = field('Currency symbol', { value: 'ETH' })
