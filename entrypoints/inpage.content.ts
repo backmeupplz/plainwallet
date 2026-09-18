@@ -40,8 +40,13 @@ export default defineContentScript({
     const icon =
       'data:image/svg+xml,' +
       encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#111"/><path d="M8 11h16v12H8z" fill="none" stroke="#fff" stroke-width="2"/><circle cx="20" cy="17" r="1.5" fill="#fff"/></svg>')
+    // UUIDv4 by hand: crypto.randomUUID is https-only and this must not crash on http:// pages
+    const hex = [...crypto.getRandomValues(new Uint8Array(16))]
+      .map((b, i) => (i === 6 ? (b & 15) | 64 : i === 8 ? (b & 63) | 128 : b).toString(16).padStart(2, '0'))
+      .join('')
+    const uuid = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
     const detail = Object.freeze({
-      info: Object.freeze({ uuid: crypto.randomUUID(), name: 'Plain Wallet', icon, rdns: 'com.github.backmeupplz.plainwallet' }),
+      info: Object.freeze({ uuid, name: 'Plain Wallet', icon, rdns: 'com.github.backmeupplz.plainwallet' }),
       provider,
     })
     const announce = () => window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail }))
