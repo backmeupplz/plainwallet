@@ -25,6 +25,14 @@ npm run build
 
 Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked** and select `.output/chrome-mv3`.
 
+### Firefox / LibreWolf
+
+```sh
+npx wxt zip -b firefox --mv3   # → .output/plainwallet-<version>-firefox.zip
+```
+
+The build is unsigned, so either load it temporarily from `about:debugging` (removed, with its storage, on restart), or in a browser that allows it (LibreWolf, Firefox Developer Edition/Nightly) set `xpinstall.signatures.required` to `false`, rename the zip to `.xpi` and open it in the browser. That pref turns off signature checks for every extension.
+
 ## Develop
 
 ```sh
