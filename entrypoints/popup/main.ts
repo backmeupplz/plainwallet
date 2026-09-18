@@ -1,4 +1,3 @@
-import { formatEther } from 'viem'
 import { addWallet, isUnlocked, load, lock, save, unlock, type Network, type State } from '@/lib/store'
 import { newMnemonic, parseSecret } from '@/lib/wallet'
 import type { Pending } from '../background'
@@ -34,7 +33,8 @@ const httpUrl = (s: string) => {
 }
 
 function walletForm(first: boolean) {
-  const secret = h('textarea', { rows: 3, placeholder: 'Seed phrase or private key' })
+  // spellcheck off: browsers' cloud ("enhanced") spellcheck would otherwise upload whatever is typed here
+  const secret = h('textarea', { rows: 3, placeholder: 'Seed phrase or private key', spellcheck: false, autocomplete: 'off', autocapitalize: 'off' })
   const pw = field('Password (min 8 characters)', { type: 'password' })
   const pw2 = field('Repeat password', { type: 'password' })
   const password = () => {
@@ -75,7 +75,7 @@ function describe(p: Pending): [title: string, body: string] {
   try {
     switch (p.method) {
       case 'eth_requestAccounts':
-        return ['Connect this site?', `It will see your address:\n${d}`]
+        return ['Connect this site?', 'It will see your address and can ask you to sign.']
       case 'wallet_switchEthereumChain':
         return ['Switch network?', `${d.name} (chain ${d.id})`]
       case 'wallet_addEthereumChain':
@@ -93,7 +93,7 @@ function describe(p: Pending): [title: string, body: string] {
       case 'eth_sendTransaction':
         return [
           d.to ? 'Send transaction' : 'Deploy contract',
-          `To: ${d.to ?? '(new contract)'}\nValue: ${formatEther(BigInt(d.value ?? 0))} ${p.network.symbol}\nData: ${d.data ?? d.input ?? '0x'}`,
+          `To: ${d.to ?? '(new contract)'}\nValue: ${d.value} ${p.network.symbol}\nMax fee: ${d.fee} ${p.network.symbol}\nData: ${d.data}`,
         ]
     }
   } catch {}
@@ -103,12 +103,17 @@ function describe(p: Pending): [title: string, body: string] {
 function approvalScreen(p: Pending, more: number) {
   const [title, body] = describe(p)
   const settle = (ok: boolean) => act(() => browser.runtime.sendMessage({ type: 'settle', id: p.id, ok }))
+  // Starts disabled: a window that pops up under the cursor, or the second half of a double-click on the previous
+  // request, must not count as consent.
+  const ok = h('button', { onclick: settle(true), disabled: true }, 'Approve')
+  setTimeout(() => (ok.disabled = false), 800)
   return [
     h('h1', {}, title),
     h('div', { className: 'mono' }, p.origin),
-    h('div', {}, `Network: ${p.network.name}`),
+    h('div', {}, `Network: ${p.network.name} (${p.network.id})`),
+    h('div', { className: 'mono' }, `Account: ${p.account}`),
     h('pre', {}, body),
-    h('div', { className: 'row' }, h('button', { onclick: settle(false) }, 'Reject'), h('button', { onclick: settle(true) }, 'Approve')),
+    h('div', { className: 'row' }, h('button', { onclick: settle(false) }, 'Reject'), ok),
     ...(more ? [h('div', {}, `${more} more request(s) waiting`)] : []),
   ]
 }

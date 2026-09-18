@@ -14,12 +14,10 @@ export default defineContentScript({
       post({ id: data.id, ...(await rpc(data.method, data.params)) })
     })
 
-    // State lives in storage.local, so its change feed doubles as the provider event source.
-    browser.storage.onChanged.addListener(async (changes, area) => {
-      if (area !== 'local') return
-      if (changes.chainId) post({ event: 'chainChanged', data: (await rpc('eth_chainId')).result })
-      if (changes.active || changes.sites || changes.addresses)
-        post({ event: 'accountsChanged', data: (await rpc('eth_accounts')).result })
+    // The background says *that* something changed; what this origin may see is still decided by the background.
+    browser.runtime.onMessage.addListener((msg) => {
+      if (msg.chain) rpc('eth_chainId').then((r) => post({ event: 'chainChanged', data: r.result }))
+      if (msg.accounts) rpc('eth_accounts').then((r) => post({ event: 'accountsChanged', data: r.result }))
     })
   },
 })

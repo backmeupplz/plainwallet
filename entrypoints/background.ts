@@ -1,4 +1,4 @@
-import { createWalletClient, defineChain, http, toHex, type TransactionSerializable } from 'viem'
+import { createWalletClient, defineChain, formatEther, http, toHex, type TransactionSerializable } from 'viem'
 import { load, save, secrets, type Network } from '@/lib/store'
 import { toAccount } from '@/lib/wallet'
 
@@ -6,22 +6,25 @@ import { toAccount } from '@/lib/wallet'
 const err = (code: number, message: string) => ({ code, message })
 const big = (v?: string) => (v == null ? undefined : BigInt(v))
 
-export type Pending = { id: number; origin: string; method: string; network: Network; detail: any }
-const pending = new Map<number, Pending & { resolve: () => void; reject: (e: unknown) => void }>()
-let nextId = 1
+export type Pending = { id: string; origin: string; method: string; network: Network; account: string; detail: any }
+const pending = new Map<string, Pending & { resolve: () => void; reject: (e: unknown) => void }>()
 let win: Promise<{ id?: number } | undefined> | undefined
 
 /** Queues a request for the user and resolves once they approve it in the popup (rejects with 4001 otherwise). */
 function approve(p: Omit<Pending, 'id'>) {
   return new Promise<void>((resolve, reject) => {
-    const id = nextId++
+    // a site can't flood the queue or spam approval windows
+    if ([...pending.values()].filter((x) => x.origin === p.origin).length >= 5) return reject(err(-32005, 'Too many pending requests'))
+    // Random, not a counter: a counter restarts with the service worker, so a stale approval window still showing
+    // an old request could approve a newer one that happened to reuse its id.
+    const id = crypto.randomUUID()
     pending.set(id, { ...p, id, resolve, reject })
     if (win) win.then((w) => void (w?.id && browser.windows.update(w.id, { focused: true })))
     else win = browser.windows.create({ url: browser.runtime.getURL('/popup.html'), type: 'popup', width: 380, height: 640 })
   })
 }
 
-function settle(id: number, ok: boolean) {
+function settle(id: string, ok: boolean) {
   const p = pending.get(id)
   pending.delete(id)
   if (ok) p?.resolve()
@@ -29,12 +32,14 @@ function settle(id: number, ok: boolean) {
   if (!pending.size) win?.then((w) => void (w?.id && browser.windows.remove(w.id)))
 }
 
-async function handle(origin: string, method: string, params: any[] = []): Promise<unknown> {
+async function handle(origin: string, method: unknown, rawParams: unknown): Promise<unknown> {
+  if (typeof method !== 'string') throw err(-32600, 'Invalid request')
+  const params: any[] = Array.isArray(rawParams) ? rawParams : []
   const s = await load()
   const network = s.networks.find((n) => n.id === s.chainId)!
   const address = s.addresses[s.active]
   const connected = s.sites.includes(origin)
-  const ask = (detail: unknown) => approve({ origin, method, network, detail })
+  const ask = (detail: unknown) => approve({ origin, method, network, account: address!, detail })
 
   switch (method) {
     case 'eth_chainId':
@@ -46,7 +51,7 @@ async function handle(origin: string, method: string, params: any[] = []): Promi
     case 'eth_requestAccounts':
       if (!address) throw err(4100, 'Open Plain Wallet and create a wallet first')
       if (!connected) {
-        await ask(address)
+        await ask(null)
         await save({ sites: [...new Set([...(await load()).sites, origin])] })
       }
       return [address]
@@ -62,8 +67,10 @@ async function handle(origin: string, method: string, params: any[] = []): Promi
       if (!s.networks.some((n) => n.id === id)) {
         if (method === 'wallet_switchEthereumChain') throw err(4902, 'Unrecognized chain; add it first')
         const rpc = c.rpcUrls?.[0]
-        if (!Number.isSafeInteger(id) || id <= 0 || typeof c.chainName !== 'string' || !/^https?:\/\//.test(rpc))
-          throw err(-32602, 'Invalid chain parameters')
+        // https only (plain http just for local dev nodes): the extension fetches this URL with its own host
+        // permissions, so a dapp must not be able to point it at devices on the user's network.
+        const okRpc = /^https:\/\/\S+$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/\S*)?$/.test(rpc)
+        if (!Number.isSafeInteger(id) || id <= 0 || typeof c.chainName !== 'string' || !okRpc) throw err(-32602, 'Invalid chain parameters')
         const added = { id, name: c.chainName.slice(0, 40), rpc, symbol: String(c.nativeCurrency?.symbol ?? 'ETH').slice(0, 10) }
         await ask(added)
         await save({ networks: [...(await load()).networks, added], chainId: id })
@@ -79,7 +86,12 @@ async function handle(origin: string, method: string, params: any[] = []): Promi
     case 'eth_sendTransaction': {
       const from = method === 'personal_sign' ? params[1] : method === 'eth_sendTransaction' ? params[0]?.from : params[0]
       if (typeof from !== 'string' || from.toLowerCase() !== address?.toLowerCase()) throw err(4100, 'Unknown account')
-      const sign = async () => toAccount((await secrets())[s.active]!)
+      // `addresses` in storage is plaintext and unauthenticated, the vault is not: make sure they agree.
+      const sign = async () => {
+        const account = toAccount((await secrets())[s.active]!)
+        if (account.address !== address) throw err(-32603, 'Vault does not match the selected account')
+        return account
+      }
 
       if (method === 'personal_sign') {
         const data = String(params[0])
@@ -94,16 +106,16 @@ async function handle(origin: string, method: string, params: any[] = []): Promi
         await ask(td)
         return (await sign()).signTypedData(td)
       }
-      const tx = params[0]
-      await ask(tx)
+      const tx = params[0] ?? {}
       const chain = defineChain({
         id: network.id,
         name: network.name,
         nativeCurrency: { name: network.symbol, symbol: network.symbol, decimals: 18 },
         rpcUrls: { default: { http: [network.rpc] } },
       })
-      const account = await sign()
-      const client = createWalletClient({ account, chain, transport: http(network.rpc) })
+      const client = createWalletClient({ account: address!, chain, transport: http(network.rpc) })
+      // Prepared BEFORE asking, and that exact request is what gets signed: the approval shows the real gas cost
+      // (a dapp or a lying RPC could otherwise burn the balance as fees) and nothing can change after the click.
       // ponytail: nonce + fees always come from the RPC, dapp-suggested ones are ignored; pass them through if a dapp needs it
       const request = await client.prepareTransactionRequest({
         to: tx.to || undefined,
@@ -114,15 +126,20 @@ async function handle(origin: string, method: string, params: any[] = []): Promi
       // Not client.sendTransaction: it signs for whatever chain the RPC *claims* to be, so a mislabeled network
       // could yield a signature valid on a chain the user never saw in the approval. Check, then sign offline.
       if (request.chainId !== network.id) throw err(-32603, `RPC serves chain ${request.chainId}, not ${network.name} (${network.id})`)
-      return client.sendRawTransaction({ serializedTransaction: await account.signTransaction(request as TransactionSerializable) })
+      const fee = request.gas * (request.maxFeePerGas ?? request.gasPrice ?? 0n)
+      await ask({ to: request.to ?? null, value: formatEther(request.value ?? 0n), fee: formatEther(fee), data: request.data ?? '0x' })
+      const { account: _, ...unsigned } = request
+      return client.sendRawTransaction({ serializedTransaction: await (await sign()).signTransaction(unsigned as TransactionSerializable) })
     }
   }
 
-  if (method.startsWith('wallet_') || /^eth_sign|^eth_subscribe|^eth_unsubscribe/.test(method)) throw err(4200, `${method} is not supported`)
+  // Forward only the standard read/broadcast namespaces: the user's RPC may be their own node with admin_,
+  // personal_, debug_ or a dev node's cheat methods enabled. Node-side signing and subscriptions are never forwarded.
+  if (!/^(eth|net|web3)_/.test(method) || /^eth_(sign|sendTransaction|subscribe|unsubscribe)/.test(method)) throw err(4200, `${method} is not supported`)
   const res = await fetch(network.rpc, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: rawParams ?? [] }),
   })
   const json = await res.json()
   if (json.error) throw json.error
@@ -130,6 +147,17 @@ async function handle(origin: string, method: string, params: any[] = []): Promi
 }
 
 export default defineBackground(() => {
+  // Content scripts run inside the website's process. Keep the vault ciphertext and the permission/network/address
+  // state out of their reach, so a renderer exploit can neither copy the vault nor rewrite them.
+  browser.storage.local.setAccessLevel?.({ accessLevel: 'TRUSTED_CONTEXTS' })
+
+  // ...which means provider events have to be pushed to the bridges from here.
+  browser.storage.onChanged.addListener(async (changes, area) => {
+    const msg = { chain: 'chainId' in changes, accounts: ['active', 'sites', 'addresses'].some((k) => k in changes) }
+    if (area !== 'local' || !(msg.chain || msg.accounts)) return
+    for (const tab of await browser.tabs.query({})) if (tab.id) browser.tabs.sendMessage(tab.id, msg).catch(() => {})
+  })
+
   browser.windows.onRemoved.addListener(async (id) => {
     if ((await win)?.id !== id) return
     win = undefined

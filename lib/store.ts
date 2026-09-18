@@ -43,6 +43,7 @@ export async function addWallet(secret: string, password?: string) {
   const { vault, addresses } = await load()
   const address = toAccount(secret).address
   if (addresses.includes(address)) throw new Error('Wallet already added')
+  if (!vault && !password) throw new Error('Password required') // never derive a vault key from an empty password
   const salt = vault ? JSON.parse(vault).salt : newSalt()
   const key = vault ? await sessionKey() : await deriveKey(password!, salt)
   if (!key) throw new Error('Wallet is locked')

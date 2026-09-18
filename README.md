@@ -12,6 +12,15 @@ A very minimal EVM wallet Chrome extension. ~550 lines of TypeScript, two runtim
 - Connects to dapps via EIP-1193 and EIP-6963, per-site approval, disconnect any time.
 - Approval window for: connect, `eth_sendTransaction`, `personal_sign`, `eth_signTypedData_v4`, `wallet_switchEthereumChain`, `wallet_addEthereumChain`. Everything else a connected site asks is forwarded to your RPC endpoint.
 
+## Security model
+
+- Seeds come from `crypto.getRandomValues` (128 bits, via `@scure/bip39`), generated inside the extension's own page. There is no weaker fallback.
+- Secrets exist only in the popup and the background. The page gets a provider object that holds nothing; the content script only relays. Both `chrome.storage` areas are closed to content scripts, so even the encrypted vault stays out of the website's process.
+- A site can do nothing but read the chain ID until you approve a connection for its exact origin. Requests from iframes and other windows are ignored.
+- Every signature needs a click in the extension's own window, which shows the origin, network, account, and for transactions the recipient, value, max fee and calldata. The transaction is fully prepared before you see it and exactly that is signed, only if the RPC really serves the chain you approved.
+- Only `eth_`/`net_`/`web3_` reads and `eth_sendRawTransaction` are forwarded to your RPC. Networks added by a dapp must use https.
+- Known gaps: no auto-lock (unlocked until the browser restarts), typed data and calldata are shown raw rather than decoded, copying a seed puts it on the system clipboard, and your RPC provider sees your address and IP.
+
 ## What it doesn't
 
 Balances, sending from the popup, tokens, NFTs, history, swaps, hardware wallets, ENS, gas editing (nonce and fees come from the RPC), revealing the seed phrase later, removing a wallet, auto-lock.
