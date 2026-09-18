@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Plain Wallet</title>
+    <style>
+      :root { color-scheme: light dark; font: 14px/1.4 system-ui, sans-serif; }
+      body { margin: 0; padding: 12px; min-width: 340px; box-sizing: border-box; }
+      #app { display: flex; flex-direction: column; gap: 8px; }
+      h1 { font-size: 16px; margin: 0; }
+      input, select, textarea, button { font: inherit; padding: 6px; box-sizing: border-box; width: 100%; }
+      textarea { resize: vertical; }
+      label { display: flex; flex-direction: column; gap: 2px; }
+      details > :not(summary) { margin-top: 6px; }
+      .row { display: flex; gap: 8px; align-items: center; }
+      .row > span { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+      .row > button { width: auto; }
+      .mono, pre { font-family: ui-monospace, monospace; font-size: 12px; overflow-wrap: anywhere; white-space: pre-wrap; }
+      pre { margin: 0; max-height: 300px; overflow: auto; padding: 8px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); }
+      .error { color: #d33; }
+    </style>
+  </head>
+  <body>
+    <main id="app"></main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
