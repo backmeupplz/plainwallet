@@ -1,4 +1,4 @@
-# Plain Wallet
+# <img src="assets/icon.svg" width="28" align="top" alt=""> Plain Wallet
 
 A very minimal EVM wallet Chrome extension. ~650 lines of TypeScript, two runtime dependencies ([viem](https://github.com/wevm/viem) and its bip39 library), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
 
@@ -57,4 +57,5 @@ entrypoints/popup/                     the only UI: setup, unlock, approvals, se
 lib/wallet.ts                          secrets → accounts, vault crypto (pure)
 lib/describe.ts                        calldata / typed data → what the approval says (pure)
 lib/store.ts                           chrome.storage state
+assets/icon.svg                        the one icon source; `public/icon/*.png` are rendered from it with rsvg-convert
 ```

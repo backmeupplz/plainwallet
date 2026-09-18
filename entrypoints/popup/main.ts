@@ -27,6 +27,15 @@ const act = (fn: () => unknown) => async () => {
   }
   await render()
 }
+const header = (...actions: Node[]) => h('header', {}, h('img', { src: '/icon/32.png', width: 22, height: 22, alt: '' }), h('h1', {}, 'Plain Wallet'), ...actions)
+/** Copies and says so on the button itself. */
+const copy = (text: string) => (e: Event) => {
+  const button = e.currentTarget as HTMLElement
+  const label = button.textContent
+  navigator.clipboard.writeText(text)
+  button.textContent = 'Copied'
+  setTimeout(() => (button.textContent = label), 1200)
+}
 const httpUrl = (s: string) => {
   if (!/^https?:\/\/\S+$/.test(s)) throw new Error('RPC must be an http(s) URL')
   return s
@@ -49,17 +58,18 @@ function walletForm(first: boolean) {
   })
   return [
     ...(first ? [pw.el, pw2.el] : []),
-    h('button', { onclick: generate }, 'Generate new wallet'),
+    h('button', { className: 'primary', onclick: generate }, 'Generate new wallet'),
+    h('p', {}, 'Or bring one you already have:'),
     secret,
     h('button', { onclick: act(() => addWallet(parseSecret(secret.value), password())) }, 'Import'),
   ]
 }
 const seedScreen = () => [
   h('h1', {}, 'Your seed phrase'),
-  h('p', {}, 'Write it down. It is the only backup and will not be shown again.'),
-  h('pre', {}, seed),
-  h('button', { onclick: () => navigator.clipboard.writeText(seed) }, 'Copy'),
-  h('button', { onclick: act(async () => (await addWallet(seed, pendingPassword), (seed = ''), (pendingPassword = undefined))) }, 'I saved it, create wallet'),
+  h('p', {}, 'Write these 12 words down in order. They are the only backup, and they will not be shown again.'),
+  h('ol', {}, ...seed.split(' ').map((word) => h('li', {}, word))),
+  h('button', { onclick: copy(seed) }, 'Copy'),
+  h('button', { className: 'primary', onclick: act(async () => (await addWallet(seed, pendingPassword), (seed = ''), (pendingPassword = undefined))) }, 'I saved it, create wallet'),
   h('button', { onclick: act(() => (seed = '')) }, 'Cancel'),
 ]
 
@@ -67,55 +77,65 @@ function unlockScreen() {
   const pw = field('Password', { type: 'password', autofocus: true })
   const go = act(() => unlock(pw.input.value))
   pw.input.onkeydown = (e) => e.key === 'Enter' && go()
-  return [h('h1', {}, 'Plain Wallet'), pw.el, h('button', { onclick: go }, 'Unlock')]
+  return [header(), pw.el, h('button', { className: 'primary', onclick: go }, 'Unlock')]
 }
 
-function describe(p: Pending): [title: string, body: string] {
+type Row = [label: string, value: string]
+// Nested data as dotted rows. The prefix keeps dapp-chosen field names from posing as the wallet's own rows.
+const flatten = (value: unknown, path: string): Row[] =>
+  value !== null && typeof value === 'object' ? Object.entries(value).flatMap(([k, v]) => flatten(v, `${path}.${k}`)) : [[path, String(value)]]
+/** What the slip says: labelled rows for structured requests, free text for messages. */
+function describe(p: Pending): { title: string; rows?: Row[]; text?: string } {
   const d = p.detail
   try {
     switch (p.method) {
       case 'eth_requestAccounts':
-        return ['Connect this site?', 'It will see your address and can ask you to sign.']
+        return { title: 'Connect this site?', text: 'It will see your address and can ask you to sign.' }
       case 'wallet_switchEthereumChain':
-        return ['Switch network?', `${d.name} (chain ${d.id})`]
+        return { title: 'Switch network?', rows: [['Switch to', `${d.name} (${d.id})`]] }
       case 'wallet_addEthereumChain':
-        return ['Add and switch to this network?', `${d.name} (chain ${d.id}, ${d.symbol})\nRPC: ${d.rpc}\n\nAll your requests on it go through this RPC.`]
+        return {
+          title: 'Add and switch to this network?',
+          rows: [['Name', d.name], ['Chain ID', String(d.id)], ['Currency', d.symbol], ['RPC', d.rpc]],
+          text: 'Everything you do on this network goes through that RPC.',
+        }
       case 'personal_sign':
-        if (typeof d === 'string') return ['Sign message', d]
+        if (typeof d === 'string') return { title: 'Sign message', text: d }
         try {
           const bytes = Uint8Array.from(d.raw.slice(2).match(/../g) ?? [], (b: string) => parseInt(b, 16))
-          return ['Sign message', new TextDecoder('utf-8', { fatal: true }).decode(bytes)]
+          return { title: 'Sign message', text: new TextDecoder('utf-8', { fatal: true }).decode(bytes) }
         } catch {
-          return ['Sign message (raw bytes)', d.raw]
+          return { title: 'Sign message (raw bytes)', text: d.raw }
         }
-      case 'eth_signTypedData_v4':
-        return [`Sign typed data: ${d.primaryType}`, JSON.stringify({ domain: d.domain, message: d.message }, null, 2)] // already reduced to what is hashed
+      case 'eth_signTypedData_v4': // already reduced to what is hashed
+        return { title: `Sign typed data: ${d.primaryType}`, rows: [...flatten(d.domain, 'domain'), ...flatten(d.message, 'message')] }
       case 'eth_sendTransaction':
-        return [
-          d.to ? 'Send transaction' : 'Deploy contract',
-          `To: ${d.to ?? '(new contract)'}\nValue: ${d.value} ${p.network.symbol}\nMax fee: ${d.fee} ${p.network.symbol}\nData: ${d.data}`,
-        ]
+        return {
+          title: d.to ? 'Send transaction' : 'Deploy contract',
+          rows: [['To', d.to ?? '(new contract)'], ['Value', `${d.value} ${p.network.symbol}`], ['Max fee', `${d.fee} ${p.network.symbol}`], ['Data', d.data]],
+        }
     }
   } catch {}
-  return [p.method, JSON.stringify(d, null, 2)]
+  return { title: p.method, text: JSON.stringify(d, null, 2) }
 }
 
 function approvalScreen(p: Pending, more: number) {
-  const [title, body] = describe(p)
+  const { title, rows = [], text } = describe(p)
   const settle = (ok: boolean) => act(() => browser.runtime.sendMessage({ type: 'settle', id: p.id, ok }))
   // Starts disabled: a window that pops up under the cursor, or the second half of a double-click on the previous
   // request, must not count as consent.
-  const ok = h('button', { onclick: settle(true), disabled: true }, 'Approve')
+  const ok = h('button', { className: 'primary', onclick: settle(true), disabled: true }, 'Approve')
   setTimeout(() => (ok.disabled = false), 800)
+  const all: Row[] = [['From site', p.origin], ['Network', `${p.network.name} (${p.network.id})`], ['Account', p.account], ...rows]
   return [
     h('h1', {}, title),
-    h('div', { className: 'mono' }, p.origin),
-    h('div', {}, `Network: ${p.network.name} (${p.network.id})`),
-    h('div', { className: 'mono' }, `Account: ${p.account}`),
-    ...(p.summary ? [h('strong', {}, p.summary)] : []),
-    h('pre', {}, body),
+    h('div', { className: 'slip' },
+      // red is reserved for requests that hand over open-ended control
+      ...(p.summary ? [h('strong', { className: /UNLIMITED|ALL your|Token approval/.test(p.summary) ? 'stamp' : '' }, p.summary)] : []),
+      h('dl', {}, ...all.flatMap(([label, value]) => [h('dt', {}, label), h('dd', {}, value)])),
+      ...(text ? [h('pre', {}, text)] : [])),
     h('div', { className: 'row' }, h('button', { onclick: settle(false) }, 'Reject'), ok),
-    ...(more ? [h('div', {}, `${more} more request(s) waiting`)] : []),
+    ...(more ? [h('p', {}, `${more} more ${more === 1 ? 'request' : 'requests'} waiting`)] : []),
   ]
 }
 
@@ -146,18 +166,19 @@ function mainScreen(s: State) {
   })
 
   return [
-    h('div', { className: 'row' }, h('h1', {}, 'Plain Wallet'), h('span'), h('button', { onclick: act(lock) }, 'Lock')),
-    wallets,
-    h('button', { className: 'mono', title: 'Copy address', onclick: () => navigator.clipboard.writeText(address) }, address),
-    networks,
+    header(h('button', { className: 'quiet', onclick: act(lock) }, 'Lock')),
+    h('label', {}, 'Account', wallets),
+    h('button', { className: 'address', title: 'Copy address', onclick: copy(address) }, address),
+    h('label', {}, 'Network', networks),
     rpc.el,
     h('details', {}, h('summary', {}, 'Networks'), name.el, id.el, url.el, symbol.el,
-      h('button', { onclick: add }, 'Add network'),
+      h('button', { className: 'primary', onclick: add }, 'Add network'),
       h('button', { onclick: remove, disabled: s.networks.length < 2 }, `Remove ${network.name}`)),
     h('details', {}, h('summary', {}, 'Add wallet'), ...walletForm(false)),
     h('details', {}, h('summary', {}, `Connected sites (${s.sites.length})`),
+      ...(s.sites.length ? [] : [h('p', {}, 'None yet. A site asks to connect when you use it.')]),
       ...s.sites.map((site) => h('div', { className: 'row' }, h('span', { className: 'mono' }, site),
-        h('button', { onclick: act(() => save({ sites: s.sites.filter((x) => x !== site) })) }, 'Disconnect')))),
+        h('button', { className: 'quiet', onclick: act(() => save({ sites: s.sites.filter((x) => x !== site) })) }, 'Disconnect')))),
   ]
 }
 
@@ -165,14 +186,14 @@ async function render() {
   const s = await load()
   let screen: (Node | string)[]
   if (seed) screen = seedScreen()
-  else if (!s.vault) screen = [h('h1', {}, 'Plain Wallet'), ...walletForm(true)]
+  else if (!s.vault) screen = [header(), h('p', {}, 'Choose a password. It encrypts your wallets on this device and unlocks them.'), ...walletForm(true)]
   else if (!(await isUnlocked())) screen = unlockScreen()
   else {
     touch() // using the wallet pushes the auto-lock back
     const pending: Pending[] = await browser.runtime.sendMessage({ type: 'pending' })
     screen = pending.length ? approvalScreen(pending[0]!, pending.length - 1) : mainScreen(s)
   }
-  app.replaceChildren(h('div', { className: 'error' }, error), ...screen)
+  app.replaceChildren(...(error ? [h('div', { className: 'error', role: 'alert' }, error)] : []), ...screen)
 }
 
 render()

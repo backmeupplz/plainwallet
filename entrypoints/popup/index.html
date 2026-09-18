@@ -4,21 +4,64 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Plain Wallet</title>
+    <link rel="icon" href="/icon/32.png" />
     <style>
-      :root { color-scheme: light dark; font: 14px/1.4 system-ui, sans-serif; }
-      body { margin: 0; padding: 12px; min-width: 340px; box-sizing: border-box; }
-      #app { display: flex; flex-direction: column; gap: 8px; }
-      h1 { font-size: 16px; margin: 0; }
-      input, select, textarea, button { font: inherit; padding: 6px; box-sizing: border-box; width: 100%; }
-      textarea { resize: vertical; }
-      label { display: flex; flex-direction: column; gap: 2px; }
-      details > :not(summary) { margin-top: 6px; }
+      /* A paper form filled in with a ballpoint: printed sans labels, typed mono values, blue ink for what you do,
+         stamp red only for what can cost you. */
+      :root {
+        color-scheme: light dark;
+        --paper: light-dark(#f7f8fa, #151929);
+        --sheet: light-dark(#ffffff, #1c2136);
+        --ink: light-dark(#1b2340, #e6e9f5);
+        --muted: light-dark(#6a7390, #8e97b5);
+        --rule: light-dark(#d5d9e3, #2c3350);
+        --pen: light-dark(#2443c4, #8fa4ff);
+        --on-pen: light-dark(#ffffff, #151929);
+        --stamp: light-dark(#c4281c, #ff7a6b);
+        --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font: 14px/1.45 system-ui, sans-serif;
+      }
+      body { margin: 0; padding: 16px; min-width: 348px; box-sizing: border-box; background: var(--paper); color: var(--ink); }
+      #app { display: flex; flex-direction: column; gap: 12px; }
+      header { display: flex; align-items: center; gap: 8px; }
+      h1 { flex: 1; margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -0.01em; }
+      p { margin: 0; color: var(--muted); }
+
+      label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
+      input, select, textarea { width: 100%; box-sizing: border-box; font: 13px var(--mono); color: var(--ink); background: var(--paper); border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; padding: 6px 0; }
+      textarea { border: 1px solid var(--rule); border-radius: 6px; padding: 8px; resize: vertical; }
+      :focus-visible { outline: 2px solid var(--pen); outline-offset: 2px; }
+      input:focus-visible, select:focus-visible { outline: 0; border-bottom-color: var(--pen); box-shadow: 0 1px 0 var(--pen); }
+
+      button { width: 100%; font: inherit; font-weight: 550; padding: 8px 12px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; cursor: pointer; }
+      button:hover:not(:disabled) { border-color: var(--pen); }
+      button.primary { color: var(--on-pen); background: var(--pen); border-color: var(--pen); }
+      button.primary:hover:not(:disabled) { filter: brightness(1.1); }
+      button.quiet { width: auto; flex: none; padding: 3px 10px; font-size: 12px; font-weight: 500; }
+      button.address { font: 12px var(--mono); text-align: left; overflow-wrap: anywhere; border-style: dashed; }
+      button:disabled { opacity: 0.45; cursor: default; }
+      @media (prefers-reduced-motion: no-preference) { button { transition: border-color 0.12s, filter 0.12s, opacity 0.2s; } }
+
+      details { border-top: 1px solid var(--rule); padding-top: 10px; }
+      summary { cursor: pointer; font-weight: 550; }
+      details > :not(summary) { margin-top: 10px; }
       .row { display: flex; gap: 8px; align-items: center; }
-      .row > span { flex: 1; overflow: hidden; text-overflow: ellipsis; }
-      .row > button { width: auto; }
-      .mono, pre { font-family: ui-monospace, monospace; font-size: 12px; overflow-wrap: anywhere; white-space: pre-wrap; }
-      pre { margin: 0; max-height: 300px; overflow: auto; padding: 8px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); }
-      .error { color: #d33; }
+      .row > span { flex: 1; overflow-wrap: anywhere; }
+      .mono { font: 12px var(--mono); overflow-wrap: anywhere; }
+      .error { color: var(--stamp); border-left: 3px solid var(--stamp); padding-left: 8px; }
+
+      /* the thing you are about to sign, as a slip torn off a pad */
+      .slip { display: flex; flex-direction: column; gap: 10px; padding: 12px; background: var(--sheet); border: 1px solid var(--rule); border-top: 2px dashed var(--rule); border-radius: 0 0 8px 8px; }
+      .slip strong { font-size: 15px; line-height: 1.35; overflow-wrap: anywhere; }
+      .stamp { color: var(--stamp); }
+      dl { display: grid; grid-template-columns: fit-content(42%) 1fr; gap: 6px 12px; margin: 0; }
+      dt { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+      dd { margin: 0; font: 12px var(--mono); overflow-wrap: anywhere; max-height: 110px; overflow: auto; }
+      .slip pre { border-top: 1px solid var(--rule); padding-top: 10px; } /* wallet's rows above, the dapp's text below */
+      pre { margin: 0; font: 12px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; }
+
+      ol { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 4px; margin: 0; padding: 12px 12px 12px 32px; font: 13px var(--mono); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
+      li::marker { color: var(--muted); font-size: 11px; }
     </style>
   </head>
   <body>

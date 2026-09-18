@@ -1,3 +1,5 @@
+import iconSvg from '@/assets/icon.svg?raw'
+
 // Runs in the page's own JS world: the EIP-1193 provider dapps talk to. Holds no secrets;
 // every request goes page -> bridge content script -> background.
 export default defineContentScript({
@@ -37,9 +39,7 @@ export default defineContentScript({
     }
 
     // EIP-6963: how modern dapps discover wallets
-    const icon =
-      'data:image/svg+xml,' +
-      encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#111"/><path d="M8 11h16v12H8z" fill="none" stroke="#fff" stroke-width="2"/><circle cx="20" cy="17" r="1.5" fill="#fff"/></svg>')
+    const icon = `data:image/svg+xml,${encodeURIComponent(iconSvg)}`
     // UUIDv4 by hand: crypto.randomUUID is https-only and this must not crash on http:// pages
     const hex = [...crypto.getRandomValues(new Uint8Array(16))]
       .map((b, i) => (i === 6 ? (b & 15) | 64 : i === 8 ? (b & 63) | 128 : b).toString(16).padStart(2, '0'))
