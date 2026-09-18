@@ -1,4 +1,4 @@
-import { addWallet, isUnlocked, load, lock, save, unlock, type Network, type State } from '@/lib/store'
+import { addWallet, isUnlocked, load, lock, save, touch, unlock, type Network, type State } from '@/lib/store'
 import { newMnemonic, parseSecret } from '@/lib/wallet'
 import type { Pending } from '../background'
 
@@ -35,11 +35,11 @@ const httpUrl = (s: string) => {
 function walletForm(first: boolean) {
   // spellcheck off: browsers' cloud ("enhanced") spellcheck would otherwise upload whatever is typed here
   const secret = h('textarea', { rows: 3, placeholder: 'Seed phrase or private key', spellcheck: false, autocomplete: 'off', autocapitalize: 'off' })
-  const pw = field('Password (min 8 characters)', { type: 'password' })
+  const pw = field('Password (min 12 characters)', { type: 'password' })
   const pw2 = field('Repeat password', { type: 'password' })
   const password = () => {
     if (!first) return undefined
-    if (pw.input.value.length < 8) throw new Error('Password must be at least 8 characters')
+    if (pw.input.value.length < 12) throw new Error('Password must be at least 12 characters')
     if (pw.input.value !== pw2.input.value) throw new Error('Passwords do not match')
     return pw.input.value
   }
@@ -89,7 +89,7 @@ function describe(p: Pending): [title: string, body: string] {
           return ['Sign message (raw bytes)', d.raw]
         }
       case 'eth_signTypedData_v4':
-        return [`Sign typed data: ${d.primaryType}`, JSON.stringify({ domain: d.domain, message: d.message }, null, 2)]
+        return [`Sign typed data: ${d.primaryType}`, JSON.stringify({ domain: d.domain, message: d.message }, null, 2)] // already reduced to what is hashed
       case 'eth_sendTransaction':
         return [
           d.to ? 'Send transaction' : 'Deploy contract',
@@ -112,6 +112,7 @@ function approvalScreen(p: Pending, more: number) {
     h('div', { className: 'mono' }, p.origin),
     h('div', {}, `Network: ${p.network.name} (${p.network.id})`),
     h('div', { className: 'mono' }, `Account: ${p.account}`),
+    ...(p.summary ? [h('strong', {}, p.summary)] : []),
     h('pre', {}, body),
     h('div', { className: 'row' }, h('button', { onclick: settle(false) }, 'Reject'), ok),
     ...(more ? [h('div', {}, `${more} more request(s) waiting`)] : []),
@@ -167,6 +168,7 @@ async function render() {
   else if (!s.vault) screen = [h('h1', {}, 'Plain Wallet'), ...walletForm(true)]
   else if (!(await isUnlocked())) screen = unlockScreen()
   else {
+    touch() // using the wallet pushes the auto-lock back
     const pending: Pending[] = await browser.runtime.sendMessage({ type: 'pending' })
     screen = pending.length ? approvalScreen(pending[0]!, pending.length - 1) : mainScreen(s)
   }

@@ -1,6 +1,7 @@
 import { createWalletClient, defineChain, formatEther, http, toHex, type TransactionSerializable } from 'viem'
-import { getTransactionCount } from 'viem/actions'
-import { load, save, secrets, type Network } from '@/lib/store'
+import { getTransactionCount, readContract } from 'viem/actions'
+import { clean, describeCall, signedView, TOKEN_ABI } from '@/lib/describe'
+import { load, lock, save, secrets, type Network } from '@/lib/store'
 
 // An RPC may not redirect: a dapp-supplied https URL could otherwise bounce the extension's requests (sent with its
 // own host permissions) to a device on the user's network.
@@ -11,7 +12,7 @@ import { toAccount } from '@/lib/wallet'
 const err = (code: number, message: string) => ({ code, message })
 const big = (v?: string) => (v == null ? undefined : BigInt(v))
 
-export type Pending = { id: string; origin: string; method: string; network: Network; account: string; detail: any }
+export type Pending = { id: string; origin: string; method: string; network: Network; account: string; summary?: string; detail: any }
 const pending = new Map<string, Pending & { resolve: () => void; reject: (e: unknown) => void }>()
 let win: Promise<{ id?: number } | undefined> | undefined
 
@@ -44,7 +45,7 @@ async function handle(origin: string, method: unknown, rawParams: unknown): Prom
   const network = s.networks.find((n) => n.id === s.chainId)!
   const address = s.addresses[s.active]
   const connected = s.sites.includes(origin)
-  const ask = (detail: unknown) => approve({ origin, method, network, account: address!, detail })
+  const ask = (detail: unknown, summary?: string) => approve({ origin, method, network, account: address!, summary, detail })
 
   switch (method) {
     case 'eth_chainId':
@@ -76,8 +77,7 @@ async function handle(origin: string, method: unknown, rawParams: unknown): Prom
         // permissions, so a dapp must not be able to point it at devices on the user's network.
         const okRpc = typeof rpc === 'string' && /^https:\/\/\S+$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/\S*)?$/.test(rpc)
         if (!Number.isSafeInteger(id) || id <= 0 || typeof c.chainName !== 'string' || !okRpc) throw err(-32602, 'Invalid chain parameters')
-        // collapse whitespace: newlines in a name could push the real chain id and RPC out of view in the approval
-        const clean = (v: unknown, max: number) => String(v).replace(/\s+/g, ' ').trim().slice(0, max)
+        // clean() collapses whitespace: newlines in a name could push the real chain id and RPC out of view
         const added = { id, name: clean(c.chainName, 40), rpc, symbol: clean(c.nativeCurrency?.symbol ?? 'ETH', 10) }
         await ask(added)
         await save({ networks: [...(await load()).networks, added], chainId: id })
@@ -110,7 +110,8 @@ async function handle(origin: string, method: unknown, rawParams: unknown): Prom
         const td = typeof params[1] === 'string' ? JSON.parse(params[1]) : params[1]
         if (td?.domain?.chainId != null && Number(td.domain.chainId) !== s.chainId)
           throw err(-32602, 'Typed data chainId does not match the active network')
-        await ask(td)
+        const { view, summary } = signedView(td)
+        await ask(view, summary)
         return (await sign()).signTypedData(td)
       }
       const tx = params[0] ?? {}
@@ -134,7 +135,11 @@ async function handle(origin: string, method: unknown, rawParams: unknown): Prom
       // could yield a signature valid on a chain the user never saw in the approval. Check, then sign offline.
       if (request.chainId !== network.id) throw err(-32603, `RPC serves chain ${request.chainId}, not ${network.name} (${network.id})`)
       const fee = request.gas * (request.maxFeePerGas ?? request.gasPrice ?? 0n)
-      await ask({ to: request.to ?? null, value: formatEther(request.value ?? 0n), fee: formatEther(fee), data: request.data ?? '0x' })
+      // symbol/decimals only make the summary readable; who gets what comes from the calldata itself
+      const token = (functionName: 'symbol' | 'decimals') =>
+        request.to ? readContract(client, { address: request.to, abi: TOKEN_ABI, functionName }).catch(() => undefined) : undefined
+      const summary = describeCall(request.data, { symbol: (await token('symbol')) as string, decimals: (await token('decimals')) as number })
+      await ask({ to: request.to ?? null, value: formatEther(request.value ?? 0n), fee: formatEther(fee), data: request.data ?? '0x' }, summary)
       // Only the nonce is refreshed after the click (it isn't shown and can't redirect funds): requests queued
       // together were all prepared at the same nonce.
       const nonce = await getTransactionCount(client, { address: address!, blockTag: 'pending' })
@@ -158,6 +163,8 @@ async function handle(origin: string, method: unknown, rawParams: unknown): Prom
 }
 
 export default defineBackground(() => {
+  browser.alarms.onAlarm.addListener((alarm) => alarm.name === 'lock' && lock()) // armed in lib/store.ts
+
   // Content scripts run inside the website's process. Keep the vault ciphertext and the permission/network/address
   // state out of their reach, so a renderer exploit can neither copy the vault nor rewrite them.
   browser.storage.local.setAccessLevel?.({ accessLevel: 'TRUSTED_CONTEXTS' }).catch(console.error)

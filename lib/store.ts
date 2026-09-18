@@ -25,11 +25,16 @@ const sessionKey = async () => (await browser.storage.session.get('key')).key as
 export const isUnlocked = async () => !!(await sessionKey())
 export const lock = () => browser.storage.session.clear()
 
+/** Auto-lock: (re)armed on unlock and on every use of the popup. An alarm, because it outlives the service worker. */
+export const AUTO_LOCK_MINUTES = 15
+export const touch = () => browser.alarms.create('lock', { delayInMinutes: AUTO_LOCK_MINUTES })
+const setKey = async (key: string) => (await browser.storage.session.set({ key }), touch())
+
 export async function unlock(password: string) {
   const { vault } = await load()
   const key = await deriveKey(password, JSON.parse(vault).salt)
   await decryptVault(key, vault).catch(() => Promise.reject(new Error('Wrong password')))
-  await browser.storage.session.set({ key })
+  await setKey(key)
 }
 
 export async function secrets(): Promise<string[]> {
@@ -49,5 +54,5 @@ export async function addWallet(secret: string, password?: string) {
   if (!key) throw new Error('Wallet is locked')
   const all = [...(vault ? await decryptVault(key, vault) : []), secret]
   await save({ vault: await encryptVault(key, salt, all), addresses: [...addresses, address], active: addresses.length })
-  await browser.storage.session.set({ key })
+  await setKey(key)
 }
