@@ -30,12 +30,18 @@ Prices, NFTs, built-in history, swaps, hardware wallets, ENS, gas editing (nonce
 
 ## Install
 
+### Chrome (and Brave, Edge, other Chromium browsers)
+
+Install [Plain Wallet from the Chrome Web Store](https://chromewebstore.google.com/detail/pmnbalegifiefmohkolfpclnmkooifcp), then pin it from the puzzle-piece menu so it stays in the toolbar. It updates automatically.
+
+Or build it from source:
+
 ```sh
 npm install
 npm run build
 ```
 
-Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked** and select `.output/chrome-mv3`.
+Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked** and select `.output/chrome-mv3`. An unpacked build doesn't update itself: pull, rebuild and click the reload icon on its card.
 
 ### Firefox / LibreWolf
 
