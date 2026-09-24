@@ -34,7 +34,7 @@ registerHooks({
     return next(specifier, context)
   },
 })
-const { addWallet, addDerivedAccount, exportAccount, seedSources, load, lock, repair, save, secrets, isUnlocked, unlock } = await import('./lib/store.ts')
+const { addWallet, addDerivedAccount, exportAccount, removeAccount, seedSources, load, lock, repair, save, secrets, isUnlocked, unlock } = await import('./lib/store.ts')
 const { deriveKey, encryptVault, newMeta, toAccount } = await import('./lib/wallet.ts')
 const { default: start } = await import('./entrypoints/background.ts')
 start()
@@ -100,6 +100,22 @@ await duringLock
 await assert.rejects(exportAccount(0, 'old-password-123'), /locked/)
 await unlock('old-password-123')
 console.log('password-authenticated export ok')
+
+// Removing an account deletes its key, nickname and connections; the others keep their order, the selection follows.
+const kept = await load()
+const [a0, gone] = [kept.addresses[0], kept.addresses[1]]
+await save({ active: 3, nicknames: { [gone]: 'Spare', [a0]: 'Main' }, connections: { 'https://a.test': [gone], 'https://b.test': [a0, gone] } })
+await assert.rejects(removeAccount(1, a0), /does not match/)
+await assert.rejects(removeAccount(99, gone), /does not match/)
+await removeAccount(1, gone)
+const removed = await load()
+assert.deepEqual(removed.addresses, kept.addresses.filter((a) => a !== gone))
+assert.deepEqual((await secrets()).map((s) => toAccount(s).address), removed.addresses)
+assert.equal(removed.active, 2) // still the same account
+assert.deepEqual(removed.nicknames, { [a0]: 'Main' })
+assert.deepEqual(removed.connections, { 'https://b.test': [a0] })
+await save({ connections: {}, nicknames: {} })
+console.log('remove account ok')
 
 // State written behind the wallet's back (Firefox content scripts can reach storage.local) is refused once unlocked,
 // by the popup and by sites alike, and can be rebuilt from the vault.
@@ -170,6 +186,7 @@ assert.equal((await message({ method: 'eth_requestAccounts' }, site)).error.code
 // Setup works again with a new password, and a reset also clears an unlocked key.
 await addWallet('0x' + '34'.repeat(32), 'new-password-123')
 assert.equal((await secrets()).length, 1)
+await assert.rejects(removeAccount(0, (await load()).addresses[0]), /only account/)
 await lock()
 await assert.rejects(unlock('old-password-123'), /Wrong password/)
 await unlock('new-password-123')

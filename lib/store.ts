@@ -198,6 +198,29 @@ async function appendWallet(secret: Secret, password?: string) {
   await setKey(key)
 }
 
+/** Deletes one account's secret from the vault, along with its nickname and site connections. `address` must match
+ * what the user picked, so a list that changed underneath the dialog can't delete a different account. */
+export const removeAccount = (index: number, address: string) => navigator.locks.request('vault', async () => {
+  const key = await unlockedKey()
+  const vault = await storedVault()
+  const all = await decryptVault(key, vault)
+  const secret = Number.isSafeInteger(index) && index >= 0 ? all[index] : undefined
+  if (!secret || toAccount(secret).address !== address) throw new Error('Vault does not match the selected account')
+  if (all.length < 2) throw new Error('This is your only account. To delete it, lock the wallet and reset it.')
+  const next = await encryptVault(key, JSON.parse(vault), all.filter((_, i) => i !== index))
+  await save((s) => {
+    if (s.addresses[index] !== address) throw new Error('Vault does not match the selected account')
+    const { [address]: _, ...nicknames } = s.nicknames
+    const connections = Object.fromEntries(Object.entries(s.connections)
+      .map(([origin, accounts]) => [origin, accounts.filter((a) => a !== address)] as const).filter(([, accounts]) => accounts.length))
+    return {
+      vault: next, nicknames, connections,
+      addresses: s.addresses.filter((_, i) => i !== index),
+      active: s.active === index ? 0 : s.active > index ? s.active - 1 : s.active,
+    }
+  }, key)
+})
+
 /** Only public labels leave this function; seed words stay in the vault. */
 export async function seedSources() {
   const all = await secrets()

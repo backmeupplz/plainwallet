@@ -7,10 +7,10 @@ A very minimal EVM wallet extension for Chrome and Firefox. ~1350 lines of TypeS
 ## What it does
 
 - Popup, sidebar or full tab.
-- Generate or import wallets (seed phrase / private key), derive more accounts from a seed, nicknames, export secrets behind your password (shown, never copied to the clipboard).
+- Generate or import wallets (seed phrase / private key), derive more accounts from a seed, nicknames, remove accounts, export secrets behind your password (shown, never copied to the clipboard).
 - Password-encrypted vault (scrypt, 128 MiB → AES-256-GCM; PBKDF2 vaults from 0.1.x are upgraded on unlock); auto-locks after 15 minutes. Forgot the password? Reset wipes everything.
 - Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche and Gnosis built in; add or edit any network.
-- Balances of the gas token and common tokens on each built-in network; add any ERC-20 by address (symbol and decimals come from the chain). Refreshed on open, on network/account switch and when your transaction is mined.
+- Balances of the gas token and common tokens on each built-in network; add any ERC-20 by address or remove one (symbol and decimals come from the chain). Refreshed on open, on network/account switch and when your transaction is mined.
 - Send the gas token or a token: review, sign, then see it confirm or fail. History opens on DeBank.
 - Dapps on https sites via EIP-1193 / EIP-6963, connected per account, with an approval window for every signature, transaction and network change.
 
@@ -26,7 +26,7 @@ A very minimal EVM wallet extension for Chrome and Firefox. ~1350 lines of TypeS
 
 ## What it doesn't
 
-Removing a token, prices, NFTs, built-in history, swaps, hardware wallets, ENS, gas editing (nonce and fees come from the RPC), removing a wallet.
+Prices, NFTs, built-in history, swaps, hardware wallets, ENS, gas editing (nonce and fees come from the RPC).
 
 ## Install
 

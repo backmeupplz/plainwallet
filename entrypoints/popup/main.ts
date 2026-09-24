@@ -1,7 +1,7 @@
 import { encodeFunctionData, erc20Abi, formatEther, formatUnits, zeroAddress } from 'viem'
 import { balances, mined, prepare, send, tokenInfo } from '@/lib/chain'
 import { parseAddress, parseAmount } from '@/lib/describe'
-import { addDerivedAccount, addWallet, exportAccount, isUnlocked, load, lock, repair, save, seedSources, signer, TAMPERED, touch, unlock, type Network, type State, type Token } from '@/lib/store'
+import { addDerivedAccount, addWallet, exportAccount, isUnlocked, load, lock, removeAccount, repair, save, seedSources, signer, TAMPERED, touch, unlock, type Network, type State, type Token } from '@/lib/store'
 import { newMnemonic, parseSecret } from '@/lib/wallet'
 import type { Pending } from '../background'
 
@@ -425,10 +425,22 @@ function sendDialog(s: State, network: Network, tokens: Token[]) {
   content.append(...form)
 }
 
-function tokenDialog(network: Network) {
-  const { content, run } = modal(`Add token on ${network.name}`)
+function tokenDialog(network: Network, tokens: Token[]) {
+  const { content, run } = modal(`Tokens on ${network.name}`)
+  const list = h('div', { className: 'dialog-content' })
+  const empty = () => { if (!list.childElementCount) list.append(h('p', {}, 'No tokens on this network.')) }
+  for (const t of tokens) {
+    const row = h('div', { className: 'row' }, h('span', {}, h('span', {}, t.symbol), h('p', { className: 'mono' }, t.address)))
+    row.append(h('button', { className: 'quiet', onclick: run(async () => {
+      await save((now) => ({ tokens: { ...now.tokens, [network.id]: (now.tokens[network.id] ?? []).filter((x) => x.address !== t.address) } }))
+      row.remove()
+      empty()
+    }, false) }, 'Remove'))
+    list.append(row)
+  }
+  empty()
   const address = field('Token contract address', { placeholder: '0x…', spellcheck: false, autocomplete: 'off' })
-  content.append(address.el, h('button', { className: 'primary', onclick: run(async () => {
+  content.append(list, address.el, h('button', { className: 'primary', onclick: run(async () => {
       const token = await tokenInfo(network, address.input.value)
       await save((now) => {
         const list = now.tokens[network.id] ?? []
@@ -436,6 +448,20 @@ function tokenDialog(network: Network) {
         return { tokens: { ...now.tokens, [network.id]: [...list, token] } }
       })
     }) }, 'Add token'))
+}
+
+function removeDialog(s: State) {
+  const { content, run } = modal('Remove account')
+  const selected = h('select', {}, ...accountOptions(s))
+  const backedUp = h('input', { type: 'checkbox' })
+  const remove = h('button', { className: 'danger', disabled: true, onclick: run(() =>
+    removeAccount(Number(selected.value), s.addresses[Number(selected.value)]!)) }, 'Remove account')
+  backedUp.onchange = () => (remove.disabled = !backedUp.checked)
+  selected.onchange = () => { backedUp.checked = false; remove.disabled = true }
+  content.append(h('label', {}, 'Account', selected),
+    h('p', { className: 'stamp' }, 'This deletes the account’s key from Plain Wallet on this device, with its nickname and site connections. Its funds stay on-chain, reachable only with its seed phrase or private key.'),
+    h('label', { className: 'acknowledgment' }, backedUp, 'I have this account’s seed phrase or private key backed up elsewhere.'),
+    remove)
 }
 
 function settingsDialog(s: State) {
@@ -454,6 +480,7 @@ function settingsDialog(s: State) {
   }
   empty()
   content.append(h('button', { onclick: () => { dialog.close(); exportDialog(s) } }, 'Export seeds / private keys'),
+    h('button', { onclick: () => { dialog.close(); removeDialog(s) } }, 'Remove account'),
     h('h2', {}, 'Connected sites'), sites,
     h('a', { href: 'https://github.com/backmeupplz/plainwallet', target: '_blank', rel: 'noreferrer' }, 'Source code on GitHub'))
 }
@@ -509,7 +536,7 @@ function mainScreen(s: State) {
       h('div', { className: 'row' }, accounts, iconButton('Edit account nickname', icons.edit, () => nicknameDialog(s)),
         iconButton('Transaction history on DeBank', icons.history, () => openDebank(address)), copyAddress)),
     list,
-    h('div', { className: 'row' }, h('button', { onclick: () => tokenDialog(network) }, 'Add token'),
+    h('div', { className: 'row' }, h('button', { onclick: () => tokenDialog(network, tokens) }, 'Tokens'),
       h('button', { className: 'primary', onclick: () => sendDialog(s, network, tokens) }, 'Send')),
   ]
 }
