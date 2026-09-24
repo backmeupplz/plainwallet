@@ -1,7 +1,6 @@
 import { defineConfig } from 'wxt'
 
 export default defineConfig({
-  suppressWarnings: { firefoxDataCollection: true }, // AMO-only requirement; this isn't published there
   manifest: ({ browser }) => ({
     name: 'Plain Wallet',
     permissions: ['storage', 'alarms', ...(browser === 'firefox' ? [] : ['sidePanel'])],
@@ -9,7 +8,12 @@ export default defineConfig({
     host_permissions: ['http://*/*', 'https://*/*'],
     // Firefox refuses MV3 extensions without an ID
     ...(browser === 'firefox' ? {
-      browser_specific_settings: { gecko: { id: 'plainwallet@backmeupplz' } },
+      browser_specific_settings: { gecko: {
+        id: 'plainwallet@backmeupplz',
+        strict_min_version: '142.0', // the first Firefox (desktop and Android) that reads data_collection_permissions
+        // AMO: addresses and signed transactions go to the RPC the user picked; nothing reaches the developer
+        data_collection_permissions: { required: ['financialAndPaymentInfo'] },
+      } },
       sidebar_action: { default_title: 'Plain Wallet', default_panel: 'popup.html?view=sidebar', default_icon: 'icon/32.png', open_at_install: false },
     } : { side_panel: { default_path: 'popup.html?view=sidebar' } }),
   }),
