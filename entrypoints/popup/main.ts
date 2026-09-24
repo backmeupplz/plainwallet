@@ -642,7 +642,7 @@ function megapotSection(m: ReturnType<typeof megapotSettings>, run: ReturnType<t
   const every = field('Every how many transactions', { type: 'number', min: 1, step: 1, value: m.every, inputMode: 'numeric' })
   const left = m.every - m.count
   return h('details', { className: 'fold' },
-    h('summary', {}, 'Megapot: ', h('span', {}, m.on ? `a ticket every ${m.every} transaction${m.every === 1 ? '' : 's'}` : 'off')),
+    h('summary', {}, 'Megapot: ', h('span', {}, m.on ? (m.every === 1 ? 'ticket/tx' : `ticket/${m.every} txs`) : 'off')),
     h('div', { className: 'dialog-content' },
       h('p', {}, 'Every N transactions you send, the wallet asks you to buy one ',
         h('a', { href: 'https://megapot.io', target: '_blank', rel: 'noreferrer' }, 'Megapot'),
