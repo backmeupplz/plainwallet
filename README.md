@@ -51,6 +51,8 @@ The build is unsigned, so either load it temporarily from `about:debugging` (rem
 
 ## Develop
 
+Contributing? Read [CONTRIBUTING.md](CONTRIBUTING.md); AI coding agents should also read [AGENTS.md](AGENTS.md).
+
 ```sh
 npm run dev   # Chrome with the extension loaded and hot reload
 npm test      # self-check: vault crypto and upgrade, signed state, approval wording, amounts, connections
