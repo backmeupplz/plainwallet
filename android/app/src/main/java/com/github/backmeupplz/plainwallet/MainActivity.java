@@ -2,6 +2,7 @@ package com.github.backmeupplz.plainwallet;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.pm.ApplicationInfo;
 import android.graphics.Insets;
 import android.net.Uri;
 import android.os.Build;
@@ -70,6 +71,8 @@ public class MainActivity extends Activity {
             return;
         }
 
+        // Debug builds only: lets Chrome DevTools (chrome://inspect) attach to both WebViews for testing.
+        WebView.setWebContentsDebuggingEnabled((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0);
         WebViewAssetLoader assets = new WebViewAssetLoader.Builder()
                 .addPathHandler("/", new WebViewAssetLoader.AssetsPathHandler(this)).build();
         wallet = webView();
