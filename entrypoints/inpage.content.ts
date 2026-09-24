@@ -13,6 +13,7 @@ export default defineContentScript({
 
     window.addEventListener('message', ({ source, data }) => {
       if (source !== window || data?.target !== 'plainwallet-inpage') return
+      if (data.event === 'accountsChanged') provider.selectedAddress = (data.data as string[])?.[0] ?? null
       if (data.event) return listeners[data.event]?.forEach((fn) => fn(data.data))
       const w = waiting.get(data.id)
       waiting.delete(data.id)
@@ -22,11 +23,16 @@ export default defineContentScript({
 
     const provider = {
       isPlainWallet: true,
+      // Deprecated MetaMask field that some sites (chainlist.org) still read to tell whether they're connected.
+      selectedAddress: null as string | null,
       request: ({ method, params }: { method: string; params?: unknown[] }) =>
         new Promise((resolve, reject) => {
           const id = nextId++
           waiting.set(id, { resolve, reject })
           window.postMessage({ target: 'plainwallet-bridge', id, method, params }, location.origin)
+        }).then((result) => {
+          if (method === 'eth_accounts' || method === 'eth_requestAccounts') provider.selectedAddress = (result as string[])[0] ?? null
+          return result
         }),
       on(event: string, fn: (data: unknown) => void) {
         ;(listeners[event] ??= new Set()).add(fn)

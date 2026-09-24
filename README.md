@@ -9,7 +9,7 @@ A very minimal EVM wallet extension for Chrome and Firefox. ~1350 lines of TypeS
 - Popup, sidebar or full tab.
 - Generate or import wallets (seed phrase / private key), derive more accounts from a seed, nicknames, remove accounts, export secrets behind your password (shown, never copied to the clipboard).
 - Password-encrypted vault (scrypt, 128 MiB → AES-256-GCM; PBKDF2 vaults from 0.1.x are upgraded on unlock); auto-locks after 15 minutes. Forgot the password? Reset wipes everything.
-- Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche and Gnosis built in; add or edit any network.
+- Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche and Gnosis built in; add networks from chainlist.org or by hand, and edit any network.
 - Balances of the gas token and common tokens on each built-in network; add any ERC-20 by address or remove one (symbol and decimals come from the chain). Refreshed on open, on network/account switch and when your transaction is mined.
 - Send the gas token or a token: review, sign, then see it confirm or fail. History opens on DeBank.
 - Dapps on https sites via EIP-1193 / EIP-6963, connected per account, with an approval window for every signature, transaction and network change.

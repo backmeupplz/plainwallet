@@ -93,7 +93,8 @@ async function handle(origin: string, method: unknown, rawParams: unknown): Prom
       const known = s.networks.find((n) => n.id === id)
       if (!known) {
         if (method === 'wallet_switchEthereumChain') throw err(4902, 'Unrecognized chain; add it first')
-        const rpc = c.rpcUrls?.[0]
+        // Sites like chainlist.org send every RPC they know of: take the first one we'd accept.
+        const rpc = Array.isArray(c.rpcUrls) ? c.rpcUrls.find(publicRpc) : undefined
         if (!Number.isSafeInteger(id) || id <= 0 || typeof c.chainName !== 'string' || !publicRpc(rpc))
           throw err(-32602, 'Invalid chain parameters (the RPC must be a public https URL)')
         // clean() collapses whitespace: newlines in a name could push the real chain id and RPC out of view

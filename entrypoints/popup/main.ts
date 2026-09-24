@@ -315,8 +315,17 @@ function networkDialog(s: State, adding = false) {
   const selected = h('select', {}, ...s.networks.map((n) => option(n.id, n.name, !adding && n.id === s.chainId)), option('add', 'Add network…', adding))
   const name = field('Name'), id = field('Chain ID', { type: 'number', min: 1 })
   const url = field('RPC URL', { spellcheck: false }), symbol = field('Currency symbol')
+  const picker = h('label', {}, 'Network', selected)
+  let custom = false
+  // Adding starts with a choice: chainlist.org adds through the site's wallet_addEthereumChain (and its approval slip).
+  const choice = [
+    h('button', { className: 'primary', onclick: () => openTab('https://chainlist.org/') }, 'Add from chainlist.org'),
+    h('button', { onclick: () => { custom = true; populate() } }, 'Add custom network'),
+  ]
   const populate = () => {
     const current = s.networks.find((n) => String(n.id) === selected.value)
+    const choosing = !current && !custom
+    content.replaceChildren(picker, ...(choosing ? choice : [name.el, id.el, url.el, symbol.el, commit, remove]))
     name.input.value = current?.name || ''
     id.input.value = current ? String(current.id) : ''
     id.input.disabled = !!current
@@ -344,9 +353,8 @@ function networkDialog(s: State, adding = false) {
       return { networks, chainId: current.chainId === removed ? networks[0]!.id : current.chainId }
     })
   }) }, 'Delete network')
-  selected.onchange = populate
+  selected.onchange = () => { custom = false; populate() }
   populate()
-  content.append(h('label', {}, 'Network', selected), name.el, id.el, url.el, symbol.el, commit, remove)
 }
 
 function exportDialog(s: State) {
