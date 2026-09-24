@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- assets/icon.svg's mark, scaled into an adaptive icon's safe zone -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="128" android:viewportHeight="128">
+    <group android:pivotX="64" android:pivotY="64" android:scaleX="0.6" android:scaleY="0.6">
+        <path android:pathData="M32,32l32,32M64,32L32,64" android:strokeColor="#FFFFFF" android:strokeWidth="14" android:strokeLineCap="round" />
+        <path android:pathData="M24,96h80" android:strokeColor="#FFFFFF" android:strokeWidth="16" />
+    </group>
+</vector>

@@ -1,6 +1,6 @@
 # <img src="assets/icon.svg" width="28" align="top" alt=""> Plain Wallet
 
-A very minimal EVM wallet extension for Chrome and Firefox. ~1900 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
+A very minimal EVM wallet extension for Chrome and Firefox, and (work in progress) an Android app. ~1900 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
 
 > Not audited. Don't keep funds in it that you can't afford to lose.
 
@@ -51,13 +51,30 @@ npx wxt zip -b firefox --mv3   # → .output/plainwallet-<version>-firefox.zip
 
 The build is unsigned, so either load it temporarily from `about:debugging` (removed, with its storage, on restart), or in a browser that allows it (LibreWolf, Firefox Developer Edition/Nightly) set `xpinstall.signatures.required` to `false`, rename the zip to `.xpi` and open it in the browser. That pref turns off signature checks for every extension.
 
+### Android (work in progress, not yet tried on a device)
+
+The same wallet as an app: an address bar with a ☆ to favorite the site, over a browser whose pages get Plain Wallet's provider, and the wallet itself (favorites on top of its home screen, then the usual screens and approvals). Needs Android 11+ and a current Android System WebView. With the Android SDK installed (Android Studio, or `ANDROID_HOME` pointing at one):
+
+```sh
+npm ci
+cd android && ./gradlew assembleDebug   # runs `npm run build:android` first
+adb install app/build/outputs/apk/debug/app-debug.apk
+```
+
+Differences from the extension, beyond one tab and no downloads, uploads or links to other apps:
+
+- Both WebViews run in one renderer process, which Android WebView doesn't split per site. A site that exploits a bug in it could read the unlocked wallet page's memory; in the browsers, extension pages get their own process.
+- The wallet page is a web page, so the RPC, Blockscout, Sourcify and Jev must allow cross-origin requests (public ones generally do); the extension's host permissions skip that check. Plain-http RPCs don't work.
+- The vault and settings live in the wallet page's `localStorage`, which sites can't reach (another origin); the unlock key only in its memory, so it is locked whenever Android ends the app. Nothing is backed up to the cloud.
+- A request's origin comes from the WebView (`addWebMessageListener`), never from the page, as in the extension.
+
 ## Develop
 
 Contributing? Read [CONTRIBUTING.md](CONTRIBUTING.md); AI coding agents should also read [AGENTS.md](AGENTS.md).
 
 ```sh
 npm run dev   # Chrome with the extension loaded and hot reload
-npm test      # self-check: vault crypto and upgrade, signed state, approval wording, amounts, connections
+npm test      # self-check: vault crypto and upgrade, signed state, approval wording, amounts, connections, the Android wallet page
 ```
 
 ```
@@ -72,5 +89,9 @@ lib/lookup.ts                          Blockscout + Sourcify lookups (only with 
 lib/jev.ts                             Jev (typesafe.ai) second opinion (only with a Jev key)
 lib/megapot.ts                         Megapot ticket every N transactions: addresses, calldata, counting (pure)
 lib/store.ts                           chrome.storage state, signed with the vault key
+entrypoints/android-inpage.ts          Android: the provider, relaying to the app instead of bridge.content.ts
+entrypoints/android-shim.ts            Android: the extension API the background and popup use, over the app
+entrypoints/android/                   Android: the wallet page, background and popup in one, favorites on its home screen
+android/                               Android: MainActivity.java, the address bar and the two WebViews, relaying between them
 assets/icon.svg                        the one icon source; `public/icon/*.png` are rendered from it with rsvg-convert
 ```

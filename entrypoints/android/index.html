@@ -3,9 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="wxt.include" content="['android']" />
     <title>Plain Wallet</title>
-    <link rel="icon" href="/icon/32.png" />
-    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="../popup/style.css" />
+    <!-- a classic script, so it runs before the modules that look for the browser API it provides -->
+    <script src="/android-shim.js"></script>
   </head>
   <body>
     <main id="app"></main>
