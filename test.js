@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import { registerHooks } from 'node:module'
 import { describeCall, foreignSignIn, parseAddress, parseAmount, publicRpc, signedView } from './lib/describe.ts'
 import { decryptVault, deriveKey, encryptVault, mac, newMeta, newMnemonic, parseSecret, toAccount } from './lib/wallet.ts'
-import { encodeFunctionData, erc20Abi, hashTypedData, recoverMessageAddress } from 'viem'
+import { decodeFunctionData, encodeFunctionData, erc20Abi, hashTypedData, recoverMessageAddress } from 'viem'
+import { approveTickets, buyTicket, megapotAbi, megapotSettings, REFERRER, tick } from './lib/megapot.ts'
 
 const MNEMONIC = 'test test test test test test test test test test test junk'
 const KEY = 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
@@ -131,5 +132,18 @@ globalThis.fetch = signatures([{ name: 'many_msg_babbage(bytes1)' }, { name: 'tr
 assert.equal(await functionName(transferData), 'No public signature matches the calldata')
 globalThis.fetch = async () => { throw new Error('offline') }
 assert.equal(await functionName(transferData), undefined)
+
+// Megapot: off by default; every Nth sent transaction earns a ticket; the purchase is one ticket, to the buyer, with the
+// developer as the only referrer, and the allowance covers exactly ten tickets
+assert.deepEqual(megapotSettings(undefined), { on: false, every: 10, count: 0 })
+assert.deepEqual(megapotSettings({ on: 'yes', every: 0, count: -1 }), { on: false, every: 10, count: 0 })
+assert.equal(tick(megapotSettings({ every: 1 })).buy, false) // off
+let m = { on: true, every: 3, count: 0 }, bought = []
+for (let i = 0; i < 7; i++) { const t = tick(m); m = t.next; bought.push(t.buy) }
+assert.deepEqual(bought, [false, false, true, false, false, true, false])
+assert.equal(tick({ on: true, every: 1, count: 0 }).buy, true)
+const buy = decodeFunctionData({ abi: megapotAbi, data: buyTicket(ADDRESS).data })
+assert.deepEqual(buy.args, [1n, ADDRESS, [REFERRER], [10n ** 18n], `0x${'0'.repeat(64)}`])
+assert.equal(decodeFunctionData({ abi: erc20Abi, data: approveTickets(1_000_000n).data }).args[1], 10_000_000n)
 
 console.log('ok')

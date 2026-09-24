@@ -10,6 +10,7 @@ Plain Wallet has no servers, accounts, analytics or telemetry. Its developer rec
 - To websites you connect: the address of the account you connected, and the signatures and transaction hashes you approve.
 - To DeBank, only when you click the history button: your address, in the page it opens.
 - To the same RPC, each transaction you review, to simulate it before you approve.
+- Only if you turn on Megapot tickets in Settings: to the Base network's RPC, reads of the ticket price and your USDC allowance, and the purchases you approve. The wallet counts your transactions on your device only.
 - Only if you enter a Jev API key in Settings, for each transaction or signature you review:
   - to Blockscout (on Ethereum, Base, Arbitrum, OP Mainnet and Polygon): the addresses of the contract called and of whoever gets to spend your tokens, to look up whether they are verified, how old they are and whether they are flagged;
   - to Sourcify (sourcify.dev): the first 4 bytes of the calldata, to name the function called when its contract isn't verified;

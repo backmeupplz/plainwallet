@@ -1,6 +1,6 @@
 # <img src="assets/icon.svg" width="28" align="top" alt=""> Plain Wallet
 
-A very minimal EVM wallet extension for Chrome and Firefox. ~1750 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
+A very minimal EVM wallet extension for Chrome and Firefox. ~1900 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
 
 > Not audited. Don't keep funds in it that you can't afford to lose.
 
@@ -23,6 +23,7 @@ A very minimal EVM wallet extension for Chrome and Firefox. ~1750 lines of TypeS
 - Only `eth_`/`net_`/`web3_` reads and `eth_sendRawTransaction` are forwarded to your RPC, rate-limited per site. Networks added by a dapp need a public https RPC (no localhost, private or raw IP addresses), and a name borrowed from one of your networks is flagged.
 - Balances, token lookups and sends go to the network's RPC. DeBank sees your address only when you open it.
 - Every transaction you review is simulated on the network's RPC (`eth_simulateV1`) and shows your balance changes or the revert reason, filled in as it arrives; the Approve button never waits for it. Optional: with a Jev (typesafe.ai) API key in Settings, every transaction and signature also gets two more lines: the contract and any spender looked up on Blockscout (verified or not, age, token, scam flag; the function named from the verified ABI, or else from Sourcify's signature list, where a match must decode the calldata exactly), and Jev's read on what it does and how likely it is a scam or a lookalike site, colored by risk. Each line folds out into details; none of it replaces the wallet's own rows.
+- Optional, off by default: a [Megapot](https://megapot.io) lottery ticket every N transactions you send (Settings → Megapot). Every Nth transaction brings up a purchase to approve: one 1 USDC ticket on Base with random numbers, for the account that sent it; when the allowance runs out, an approval for the next 10 tickets comes first. It's skipped without asking when that account has less than 1 USDC on Base.
 - Known gaps: calldata other than the token calls above is shown as raw hex; symbol/decimals of tokens not in your list come from the RPC (the addresses and UNLIMITED flag do not); a public hostname that resolves to a private address (DNS rebinding) still passes the dapp-RPC check; on Firefox a compromised website process can read your addresses, connected sites and Jev API key; your RPC provider sees your address and IP.
 
 ## What it doesn't
@@ -69,6 +70,7 @@ lib/describe.ts                        calldata / typed data → what the approv
 lib/chain.ts                           RPC: balances, token lookup, prepare + sign + send, simulate
 lib/lookup.ts                          Blockscout + Sourcify lookups (only with a Jev key)
 lib/jev.ts                             Jev (typesafe.ai) second opinion (only with a Jev key)
+lib/megapot.ts                         Megapot ticket every N transactions: addresses, calldata, counting (pure)
 lib/store.ts                           chrome.storage state, signed with the vault key
 assets/icon.svg                        the one icon source; `public/icon/*.png` are rendered from it with rsvg-convert
 ```

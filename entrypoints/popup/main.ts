@@ -3,6 +3,7 @@ import { balances, mined, prepare, send, simulate, tokenInfo, type Simulation } 
 import { describeCall, parseAddress, parseAmount, spenderOf } from '@/lib/describe'
 import { analyze, type Subject, type Verdict } from '@/lib/jev'
 import { lookup, type Level, type Lookup, type Party } from '@/lib/lookup'
+import { megapotSettings } from '@/lib/megapot'
 import { addDerivedAccount, addWallet, exportAccount, isUnlocked, load, lock, removeAccount, repair, save, seedSources, signer, TAMPERED, touch, unlock, type Network, type State, type Token } from '@/lib/store'
 import { newMnemonic, parseSecret } from '@/lib/wallet'
 import type { Pending } from '../background'
@@ -264,7 +265,11 @@ function secondOpinion(subject: Subject, fields: Record<string, string>, checks:
 }
 /** The second opinion for whatever a site asks to sign. */
 function sitePanel(p: Pending) {
-  const d = p.detail, fields = { site: new URL(p.origin).hostname, ...(p.title && { page_title: p.title }), network: p.network.name }
+  const d = p.detail
+  if (p.method === 'plainwallet_megapot') return secondOpinion('transaction', {
+    network: p.network.name, to: d.to, value: `0 ${p.network.symbol}`, call: p.summary!,
+  }, () => txChecks(p.network, p.account as `0x${string}`, { to: d.to, data: d.data }), p.id)
+  const fields = { site: new URL(p.origin).hostname, ...(p.title && { page_title: p.title }), network: p.network.name }
   switch (p.method) {
     case 'eth_sendTransaction':
       return secondOpinion('transaction', {
@@ -311,6 +316,11 @@ function describe(p: Pending): { title: string; rows?: Row[]; text?: string } {
         }
       case 'eth_signTypedData_v4': // already reduced to what is hashed
         return { title: `Sign typed data: ${d.primaryType}`, rows: [...flatten(d.domain, 'domain'), ...flatten(d.message, 'message')] }
+      case 'plainwallet_megapot': // the wallet's own, see Settings
+        return {
+          title: d.step === 'approve' ? 'Approve USDC for Megapot tickets?' : 'Buy a Megapot ticket?',
+          rows: [['To', d.to], ['Max fee', `${d.fee} ${p.network.symbol}`], ['Data', d.data]],
+        }
       case 'eth_sendTransaction':
         return {
           title: d.to ? 'Send transaction' : 'Deploy contract',
@@ -325,7 +335,9 @@ function approvalScreen(p: Pending, more: number) {
   const { title, rows = [], text } = describe(p)
   const settle = (ok: boolean) => act(() => browser.runtime.sendMessage({ type: 'settle', id: p.id, ok }))
   const ok = armed(h('button', { className: 'primary', onclick: settle(true) }, 'Approve'))
-  const all: Row[] = [['From site', p.origin], ['Network', networkLabel(p.network)], ['Account', p.account], ...rows]
+  const own = p.method === 'plainwallet_megapot'
+  const all: Row[] = [own ? ['Asked by', 'Plain Wallet: a Megapot ticket every few transactions (Settings)'] : ['From site', p.origin],
+    ['Network', networkLabel(p.network)], ['Account', p.account], ...rows]
   return [
     h('h1', {}, title),
     h('div', { className: 'slip' },
@@ -524,6 +536,7 @@ function sendDialog(s: State, network: Network, tokens: Token[]) {
       : { to: recipient, value })
     const confirm = armed(h('button', { className: 'primary', onclick: run(async () => {
       const hash = await send(network, await signer(index, from), request)
+      void browser.runtime.sendMessage({ type: 'sent', account: from }) // counts toward a Megapot ticket, if that's on
       // Waited for outside run(): the dialog stays closable while the transaction is pending.
       const status = h('strong', { className: 'pending' }, 'Submitted, waiting for it to be included…')
       content.replaceChildren(status, h('p', { className: 'mono' }, hash), h('button', { onclick: copy(hash) }, 'Copy hash'),
@@ -590,7 +603,8 @@ function removeDialog(s: State) {
     remove)
 }
 
-function settingsDialog(s: State) {
+async function settingsDialog(s: State) {
+  const m = megapotSettings((await browser.storage.local.get('megapot')).megapot)
   const { content, run, dialog } = modal('Settings')
   const sites = h('div', { className: 'dialog-content' })
   const empty = () => { if (!sites.childElementCount) sites.append(h('p', {}, 'No connected sites.')) }
@@ -609,13 +623,39 @@ function settingsDialog(s: State) {
   content.append(h('button', { onclick: () => { dialog.close(); exportDialog(s) } }, 'Export seeds / private keys'),
     h('button', { onclick: () => { dialog.close(); removeDialog(s) } }, 'Remove account'),
     h('h2', {}, 'Connected sites'), sites,
-    h('h2', {}, 'Jev transaction check'),
-    h('p', {}, 'Optional. Transactions are always simulated on your network’s RPC. With a typesafe.ai API key, each transaction and signature you review is also looked up on Blockscout and described to Jev, which says what it does and how likely it is a scam. Leave empty to turn that off.'),
-    jev.el, h('button', { onclick: run(() => {
-      const key = jev.input.value.trim()
-      return key ? browser.storage.local.set({ jevKey: key }) : browser.storage.local.remove('jevKey')
-    }) }, 'Save API key'),
-    h('a', { href: 'https://github.com/backmeupplz/plainwallet', target: '_blank', rel: 'noreferrer' }, 'Source code on GitHub'))
+    h('details', { className: 'fold' },
+      h('summary', {}, 'Jev transaction check: ', h('span', {}, jevKey ? 'on' : 'off')),
+      h('div', { className: 'dialog-content' },
+        h('p', {}, 'Transactions are always simulated on your network’s RPC. With a typesafe.ai API key, each transaction and signature you review is also looked up on Blockscout and described to Jev, which says what it does and how likely it is a scam. Leave empty to turn that off.'),
+        jev.el, h('button', { onclick: run(() => {
+          const key = jev.input.value.trim()
+          return key ? browser.storage.local.set({ jevKey: key }) : browser.storage.local.remove('jevKey')
+        }) }, 'Save API key'))),
+    megapotSection(m, run),
+    h('p', {}, `Plain Wallet ${browser.runtime.getManifest().version} · `,
+      h('a', { href: 'https://github.com/backmeupplz/plainwallet', target: '_blank', rel: 'noreferrer' }, 'Source code on GitHub')))
+}
+
+/** Collapsed until opened: a Megapot ticket every N transactions, off by default. */
+function megapotSection(m: ReturnType<typeof megapotSettings>, run: ReturnType<typeof modal>['run']) {
+  const on = h('input', { type: 'checkbox', checked: m.on })
+  const every = field('Every how many transactions', { type: 'number', min: 1, step: 1, value: m.every, inputMode: 'numeric' })
+  const left = m.every - m.count
+  return h('details', { className: 'fold' },
+    h('summary', {}, 'Megapot: ', h('span', {}, m.on ? `a ticket every ${m.every} transaction${m.every === 1 ? '' : 's'}` : 'off')),
+    h('div', { className: 'dialog-content' },
+      h('p', {}, 'Every N transactions you send, the wallet asks you to buy one ',
+        h('a', { href: 'https://megapot.io', target: '_blank', rel: 'noreferrer' }, 'Megapot'),
+        ' lottery ticket: 1 USDC on Base, random numbers, for the account that sent it. You approve each purchase like any transaction; when the allowance runs out, an approval for the next 10 tickets comes first. If that account has less than 1 USDC on Base, the ticket is skipped without asking. Needs a little ETH on Base for fees.'),
+      h('label', { className: 'acknowledgment' }, on, 'Buy Megapot tickets'), every.el,
+      ...(m.on ? [h('p', {}, `Next ticket after ${left} more transaction${left === 1 ? '' : 's'}.`)] : []),
+      ...(m.error ? [h('p', { className: 'warn' }, `The last ticket wasn’t bought: ${m.error}`)] : []),
+      h('button', { onclick: run(async () => {
+        const n = Number(every.input.value)
+        if (!Number.isSafeInteger(n) || n < 1) throw new Error('Enter a whole number of transactions, 1 or more')
+        const now = megapotSettings((await browser.storage.local.get('megapot')).megapot)
+        await browser.storage.local.set({ megapot: { on: on.checked, every: n, count: Math.min(now.count, n - 1) } })
+      }) }, 'Save Megapot settings')))
 }
 
 function mainScreen(s: State) {
