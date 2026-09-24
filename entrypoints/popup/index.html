@@ -22,13 +22,17 @@
         font: 14px/1.45 system-ui, sans-serif;
       }
       body { margin: 0; padding: 16px; min-width: 348px; box-sizing: border-box; background: var(--paper); color: var(--ink); }
-      #app { display: flex; flex-direction: column; gap: 12px; }
-      header { display: flex; align-items: center; gap: 8px; }
+      #app { display: flex; flex-direction: column; gap: 12px; max-width: 400px; margin: 0 auto; }
+      body.sidebar { min-width: 0; }
+      header { display: flex; align-items: center; gap: 6px; }
       h1 { flex: 1; margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -0.01em; }
+      h2 { margin: 0; font-size: 16px; font-weight: 650; }
       p { margin: 0; color: var(--muted); }
 
       label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
       input, select, textarea { width: 100%; box-sizing: border-box; font: 13px var(--mono); color: var(--ink); background: var(--paper); border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; padding: 6px 0; }
+      dialog input:not([type="checkbox"]), dialog select { padding-inline: 10px; }
+      input[type="password"] { letter-spacing: 0.2em; }
       textarea { border: 1px solid var(--rule); border-radius: 6px; padding: 8px; resize: vertical; }
       :focus-visible { outline: 2px solid var(--pen); outline-offset: 2px; }
       input:focus-visible, select:focus-visible { outline: 0; border-bottom-color: var(--pen); box-shadow: 0 1px 0 var(--pen); }
@@ -38,16 +42,24 @@
       button.primary { color: var(--on-pen); background: var(--pen); border-color: var(--pen); }
       button.primary:hover:not(:disabled) { filter: brightness(1.1); }
       button.quiet { width: auto; flex: none; padding: 3px 10px; font-size: 12px; font-weight: 500; }
-      button.address { font: 12px var(--mono); text-align: left; overflow-wrap: anywhere; border-style: dashed; }
+      button.icon { display: grid; place-items: center; flex: none; width: 32px; height: 32px; padding: 6px; }
+      button.icon svg { width: 18px; height: 18px; }
       button:disabled { opacity: 0.45; cursor: default; }
+      button.danger { color: var(--stamp); border-color: var(--stamp); }
+      dialog { box-sizing: border-box; width: 360px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); padding: 16px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
+      dialog[open] { display: flex; flex-direction: column; gap: 12px; }
+      dialog::backdrop { background: #0008; }
+      .acknowledgment { flex-direction: row; align-items: flex-start; gap: 8px; color: var(--ink); }
+      .acknowledgment input { width: auto; flex: none; margin-top: 3px; }
       @media (prefers-reduced-motion: no-preference) { button { transition: border-color 0.12s, filter 0.12s, opacity 0.2s; } }
 
-      details { border-top: 1px solid var(--rule); padding-top: 10px; }
-      summary { cursor: pointer; font-weight: 550; }
-      details > :not(summary) { margin-top: 10px; }
       .row { display: flex; gap: 8px; align-items: center; }
+      .row > select { flex: 1; min-width: 0; width: 0; }
+      .selector-field { display: flex; flex-direction: column; gap: 4px; }
+      .dialog-content { display: flex; flex-direction: column; gap: 12px; }
       .row > span { flex: 1; overflow-wrap: anywhere; }
       .mono { font: 12px var(--mono); overflow-wrap: anywhere; }
+      a { color: var(--pen); }
       .error { color: var(--stamp); border-left: 3px solid var(--stamp); padding-left: 8px; }
 
       /* the thing you are about to sign, as a slip torn off a pad */
@@ -59,6 +71,13 @@
       dd { margin: 0; font: 12px var(--mono); overflow-wrap: anywhere; max-height: 110px; overflow: auto; }
       .slip pre { border-top: 1px solid var(--rule); padding-top: 10px; } /* wallet's rows above, the dapp's text below */
       pre { margin: 0; font: 12px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; }
+
+      .balances { padding: 12px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
+      .balances dt { font: 13px var(--mono); color: var(--ink); }
+      .balances dd { font-size: 13px; text-align: right; }
+      .balances dd.skeleton { justify-self: end; width: 64px; height: 13px; margin-block: 3px; border-radius: 4px; background: var(--rule); }
+      @media (prefers-reduced-motion: no-preference) { .skeleton, .pending { animation: pulse 1.2s ease-in-out infinite alternate; } }
+      @keyframes pulse { to { opacity: 0.4; } }
 
       ol { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 4px; margin: 0; padding: 12px 12px 12px 32px; font: 13px var(--mono); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
       li::marker { color: var(--muted); font-size: 11px; }

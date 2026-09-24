@@ -1,6 +1,6 @@
 // Isolated-world relay between the inpage provider and the background.
 export default defineContentScript({
-  matches: ['http://*/*', 'https://*/*'],
+  matches: ['https://*/*', 'http://localhost/*', 'http://127.0.0.1/*'], // no plain-http sites: see background.ts
   runAt: 'document_start',
   main() {
     const post = (msg: object) => window.postMessage({ target: 'plainwallet-inpage', ...msg }, location.origin)

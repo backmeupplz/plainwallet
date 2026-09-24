@@ -3,7 +3,7 @@ import iconSvg from '@/assets/icon.svg?raw'
 // Runs in the page's own JS world: the EIP-1193 provider dapps talk to. Holds no secrets;
 // every request goes page -> bridge content script -> background.
 export default defineContentScript({
-  matches: ['http://*/*', 'https://*/*'],
+  matches: ['https://*/*', 'http://localhost/*', 'http://127.0.0.1/*'], // no plain-http sites: see background.ts
   runAt: 'document_start',
   world: 'MAIN',
   main() {
