@@ -1,6 +1,8 @@
-import { encodeFunctionData, erc20Abi, formatEther, formatUnits, zeroAddress } from 'viem'
-import { balances, mined, prepare, send, tokenInfo } from '@/lib/chain'
-import { parseAddress, parseAmount } from '@/lib/describe'
+import { encodeFunctionData, erc20Abi, formatEther, formatUnits, isAddress, parseEther, zeroAddress } from 'viem'
+import { balances, mined, prepare, send, simulate, tokenInfo, type Simulation } from '@/lib/chain'
+import { describeCall, parseAddress, parseAmount, spenderOf } from '@/lib/describe'
+import { analyze, type Subject, type Verdict } from '@/lib/jev'
+import { lookup, type Level, type Lookup, type Party } from '@/lib/lookup'
 import { addDerivedAccount, addWallet, exportAccount, isUnlocked, load, lock, removeAccount, repair, save, seedSources, signer, TAMPERED, touch, unlock, type Network, type State, type Token } from '@/lib/store'
 import { newMnemonic, parseSecret } from '@/lib/wallet'
 import type { Pending } from '../background'
@@ -27,6 +29,11 @@ const openDebank = (address: string) => openTab(`https://debank.com/profile/${ad
 // Fetched once per network + account + token list, and again after one of our transactions is mined (see
 // lib/chain.ts): redraws for anything else reuse them.
 let cached: { key: string; values: Promise<(bigint | undefined)[]> } | undefined
+// Unsigned, so outside the MAC: at worst a tampered key costs a Jev opinion, never a signature. Empty = no Jev at all.
+let jevKey = ''
+// What the wallet finds out before asking Jev: a simulation (always) and, with a key, public lookups.
+type Checks = { simulation?: Promise<Simulation>; lookup?: Promise<Lookup> }
+const analyses = new Map<string, Checks & { verdict?: Promise<Verdict> }>() // per approval id: redraws don't ask (and bill) again
 
 // Children are appended as text nodes, so dapp-supplied strings can never become markup.
 function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, unknown> = {}, ...children: (Node | string)[]) {
@@ -173,6 +180,112 @@ const rowList = (rows: Row[]) => h('dl', {}, ...rows.flatMap(([label, value]) =>
 // Nested data as dotted rows. The prefix keeps dapp-chosen field names from posing as the wallet's own rows.
 const flatten = (value: unknown, path: string): Row[] =>
   value !== null && typeof value === 'object' ? Object.entries(value).flatMap(([k, v]) => flatten(v, `${path}.${k}`)) : [[path, String(value)]]
+const percent = (n: number) => `${Math.round(n * 100)}%`
+// How likely the bad thing is, as the color of its number. Jev puts ordinary requests from sites it doesn't know at
+// 15-30%, so only above that is it worth a second look; red once it's more likely than not.
+const risk = (label: string, p: number) => h('span', { className: p >= 0.5 ? 'bad' : p >= 0.3 ? 'warn' : 'ok' }, `${label} ${percent(p)}`)
+
+type Fold = { summary: (Node | string)[]; rows: [string, Node | string][]; note?: string }
+/** One line that folds out into rows: filled in when `content` arrives, dropped if there turns out to be nothing to say. */
+function foldLine(label: string, content: Promise<Fold | undefined>) {
+  const result = h('span', { className: 'skeleton' })
+  const more = h('div', { className: 'dialog-content' })
+  const line = h('details', { className: 'fold', ariaBusy: 'true' }, h('summary', {}, `${label}: `, result), more)
+  void content.then((c) => {
+    if (!c) return line.remove()
+    result.replaceWith(h('span', {}, ...c.summary))
+    if (c.rows.length) more.append(h('dl', {}, ...c.rows.flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)])))
+    if (c.note) more.append(h('p', {}, c.note))
+    line.ariaBusy = 'false'
+  }, () => line.remove())
+  return line
+}
+const simulationFold = ({ summary, details, failed }: Simulation): Fold => ({
+  summary: [h('span', { className: failed ? 'bad' : '' }, summary)], rows: details,
+  note: 'Run on this network’s RPC as of the latest block, fee not included. The chain can change before yours is included.',
+})
+const partyRow = (label: string, p: Party): [string, Node] => [label, h('span', {}, h('span', { className: p.level }, `${p.name}: ${p.about}`), h('br'), p.address)]
+function lookupFold({ contract, spender, call }: Lookup): Fold | undefined {
+  const main = contract ?? spender
+  if (!main && !call) return
+  const worst = [contract, spender].find((p) => p?.level === 'bad') ?? [contract, spender].find((p) => p?.level === 'warn')
+  return {
+    summary: [main?.name ?? 'not found on Blockscout', ...(worst ? [' · ', h('span', { className: worst.level }, worst === spender ? `spender: ${spender!.name}` : 'check details')] : [])],
+    rows: [...(contract ? [partyRow('Contract', contract)] : []), ...(call ? [['Function', call] as [string, string]] : []), ...(spender ? [partyRow('Spender', spender)] : [])],
+    note: 'From Blockscout, which knows contracts verified on it or on Sourcify; ones verified only on Etherscan show as unverified.',
+  }
+}
+function jevFold(v: Verdict, site: boolean): Fold {
+  const others = v.ranked.slice(1, 4).filter(([, p]) => p >= 0.01).map(([k, p]) => `${k} ${percent(p)}`).join(', ')
+  return {
+    summary: [v.action, ' · ', risk('scam', v.scam), ...(site ? [' · ', risk('fake site', v.lookalike!)] : [])],
+    rows: [['Action', `${v.action} (${percent(v.ranked[0]?.[1] ?? 0)})`], ...(others ? [['Or maybe', others] as [string, string]] : []),
+      ['Scam risk', risk('', v.scam)], ...(site ? [['Fake site', risk('', v.lookalike!)] as [string, Node]] : [])],
+    note: 'Jev (typesafe.ai) only sees the simulation, lookups and request details, and a site can word things to sway it.',
+  }
+}
+
+/** The simulation (on the network's own RPC, so always) and, with a Jev key, public lookups. */
+function txChecks(network: Network, from: `0x${string}`, tx: { to?: `0x${string}` | null; data?: `0x${string}`; value?: bigint }): Checks {
+  if (!tx.to) return {}
+  const call = tx.data && tx.data !== '0x' ? tx.data : undefined
+  return {
+    simulation: simulate(network, from, { to: tx.to, data: call, value: tx.value }),
+    lookup: call && jevKey ? lookup(network.id, { contract: tx.to, spender: spenderOf(call), data: call }) : undefined,
+  }
+}
+// A slow RPC (viem retries rate limits) or lookup gets 15 seconds, then Jev goes ahead without it.
+const timed = <T>(p?: Promise<T>) => p && Promise.race([p.catch(() => undefined), new Promise<undefined>((done) => setTimeout(done, 15_000))])
+/** Simulation, lookups and Jev, one foldable line each, filled in as they arrive. Nothing here is awaited, and anything
+ * that goes wrong only costs these lines: the approval never waits for or depends on them. */
+function secondOpinion(subject: Subject, fields: Record<string, string>, checks: () => Checks, id?: string) {
+  let run = id ? analyses.get(id) : undefined
+  if (!run) {
+    let started: Checks
+    try { started = checks() } catch { started = {} }
+    const key = jevKey
+    const verdict = key ? Promise.all([timed(started.simulation), timed(started.lookup)]).then(([simulated, found]) => analyze(key, subject, {
+      ...fields,
+      ...(simulated?.text && { simulation: simulated.text }),
+      ...(found?.contract && { contract: `${found.contract.name}: ${found.contract.about}` }),
+      ...(found?.call && { function: found.call }),
+      ...(found?.spender && { spender: `${found.spender.name}: ${found.spender.about}` }),
+    })) : undefined
+    run = { ...started, verdict }
+    if (id) analyses.set(id, run)
+  }
+  const { simulation, lookup: found, verdict } = run
+  return [
+    ...(simulation ? [foldLine('Simulation', simulation.then(simulationFold, () => simulationFold({ summary: 'unavailable', details: [] })))] : []),
+    ...(found ? [foldLine('Contract', found.then(lookupFold))] : []),
+    ...(verdict ? [foldLine('Jev', verdict.then((v) => jevFold(v, !!fields.site),
+      (e: Error): Fold => ({ summary: [h('span', { className: 'warn' }, 'couldn’t check')], rows: [['Error', e.message]] })))] : []),
+  ]
+}
+/** The second opinion for whatever a site asks to sign. */
+function sitePanel(p: Pending) {
+  const d = p.detail, fields = { site: new URL(p.origin).hostname, ...(p.title && { page_title: p.title }), network: p.network.name }
+  switch (p.method) {
+    case 'eth_sendTransaction':
+      return secondOpinion('transaction', {
+        ...fields, to: d.to ?? '(new contract)', value: `${d.value} ${p.network.symbol}`,
+        call: d.data === '0x' ? 'none' : d.to ? p.summary ?? 'contract call, not decoded' : 'deploys a new contract',
+      }, () => txChecks(p.network, p.account as `0x${string}`, { to: d.to, data: d.data, value: parseEther(d.value) }), p.id)
+    case 'personal_sign':
+      return secondOpinion('signature', { ...fields, message: describe(p).text!.slice(0, 4000) }, () => ({}), p.id)
+    case 'eth_signTypedData_v4': {
+      const contract = d.domain?.verifyingContract, spender = d.message?.spender ?? d.message?.operator
+      const address = (v: unknown) => typeof v === 'string' && isAddress(v) ? v : undefined
+      return secondOpinion('signature', {
+        ...fields, type: d.primaryType, domain: JSON.stringify(d.domain).slice(0, 1000), message: JSON.stringify(d.message).slice(0, 4000),
+        ...(p.summary && { wallet_warning: p.summary }),
+      }, () => ({ lookup: jevKey && (address(contract) || address(spender))
+        ? lookup(Number(d.domain.chainId ?? p.network.id), { contract: address(contract), spender: address(spender) }) : undefined }), p.id)
+    }
+  }
+  return []
+}
+
 /** What the slip says: labelled rows for structured requests, free text for messages. */
 function describe(p: Pending): { title: string; rows?: Row[]; text?: string } {
   const d = p.detail
@@ -220,6 +333,7 @@ function approvalScreen(p: Pending, more: number) {
       ...(p.summary ? [h('strong', { className: p.danger ? 'stamp' : '' }, p.summary)] : []),
       rowList(all),
       ...(text ? [h('pre', {}, text)] : [])),
+    ...sitePanel(p),
     h('div', { className: 'row' }, h('button', { onclick: settle(false) }, 'Reject'), ok),
     ...(more ? [h('p', {}, `${more} more ${more === 1 ? 'request' : 'requests'} waiting`)] : []),
   ]
@@ -427,6 +541,10 @@ function sendDialog(s: State, network: Network, tokens: Token[]) {
         ...(token ? [['Token contract', token.address] as Row] : []),
         ['Max fee', `${formatEther(fee)} ${network.symbol}`],
       ])),
+      ...secondOpinion('transaction', {
+        network: network.name, to: request.to!, value: `${formatEther(request.value ?? 0n)} ${network.symbol}`,
+        call: describeCall(request.data, token) ?? 'none',
+      }, () => txChecks(network, from, request)),
       h('div', { className: 'row' }, h('button', { onclick: () => content.replaceChildren(...form) }, 'Back'), confirm))
   }, false)
   const form = [h('label', {}, 'Asset', asset), to.el, amount.el, h('button', { className: 'primary', onclick: review }, 'Review')]
@@ -487,9 +605,16 @@ function settingsDialog(s: State) {
     sites.append(row)
   }
   empty()
+  const jev = field('API key', { type: 'password', value: jevKey, autocomplete: 'off', spellcheck: false })
   content.append(h('button', { onclick: () => { dialog.close(); exportDialog(s) } }, 'Export seeds / private keys'),
     h('button', { onclick: () => { dialog.close(); removeDialog(s) } }, 'Remove account'),
     h('h2', {}, 'Connected sites'), sites,
+    h('h2', {}, 'Jev transaction check'),
+    h('p', {}, 'Optional. Transactions are always simulated on your network’s RPC. With a typesafe.ai API key, each transaction and signature you review is also looked up on Blockscout and described to Jev, which says what it does and how likely it is a scam. Leave empty to turn that off.'),
+    jev.el, h('button', { onclick: run(() => {
+      const key = jev.input.value.trim()
+      return key ? browser.storage.local.set({ jevKey: key }) : browser.storage.local.remove('jevKey')
+    }) }, 'Save API key'),
     h('a', { href: 'https://github.com/backmeupplz/plainwallet', target: '_blank', rel: 'noreferrer' }, 'Source code on GitHub'))
 }
 
@@ -570,6 +695,7 @@ async function render() {
   else if (!(await isUnlocked())) screen = unlockScreen(pending[0])
   else {
     touch() // using the wallet pushes the auto-lock back
+    jevKey = ((await browser.storage.local.get('jevKey')).jevKey as string | undefined) ?? ''
     screen = pending.length ? approvalScreen(pending[0]!, pending.length - 1) : mainScreen(s)
   }
   app.replaceChildren(...(error ? [h('div', { className: 'error', role: 'alert' }, error)] : []), ...screen)

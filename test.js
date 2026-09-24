@@ -1,8 +1,9 @@
 // Self-check for the key + vault path. Run: npm test
 import assert from 'node:assert/strict'
+import { registerHooks } from 'node:module'
 import { describeCall, foreignSignIn, parseAddress, parseAmount, publicRpc, signedView } from './lib/describe.ts'
 import { decryptVault, deriveKey, encryptVault, mac, newMeta, newMnemonic, parseSecret, toAccount } from './lib/wallet.ts'
-import { hashTypedData, recoverMessageAddress } from 'viem'
+import { encodeFunctionData, erc20Abi, hashTypedData, recoverMessageAddress } from 'viem'
 
 const MNEMONIC = 'test test test test test test test test test test test junk'
 const KEY = 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
@@ -97,5 +98,38 @@ assert.equal(parseAmount('3', 0), 3n)
 for (const bad of ['', '.', 'abc', '-1', '1e3', '1.2.3', '0', '0.0']) assert.throws(() => parseAmount(bad, 6), bad)
 assert.throws(() => parseAmount('1.0000001', 6), /At most 6 decimals/) // never silently rounded
 assert.throws(() => parseAmount('1.5', 0))
+
+// lib/ imports each other without extensions, as the bundler resolves them
+registerHooks({ resolve: (specifier, context, next) => next(specifier === './describe' ? './describe.ts' : specifier, context) })
+const { analyze } = await import('./lib/jev.ts')
+const { functionName } = await import('./lib/lookup.ts')
+// Jev: the site question is only asked for site requests, and anything but the expected answer shape is an error
+const jevAnswers = (answers, status = 200) => async (_url, init) => {
+  jevAnswers.sent = JSON.parse(init.body)
+  return new Response(JSON.stringify({ answers }), { status })
+}
+globalThis.fetch = jevAnswers({ action: { choice: 'Grants token access', probabilities: { Swaps: 0.1, 'Grants token access': 0.9 } }, scam: { noul: 0.8 }, lookalike: { noul: 0.7 } })
+assert.deepEqual(await analyze('k', 'transaction', { site: 'uniswap-claim.xyz', call: 'Lets 0x1 spend UNLIMITED USDC of yours' }),
+  { action: 'Grants token access', ranked: [['Grants token access', 0.9], ['Swaps', 0.1]], scam: 0.8, lookalike: 0.7 })
+assert.deepEqual(Object.keys(jevAnswers.sent.questions), ['action', 'scam', 'lookalike'])
+globalThis.fetch = jevAnswers({ action: { choice: 'Sends coins', probabilities: { 'Sends coins': 1 } }, scam: { noul: 0 } })
+assert.equal((await analyze('k', 'transaction', { call: 'none' })).action, 'Sends coins')
+assert.deepEqual(Object.keys(jevAnswers.sent.questions), ['action', 'scam'])
+await assert.rejects(analyze('k', 'signature', {}), /Unexpected/) // a transaction answer to a signature question
+globalThis.fetch = jevAnswers({ action: { choice: 'toString', probabilities: { toString: 1 } }, scam: { noul: 0 } })
+await assert.rejects(analyze('k', 'transaction', {}), /Unexpected/)
+globalThis.fetch = jevAnswers({ action: { choice: 'Sends coins', probabilities: { 'Sends coins': 1 } }, scam: { noul: '0' } })
+await assert.rejects(analyze('k', 'transaction', {}), /Unexpected/)
+globalThis.fetch = jevAnswers({}, 401)
+await assert.rejects(analyze('k', 'transaction', {}), /API key/)
+// a looked-up function name only counts if it round-trips the calldata; verified ones first
+const transferData = encodeFunctionData({ abi: erc20Abi, functionName: 'transfer', args: [ADDRESS, 5n] })
+const signatures = (list) => async () => new Response(JSON.stringify({ result: { function: { '0xa9059cbb': list } } }))
+globalThis.fetch = signatures([{ name: 'many_msg_babbage(bytes1)' }, { name: 'claimAirdrop(address,uint256)' }, { name: 'transfer(address,uint256)', hasVerifiedContract: true }])
+assert.equal(await functionName(transferData), 'transfer(address,uint256), named by a public signature list')
+globalThis.fetch = signatures([{ name: 'many_msg_babbage(bytes1)' }, { name: 'transfer(bytes4[9],bytes5[6],int48[11])' }])
+assert.equal(await functionName(transferData), 'No public signature matches the calldata')
+globalThis.fetch = async () => { throw new Error('offline') }
+assert.equal(await functionName(transferData), undefined)
 
 console.log('ok')

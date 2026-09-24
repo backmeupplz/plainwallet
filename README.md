@@ -1,6 +1,6 @@
 # <img src="assets/icon.svg" width="28" align="top" alt=""> Plain Wallet
 
-A very minimal EVM wallet extension for Chrome and Firefox. ~1350 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
+A very minimal EVM wallet extension for Chrome and Firefox. ~1750 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
 
 > Not audited. Don't keep funds in it that you can't afford to lose.
 
@@ -22,7 +22,8 @@ A very minimal EVM wallet extension for Chrome and Firefox. ~1350 lines of TypeS
 - Every signature needs a click in the extension's own window, which shows the origin, network, account, and for transactions the recipient, value, max fee and calldata. Token approvals and transfers (`approve`, `increaseAllowance`, `transfer`, `transferFrom`, `setApprovalForAll`) are spelled out in a sentence, with unlimited amounts flagged. Typed data is reduced to the fields that are actually hashed, and signatures that can hand over assets (permits, transfer authorizations, marketplace orders, Safe transactions) are flagged. Sign-in messages (EIP-4361) for a different site are refused. The transaction is fully prepared before you see it (the max fee includes the L1 data fee on OP-stack chains) and exactly that is signed, only after the RPC confirms it serves the chain you approved.
 - Only `eth_`/`net_`/`web3_` reads and `eth_sendRawTransaction` are forwarded to your RPC, rate-limited per site. Networks added by a dapp need a public https RPC (no localhost, private or raw IP addresses), and a name borrowed from one of your networks is flagged.
 - Balances, token lookups and sends go to the network's RPC. DeBank sees your address only when you open it.
-- Known gaps: calldata other than the token calls above is shown as raw hex; symbol/decimals of tokens not in your list come from the RPC (the addresses and UNLIMITED flag do not); a public hostname that resolves to a private address (DNS rebinding) still passes the dapp-RPC check; on Firefox a compromised website process can read your addresses and connected sites; your RPC provider sees your address and IP.
+- Every transaction you review is simulated on the network's RPC (`eth_simulateV1`) and shows your balance changes or the revert reason, filled in as it arrives; the Approve button never waits for it. Optional: with a Jev (typesafe.ai) API key in Settings, every transaction and signature also gets two more lines: the contract and any spender looked up on Blockscout (verified or not, age, token, scam flag; the function named from the verified ABI, or else from Sourcify's signature list, where a match must decode the calldata exactly), and Jev's read on what it does and how likely it is a scam or a lookalike site, colored by risk. Each line folds out into details; none of it replaces the wallet's own rows.
+- Known gaps: calldata other than the token calls above is shown as raw hex; symbol/decimals of tokens not in your list come from the RPC (the addresses and UNLIMITED flag do not); a public hostname that resolves to a private address (DNS rebinding) still passes the dapp-RPC check; on Firefox a compromised website process can read your addresses, connected sites and Jev API key; your RPC provider sees your address and IP.
 
 ## What it doesn't
 
@@ -65,7 +66,9 @@ dapp → entrypoints/inpage.content.ts   EIP-1193 provider in the page's world, 
 entrypoints/popup/                     the only UI: setup, unlock, balances, send, approvals, settings
 lib/wallet.ts                          secrets → accounts, vault crypto (pure)
 lib/describe.ts                        calldata / typed data → what the approval says, typed amounts (pure)
-lib/chain.ts                           RPC: balances, token lookup, prepare + sign + send
+lib/chain.ts                           RPC: balances, token lookup, prepare + sign + send, simulate
+lib/lookup.ts                          Blockscout + Sourcify lookups (only with a Jev key)
+lib/jev.ts                             Jev (typesafe.ai) second opinion (only with a Jev key)
 lib/store.ts                           chrome.storage state, signed with the vault key
 assets/icon.svg                        the one icon source; `public/icon/*.png` are rendered from it with rsvg-convert
 ```

@@ -8,7 +8,8 @@ const err = (code: number, message: string) => ({ code, message })
 const big = (v?: string) => (v == null ? undefined : BigInt(v))
 const size = (v: unknown) => { try { return JSON.stringify(v ?? null).length } catch { return Infinity } }
 
-export type Pending = { id: string; origin: string; method: string; network: Network; account: string; summary?: string; danger?: boolean; detail: any }
+// `title`: the page's own title, only ever context for Jev.
+export type Pending = { id: string; origin: string; title?: string; method: string; network: Network; account: string; summary?: string; danger?: boolean; detail: any }
 const pending = new Map<string, Pending & { resolve: () => void; reject: (e: unknown) => void }>()
 let win: Promise<{ id?: number } | undefined> | undefined
 let generation = 0 // a reset also invalidates requests still preparing their approval
@@ -45,7 +46,7 @@ function settle(id: string, ok: boolean) {
   if (!pending.size) win?.then((w) => void (w?.id && browser.windows.remove(w.id)))
 }
 
-async function handle(origin: string, method: unknown, rawParams: unknown): Promise<unknown> {
+async function handle(origin: string, method: unknown, rawParams: unknown, title?: string): Promise<unknown> {
   if (resetting) throw err(4001, 'Wallet is being reset')
   const started = generation
   if (typeof method !== 'string') throw err(-32600, 'Invalid request')
@@ -58,7 +59,7 @@ async function handle(origin: string, method: unknown, rawParams: unknown): Prom
   const connected = !!address && !!s.connections[origin]?.includes(address)
   const ask = async (detail: unknown, summary?: string, danger?: boolean) => {
     if (resetting || started !== generation) throw err(4001, 'Wallet was reset')
-    await approve({ origin, method, network, account: address!, summary, danger, detail })
+    await approve({ origin, title, method, network, account: address!, summary, danger, detail })
     // A request that arrived while locked showed unverified state; approving unlocked the wallet, so load() now
     // checks it (and throws if it was tampered with). It must still say what the approval showed.
     const now = await load()
@@ -227,7 +228,7 @@ export default defineBackground(() => {
     if (!/^https:\/\/|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return respond({ error: err(4100, 'Plain Wallet only works on https sites') })
     // A site can't freeze the approval window, or the wallet, with a huge payload.
     if (size(msg.params) > 512_000) return respond({ error: err(-32602, 'Request too large') })
-    handle(origin, msg.method, msg.params).then(
+    handle(origin, msg.method, msg.params, sender.tab?.title && clean(sender.tab.title, 80)).then(
       (result) => respond({ result }),
       (e) => respond({ error: { code: e?.code ?? -32603, message: e?.shortMessage ?? e?.message ?? String(e) } }),
     )

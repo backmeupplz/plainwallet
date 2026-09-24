@@ -40,6 +40,14 @@ export function describeCall(data?: `0x${string}`, token: { symbol?: string; dec
   }
 }
 
+/** Whoever token-moving calldata would let move the account's assets later: the spender or operator. */
+export function spenderOf(data?: `0x${string}`) {
+  try {
+    const call = decodeFunctionData({ abi: CALLS, data: data! })
+    if (['approve', 'increaseAllowance', 'setApprovalForAll'].includes(call.functionName)) return call.args[0] as `0x${string}`
+  } catch {}
+}
+
 /** Typed data reduced to exactly what gets hashed: keys a dapp adds outside `types` are not signed, so not shown. */
 export function signedView(td: any) {
   // Without an EIP712Domain type, viem hashes only the domain fields it recognizes (e.g. a chainId given as a string is

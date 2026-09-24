@@ -18,6 +18,8 @@
         --pen: light-dark(#2443c4, #8fa4ff);
         --on-pen: light-dark(#ffffff, #151929);
         --stamp: light-dark(#c4281c, #ff7a6b);
+        --warn: light-dark(#9a6200, #f2c14e);
+        --ok: light-dark(#1d7a3e, #6fd08c);
         --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
         font: 14px/1.45 system-ui, sans-serif;
       }
@@ -75,7 +77,22 @@
       .balances { padding: 12px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
       .balances dt { font: 13px var(--mono); color: var(--ink); }
       .balances dd { font-size: 13px; text-align: right; }
-      .balances dd.skeleton { justify-self: end; width: 64px; height: 13px; margin-block: 3px; border-radius: 4px; background: var(--rule); }
+      dd.skeleton { width: 64px; height: 13px; margin-block: 3px; border-radius: 4px; background: var(--rule); }
+      .balances dd.skeleton { justify-self: end; }
+      /* checks on a request: one line each, the details folding out under a chevron */
+      .fold { padding: 8px 12px; border: 1px dashed var(--rule); border-radius: 8px; font-size: 13px; }
+      .fold summary { display: flex; align-items: center; gap: 6px; list-style: none; cursor: pointer; color: var(--muted); }
+      .fold summary::-webkit-details-marker { display: none; }
+      .fold summary > span { flex: 1; font: 12px var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+      .fold summary > span.skeleton { flex: 0 0 96px; height: 12px; border-radius: 4px; background: var(--rule); }
+      .fold summary::after { content: ''; flex: none; width: 6px; height: 6px; margin: 0 2px 3px auto; border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+      .fold[open] summary::after { margin-bottom: -3px; transform: rotate(-135deg); }
+      .fold[open] summary { margin-bottom: 10px; }
+      @media (prefers-reduced-motion: no-preference) { .fold summary::after { transition: transform 0.15s; } }
+      /* how likely the bad thing is */
+      .ok { color: var(--ok); }
+      .warn { color: var(--warn); }
+      .bad { color: var(--stamp); }
       @media (prefers-reduced-motion: no-preference) { .skeleton, .pending { animation: pulse 1.2s ease-in-out infinite alternate; } }
       @keyframes pulse { to { opacity: 0.4; } }
 

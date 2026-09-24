@@ -1,6 +1,6 @@
 // Talking to a network's RPC. Shared by the background (dapp requests) and the popup (balances, sending).
-import { createWalletClient, defineChain, erc20Abi, http, type LocalAccount, type TransactionSerializable } from 'viem'
-import { getBalance, getChainId, getTransactionCount, multicall, readContract, waitForTransactionReceipt } from 'viem/actions'
+import { createWalletClient, defineChain, erc20Abi, ethAddress, formatUnits, http, type BaseError, type LocalAccount, type TransactionSerializable } from 'viem'
+import { getBalance, getChainId, getTransactionCount, multicall, readContract, simulateCalls, waitForTransactionReceipt } from 'viem/actions'
 import { estimateL1Fee } from 'viem/op-stack'
 import { browser } from 'wxt/browser'
 import { clean, parseAddress } from './describe'
@@ -74,4 +74,45 @@ export async function tokenInfo(network: Network, input: string): Promise<Token>
     readContract(c, { address, abi: erc20Abi, functionName: 'decimals' }),
   ]).catch(() => { throw new Error(`Couldn't read an ERC-20 token at this address on ${network.name}`) })
   return { address, symbol: clean(symbol, 12) || '?', decimals }
+}
+
+export type Simulation = { summary: string; details: [label: string, value: string][]; failed?: boolean; text?: string }
+
+/** How `from`'s balances would change if the transaction ran on the latest block (the fee aside): a rounded `summary`,
+ * exact `details`, and `text` for Jev when it ran. Needs an RPC with eth_simulateV1. Symbols come from the token
+ * contracts, so a fake "USDC" reads as USDC too: the details carry each token's address. */
+export async function simulate(network: Network, from: `0x${string}`, tx: { to: `0x${string}`; data?: `0x${string}`; value?: bigint }): Promise<Simulation> {
+  let simulated
+  for (let attempt = 1; !simulated; attempt++) {
+    try {
+      simulated = await simulateCalls(client(network), { account: from, calls: [tx], traceAssetChanges: true })
+    } catch (e) {
+      const why = (e as BaseError).details || (e as BaseError).shortMessage || String(e)
+      // It takes a burst of calls right after preparing the transaction, and public RPCs rate-limit bursts, some (Base:
+      // "over rate limit", -32016) with codes viem doesn't retry.
+      if (attempt < 3 && /rate.?limit|too many/i.test(why)) await new Promise((done) => setTimeout(done, 1500 * attempt))
+      else return { summary: 'unavailable', details: [['RPC error', clean(why, 120)]] }
+    }
+  }
+  const { results: [result], assetChanges } = simulated
+  if (result!.status === 'failure') {
+    const reason = clean(((result!.error as BaseError).shortMessage ?? result!.error.message).replace(/^.*reverted with the following reason:/s, ''), 160)
+    return { summary: 'fails', failed: true, details: [['Reverts', `${reason}. Sending it anyway would only spend the fee.`]], text: `Fails: ${reason}` }
+  }
+  const moves = assetChanges.filter((a) => a.value.diff).map(({ token, value: { diff } }) => {
+    const native = token.address === ethAddress
+    const exact = token.decimals == null ? String(diff < 0n ? -diff : diff) : formatUnits(diff < 0n ? -diff : diff, token.decimals)
+    const n = Number(exact)
+    const rounded = n.toLocaleString('en-US', n >= 1 ? { maximumFractionDigits: 4 } : { maximumSignificantDigits: 4 })
+    const symbol = native ? network.symbol : token.symbol ? clean(token.symbol, 12) : 'tokens'
+    const sign = diff < 0n ? '−' : '+'
+    return {
+      short: `${sign}${rounded} ${symbol}`,
+      exact: [diff < 0n ? 'Sends' : 'Receives', `${exact} ${symbol}${token.decimals == null ? ' (raw units or NFTs)' : ''}${native ? '' : `, token ${token.address}`}`] as [string, string],
+      text: `${diff < 0n ? 'sends' : 'receives'} ${exact} ${symbol}`,
+    }
+  })
+  return moves.length
+    ? { summary: moves.map((m) => m.short).join(', '), details: moves.map((m) => m.exact), text: `The account ${moves.map((m) => m.text).join(', ')}` }
+    : { summary: 'no balance changes', details: [], text: 'No balance changes for the account' }
 }
