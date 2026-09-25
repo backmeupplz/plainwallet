@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Plain Wallet</title>
-    <meta name="description" content="A very minimal EVM wallet extension for Chrome and Firefox. About 1,400 lines of TypeScript you can read in an evening." />
+    <meta name="description" content="A very minimal EVM wallet for Chrome, Firefox and Android. About 1,400 lines of TypeScript you can read in an evening." />
     <link rel="canonical" href="https://plainwallet.app/" />
     <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#151929" media="(prefers-color-scheme: dark)" />
@@ -13,7 +13,7 @@
     <meta property="og:site_name" content="Plain Wallet" />
     <meta property="og:url" content="https://plainwallet.app/" />
     <meta property="og:title" content="Plain Wallet — a wallet you can read" />
-    <meta property="og:description" content="A very minimal EVM wallet extension for Chrome and Firefox. About 1,400 lines of TypeScript, three runtime dependencies, MIT." />
+    <meta property="og:description" content="A very minimal EVM wallet for Chrome, Firefox and Android. About 1,400 lines of TypeScript, three runtime dependencies, MIT." />
     <meta property="og:image" content="https://plainwallet.app/og.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
@@ -22,7 +22,7 @@
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Plain Wallet — a wallet you can read" />
-    <meta name="twitter:description" content="A very minimal EVM wallet extension for Chrome and Firefox. About 1,400 lines of TypeScript, three runtime dependencies, MIT." />
+    <meta name="twitter:description" content="A very minimal EVM wallet for Chrome, Firefox and Android. About 1,400 lines of TypeScript, three runtime dependencies, MIT." />
     <meta name="twitter:image" content="https://plainwallet.app/og.png" />
     <meta name="twitter:image:alt" content="Plain Wallet: a wallet you can read. The extension popup showing token balances, stamped NOT AUDITED." />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
@@ -104,6 +104,10 @@
       ol li::marker { font: 600 13px var(--mono); color: var(--pen); }
       ol pre { margin-top: 8px; padding: 10px 12px; }
       #prompt { padding-top: 44px; }
+      .install .wide { grid-column: 1 / -1; }
+      .slip .actions { margin-bottom: 20px; }
+      .fingerprint { margin: 16px 0 0; font-size: 13px; color: var(--muted); }
+      .fingerprint code { display: block; overflow-wrap: anywhere; color: var(--ink); }
       .warn { margin-top: 32px; padding-left: 12px; border-left: 3px solid var(--stamp); color: var(--ink); font-size: 15px; }
 
       footer { display: flex; flex-wrap: wrap; gap: 8px 24px; padding-block: 32px 48px; border-top: 1px dashed var(--rule); color: var(--muted); font: 13px var(--mono); }
@@ -134,7 +138,7 @@
       <div class="hero">
         <div>
           <h1>A wallet you can <em>read</em>.</h1>
-          <p class="lede">A very minimal EVM wallet for Chrome and Firefox. About 1,400 lines of TypeScript — small enough to read in an evening, or have your agent read in a minute.</p>
+          <p class="lede">A very minimal EVM wallet for Chrome, Firefox and Android. About 1,400 lines of TypeScript — small enough to read in an evening, or have your agent read in a minute.</p>
           <ul class="facts">
             <li>3 runtime deps</li>
             <li>no servers</li>
@@ -143,6 +147,7 @@
           </ul>
           <div class="actions">
             <a class="button primary" href="#install">Install</a>
+            <a class="button" href="#android">Android app</a>
             <a class="button" href="https://github.com/backmeupplz/plainwallet">
               <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
               Read the source
@@ -181,6 +186,20 @@
         <h2>Install</h2>
         <p class="sub">Don't trust it — check it. That's the point of keeping it small.</p>
         <div class="install">
+          <div class="slip wide" id="android">
+            <h3>For Android <span class="mono">Android 11+</span></h3>
+            <p>A browser with the wallet built in. Type a site and it gets Plain Wallet, with the same approvals as the extension. Star the sites you use to keep them on top of the wallet, and unlock with your fingerprint if you like.</p>
+            <div class="actions">
+              <a class="button primary" href="https://github.com/backmeupplz/plainwallet/releases/latest">Download the APK</a>
+              <a class="button" href="https://github.com/backmeupplz/plainwallet#android">How it differs from the extension</a>
+            </div>
+            <ol>
+              <li>On your phone, open the latest release and download <code>plainwallet-…-android.apk</code>.</li>
+              <li>Open it and allow installing from your browser when asked. Later releases install over it, keeping your wallet.</li>
+            </ol>
+            <p class="fingerprint">Releases are signed with this certificate (SHA-256):<code>1F:EC:2B:63:39:34:74:21:B0:C5:64:AB:19:EE:66:34:39:16:F7:FE:B0:81:62:C3:5F:C3:5C:9F:B5:9F:CB:83</code></p>
+          </div>
+
           <div class="slip">
             <h3>For AI agents <span class="mono">review first</span></h3>
             <p>Paste this into Claude Code, Codex, Cursor or any agent that can run a shell.</p>
@@ -196,7 +215,7 @@
 
           <div class="slip">
             <h3>For humans</h3>
-            <p>Build it from source for Chrome, Brave, Edge and other Chromium browsers, or Firefox.</p>
+            <p>Build the extension from source for Chrome, Brave, Edge and other Chromium browsers, or Firefox.</p>
             <ol>
               <li>Clone and build:
                 <pre>git clone https://github.com/backmeupplz/plainwallet
