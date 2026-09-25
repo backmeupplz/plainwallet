@@ -29,7 +29,7 @@ registerHooks({
 
 ;(await import('./entrypoints/android-shim.ts')).default.main()
 assert.deepEqual(sent, [{ type: 'ready', setup: false }])
-const { addWallet, isUnlocked, load, save } = await import('./lib/store.ts')
+const { addWallet, isUnlocked, load, save, unlock } = await import('./lib/store.ts')
 ;(await import('./entrypoints/background.ts')).default()
 const until = async (check) => { for (let i = 0; i < 400 && !(await check()); i++) await new Promise((r) => setTimeout(r, 5)) }
 const fromApp = (msg) => native.onmessage({ data: JSON.stringify(msg) })
@@ -57,6 +57,11 @@ assert.equal((await request('https://dapp.test', { id: 8, type: 'pending' })).er
 assert.equal((await request('https://dapp.test', { id: 9, type: 'reset', method: 'eth_chainId', origin: 'https://other.test' })).result, '0x1')
 assert.equal((await request('http://dapp.test', { id: 10, method: 'eth_chainId' })).error.code, 4100)
 assert.equal((await request('https://dapp.test', { id: 11, method: 'eth_accounts' })).result.length, 0)
+// Something that isn't JSON gets an error back rather than nothing (the app keeps a slot per request until then).
+await fromApp({ type: 'request', n: 900, origin: 'https://dapp.test', title: '', data: '{"id": 1, "method": ' })
+assert.equal(JSON.parse(sent.find((m) => m.type === 'reply' && m.n === 900).data).error.code, -32700)
+// No EIP-3668 offchain lookups: a contract could otherwise make the wallet fetch any URL it names.
+assert.equal((await import('./lib/chain.ts')).client({ id: 1, name: 'x', rpc: 'https://rpc.invalid', symbol: 'ETH' }).ccipRead, false)
 
 // Asking brings the wallet up; backing out of it (the app's "back") rejects, like closing the approval window.
 const asked = request('https://dapp.test', { id: 12, method: 'eth_requestAccounts' })
@@ -101,6 +106,11 @@ assert.deepEqual(heard.map((m) => m.enabled), [true, false])
 // Auto-lock: an overdue alarm fires before anything reads the session key, even if no timer ran meanwhile.
 assert.ok(await isUnlocked())
 await browser.alarms.create('lock', { delayInMinutes: 0 })
+assert.equal(await isUnlocked(), false)
+// ...and when the app says it was away from the screen too long.
+await unlock('android-password-1')
+assert.ok(await isUnlocked())
+await fromApp({ type: 'lock' })
 assert.equal(await isUnlocked(), false)
 console.log('android ok')
 process.exit(0) // the shim's alarm check keeps an interval running

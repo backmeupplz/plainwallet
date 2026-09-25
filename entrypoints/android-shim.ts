@@ -17,10 +17,11 @@ export default defineUnlistedScript({
     }
 
     // Alarms (only the auto-lock) are deadlines, checked every second and before anything reads the session: timers
-    // don't run while Android has the app frozen in the background.
+    // don't run while Android has the app frozen in the background. On the page's own monotonic clock, which changing
+    // the phone's date can't move; time away from the app is the app's to count (it sends 'lock').
     const alarm = event<(a: { name: string }) => void>()
     const alarms = new Map<string, number>()
-    const due = () => alarms.forEach((at, name) => { if (at <= Date.now()) { alarms.delete(name); alarm.fire({ name }) } })
+    const due = () => alarms.forEach((at, name) => { if (at <= performance.now()) { alarms.delete(name); alarm.fire({ name }) } })
     setInterval(due, 1000)
 
     const changed = event<(changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => void>()
@@ -89,7 +90,7 @@ export default defineUnlistedScript({
       },
       storage,
       alarms: {
-        create: async (name: string, { delayInMinutes }: { delayInMinutes: number }) => void alarms.set(name, Date.now() + delayInMinutes * 60_000),
+        create: async (name: string, { delayInMinutes }: { delayInMinutes: number }) => void alarms.set(name, performance.now() + delayInMinutes * 60_000),
         clear: async (name: string) => alarms.delete(name),
         onAlarm: alarm,
       },
@@ -123,7 +124,9 @@ export default defineUnlistedScript({
       switch (msg.type) {
         case 'request': { // a site's request, with the origin the app got from the WebView
           let request
-          try { request = JSON.parse(msg.data) } catch { return }
+          try { request = JSON.parse(msg.data) } catch {
+            return toNative({ type: 'reply', n: msg.n, origin: msg.origin, data: JSON.stringify({ id: null, error: { code: -32700, message: 'Parse error' } }) })
+          }
           // Only the method and params come from the site: no sender.url, so never the trusted branch.
           const response = await deliver({ method: request?.method, params: request?.params }, { origin: origin(msg.origin), tab: { id: 1, title: msg.title } })
           return toNative({ type: 'reply', n: msg.n, origin: msg.origin, data: JSON.stringify({ id: request?.id, ...response }) })
@@ -146,9 +149,11 @@ export default defineUnlistedScript({
         }
         case 'shown': // you brought this page up
           return dispatchEvent(new Event('plainwallet-render'))
-        case 'back': // you backed out of an approval: like closing its window, which rejects what's waiting
+        case 'back': // you left the wallet: like closing the approval window, which rejects what's waiting
           if (open) { open = false; removed.fire(1) }
           return
+        case 'lock': // the app was away from the screen too long
+          return storage.session.clear()
         default: // for the wallet page's own Android code (fingerprint unlock)
           if (app.fns.size) app.fire(msg)
           else early.push(msg)

@@ -32,13 +32,13 @@ textarea { border: 1px solid var(--rule); border-radius: 6px; padding: 8px; resi
 input:focus-visible, select:focus-visible { outline: 0; border-bottom-color: var(--pen); box-shadow: 0 1px 0 var(--pen); }
 
 button { width: 100%; font: inherit; font-weight: 550; padding: 8px 12px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; cursor: pointer; }
-button:hover:not(:disabled) { border-color: var(--pen); }
+button:hover:not(:disabled, [aria-disabled="true"]) { border-color: var(--pen); }
 button.primary { color: var(--on-pen); background: var(--pen); border-color: var(--pen); }
-button.primary:hover:not(:disabled) { filter: brightness(1.1); }
+button.primary:hover:not(:disabled, [aria-disabled="true"]) { filter: brightness(1.1); }
 button.quiet { width: auto; flex: none; padding: 3px 10px; font-size: 12px; font-weight: 500; }
 button.icon { display: grid; place-items: center; flex: none; width: 32px; height: 32px; padding: 6px; }
 button.icon svg { width: 18px; height: 18px; }
-button:disabled { opacity: 0.45; cursor: default; }
+button:disabled, button[aria-disabled="true"] { opacity: 0.45; cursor: default; }
 button.danger { color: var(--stamp); border-color: var(--stamp); }
 dialog { box-sizing: border-box; width: 360px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); padding: 16px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
 dialog[open] { display: flex; flex-direction: column; gap: 12px; }

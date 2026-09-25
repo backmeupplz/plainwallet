@@ -12,6 +12,9 @@ export const noRedirect = { redirect: 'error' } as const
 
 export const client = (network: Network, account?: `0x${string}`) => createWalletClient({
   account,
+  // No EIP-3668 offchain lookups: a contract (a dapp's, or a token's) could name any URL, and reading its symbol for
+  // an approval would fetch it, past noRedirect and the public-RPC check, from the extension with its host permissions.
+  ccipRead: false,
   chain: defineChain({
     id: network.id,
     name: network.name,

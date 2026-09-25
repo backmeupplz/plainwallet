@@ -1,7 +1,7 @@
 // The Android app's wallet page (android/): the extension's background and popup in one page, on the API that
 // entrypoints/android-shim.ts provides. The app shows it for the home screen and for approvals.
 import background from '../background'
-import { extras, h, render } from '../popup/main'
+import { extras, h, rearm, render } from '../popup/main'
 import { isUnlocked, unlock, unlockWithKey } from '@/lib/store'
 
 // Messages to and from the app, beyond what the shim handles itself.
@@ -14,14 +14,15 @@ addEventListener('plainwallet-render', () => {
   void render()
 })
 
-// Sites starred in the app's browser, on top of the home screen, with the icons the app got from them.
+// Sites starred in the app's browser, on top of the home screen, with the icons the app got from them. Labeled with
+// the host, which a site can't choose the way it chooses its title.
 extras.home = () => {
   const nav = h('nav', { className: 'favorites', ariaLabel: 'Favorite sites' })
   void browser.storage.local.get('favorites').then(({ favorites = [] }: { favorites?: { url: string; title: string; icon?: string }[] }) =>
     nav.replaceChildren(...(favorites.length ? favorites.map(({ url, title, icon }) => {
-      const name = title || new URL(url).hostname
-      return h('button', { title: url, onclick: () => browser.tabs.create({ url }) },
-        icon ? h('img', { src: icon, alt: '' }) : h('span', {}, name[0]!.toUpperCase()), h('span', {}, name))
+      const host = new URL(url).hostname.replace(/^www\./, '')
+      return h('button', { title: `${title} · ${url}`, onclick: () => browser.tabs.create({ url }) },
+        icon ? h('img', { src: icon, alt: '' }) : h('span', {}, host[0]!.toUpperCase()), h('span', {}, host))
     }) : [h('p', {}, 'Tap ☆ in the address bar to pin a site here.')])))
   return [nav]
 }
@@ -35,6 +36,8 @@ let asked = false // the prompt comes up by itself once each time the locked wal
 let section: HTMLElement | undefined // Settings' fingerprint section, redrawn when the app reports a change
 
 app.listen(async (msg) => {
+  // The wallet just came on screen: its Approve and Send wait a moment, whenever they were drawn.
+  if (msg.type === 'visible') return rearm()
   // On start, on coming back to the app, and after any change: ask again, unless asking just failed (a lockout
   // would only fail again).
   if (msg.type === 'fingerprint') {
