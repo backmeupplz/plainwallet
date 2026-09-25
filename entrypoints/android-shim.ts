@@ -110,8 +110,13 @@ export default defineUnlistedScript({
     ;(globalThis as any).browser = (globalThis as any).chrome = api
 
     // For the wallet page's own Android code (entrypoints/android/main.ts): messages to and from the app.
+    // Held until that code listens: the app answers "ready" before the page's modules have loaded.
     const app = event<(msg: any) => void>()
-    ;(globalThis as any).plainwalletApp = { send: toNative, listen: app.addListener }
+    const early: unknown[] = []
+    ;(globalThis as any).plainwalletApp = {
+      send: toNative,
+      listen: (fn: (msg: any) => void) => { app.addListener(fn); early.splice(0).forEach(fn) },
+    }
 
     native.onmessage = async ({ data }: { data: string }) => {
       const msg = JSON.parse(data)
@@ -145,7 +150,8 @@ export default defineUnlistedScript({
           if (open) { open = false; removed.fire(1) }
           return
         default: // for the wallet page's own Android code (fingerprint unlock)
-          app.fire(msg)
+          if (app.fns.size) app.fire(msg)
+          else early.push(msg)
       }
     }
     toNative({ type: 'ready', setup: !!JSON.parse(localStorage.getItem('vault') ?? '""') })

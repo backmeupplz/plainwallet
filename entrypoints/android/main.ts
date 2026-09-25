@@ -35,9 +35,12 @@ let asked = false // the prompt comes up by itself once each time the locked wal
 let section: HTMLElement | undefined // Settings' fingerprint section, redrawn when the app reports a change
 
 app.listen(async (msg) => {
+  // On start, on coming back to the app, and after any change: ask again, unless asking just failed (a lockout
+  // would only fail again).
   if (msg.type === 'fingerprint') {
     fingerprint = { available: msg.available, enabled: msg.enabled }
     note = msg.error ?? ''
+    if (!note) asked = false
     section?.replaceWith((section = settings(true)))
     if (!(await isUnlocked())) void render()
   } else if (msg.type === 'fingerprint-key') {

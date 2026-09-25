@@ -83,6 +83,7 @@ public class MainActivity extends Activity {
     final Map<Integer, JavaScriptReplyProxy> waiting = new HashMap<>(); // request number -> the page that asked
     int requests;
     boolean approving; // the wallet came up for an approval, not because you opened it
+    boolean prompting; // a fingerprint prompt is showing
 
     @Override
     protected void onCreate(Bundle saved) {
@@ -252,7 +253,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (wallet != null) fingerprint(null); // you may have set up a fingerprint meanwhile
+        if (wallet != null) fingerprint(null); // you may have set up a fingerprint meanwhile; a locked wallet asks again
     }
 
     @Override
@@ -402,7 +403,7 @@ public class MainActivity extends Activity {
 
     void unlockWithFingerprint() {
         // Only for the wallet you're looking at: never a prompt over a site.
-        if (wallet.getVisibility() != View.VISIBLE || !stored().contains("data")) return;
+        if (prompting || wallet.getVisibility() != View.VISIBLE || !stored().contains("data")) return;
         try {
             KeyStore keys = KeyStore.getInstance("AndroidKeyStore");
             keys.load(null);
@@ -435,15 +436,17 @@ public class MainActivity extends Activity {
 
     /** The system's fingerprint dialog; the cipher only works once it succeeds. */
     void prompt(String title, Cipher cipher, Unlocked then) {
+        prompting = true;
         new BiometricPrompt.Builder(this)
                 .setTitle(title)
                 .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                .setNegativeButton("Use password", getMainExecutor(), (dialog, which) -> {})
+                .setNegativeButton("Use password", getMainExecutor(), (dialog, which) -> prompting = false)
                 .build()
                 .authenticate(new BiometricPrompt.CryptoObject(cipher), new CancellationSignal(), getMainExecutor(),
                         new BiometricPrompt.AuthenticationCallback() {
                             @Override
                             public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                                prompting = false;
                                 try {
                                     then.run(result.getCryptoObject().getCipher());
                                 } catch (GeneralSecurityException e) {
@@ -453,6 +456,7 @@ public class MainActivity extends Activity {
 
                             @Override
                             public void onAuthenticationError(int code, CharSequence message) {
+                                prompting = false;
                                 boolean dismissed = code == BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED
                                         || code == BiometricPrompt.BIOMETRIC_ERROR_CANCELED;
                                 if (!dismissed) fingerprint(message.toString());

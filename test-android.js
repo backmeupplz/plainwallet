@@ -91,10 +91,12 @@ assert.equal((await browser.storage.local.get('favorites')).favorites[0].icon, u
 await fromApp({ type: 'page', url: 'https://other.test/swap', title: 'Other', icon: 'data:image/png;base64,iVBORw0KGgo=' })
 assert.equal((await browser.storage.local.get('favorites')).favorites[0].icon, 'data:image/png;base64,iVBORw0KGgo=')
 // Anything else from the app goes to the wallet page's own Android code.
-let heard
-plainwalletApp.listen((msg) => (heard = msg))
+// Held until that code listens: the app answers "ready" before the page's modules have loaded.
+await fromApp({ type: 'fingerprint', available: true, enabled: true })
+const heard = []
+plainwalletApp.listen((msg) => heard.push(msg))
 await fromApp({ type: 'fingerprint', available: true, enabled: false })
-assert.deepEqual(heard, { type: 'fingerprint', available: true, enabled: false })
+assert.deepEqual(heard.map((m) => m.enabled), [true, false])
 
 // Auto-lock: an overdue alarm fires before anything reads the session key, even if no timer ran meanwhile.
 assert.ok(await isUnlocked())
