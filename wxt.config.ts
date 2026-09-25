@@ -1,6 +1,9 @@
 import { defineConfig } from 'wxt'
 
 export default defineConfig({
+  // Firefox reviewers rebuild from the sources zip: it keeps .npmrc (no install scripts), not caches or the Android
+  // app's build output.
+  zip: { dotSources: true, excludeSources: ['.git/**', '.wxt/**', 'android/.gradle/**', 'android/**/build/**', '**/*.hprof'] },
   manifest: ({ browser }) => ({
     name: 'Plain Wallet',
     permissions: ['storage', 'alarms', ...(browser === 'firefox' ? [] : ['sidePanel'])],
