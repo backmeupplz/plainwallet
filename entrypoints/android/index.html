@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="wxt.include" content="['android']" />
+    <!-- As strict as the extension's own pages: only this page's scripts; network only to https (RPCs, lookups, Jev) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https:; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'" />
     <title>Plain Wallet</title>
     <link rel="stylesheet" href="../popup/style.css" />
     <!-- a classic script, so it runs before the modules that look for the browser API it provides -->

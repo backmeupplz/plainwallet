@@ -94,11 +94,24 @@ const copy = (text: string) => (e: Event) => {
   button.textContent = 'Copied'
   setTimeout(() => (button.textContent = label), 1200)
 }
-// Consent buttons start disabled: a window that pops up under the cursor, or the second half of a double-click on
-// whatever was there before, must not count as a click on them.
+// Consent buttons (Approve, Send) only come on once taps have stopped for 800 ms: a window that pops up under the
+// cursor, the second half of a double-click, or a site getting you to tap again and again where the button is about to
+// appear must not count as a click on them. aria-disabled rather than disabled, so taps on the button itself count as
+// taps too. The Android app also re-arms them whenever it brings the wallet up.
+let quiet: ReturnType<typeof setTimeout> | undefined
+export function rearm() {
+  const buttons = document.querySelectorAll<HTMLButtonElement>('button[data-armed]')
+  buttons.forEach((button) => (button.ariaDisabled = 'true'))
+  clearTimeout(quiet)
+  quiet = setTimeout(() => buttons.forEach((button) => (button.ariaDisabled = 'false')), 800)
+}
+addEventListener('pointerdown', () => { if (document.querySelector('button[data-armed][aria-disabled="true"]')) rearm() }, true)
 const armed = (button: HTMLButtonElement) => {
-  button.disabled = true
-  setTimeout(() => (button.disabled = false), 800)
+  const click = button.onclick
+  button.onclick = (e) => { if (button.ariaDisabled !== 'true') click?.call(button, e) }
+  button.dataset.armed = ''
+  button.ariaDisabled = 'true'
+  queueMicrotask(rearm)
   return button
 }
 
@@ -106,6 +119,7 @@ const armed = (button: HTMLButtonElement) => {
 function secretBox(changed: () => void = () => {}) {
   // spellcheck off: browsers' cloud ("enhanced") spellcheck would otherwise upload whatever is typed here
   const input = h('textarea', { rows: 3, placeholder: 'Seed phrase or private key', spellcheck: false, autocomplete: 'off', autocapitalize: 'off' })
+  input.setAttribute('autocorrect', 'off') // not a property: phone keyboards read the attribute
   const note = h('p', { ariaLive: 'polite' })
   let ok = false
   input.oninput = () => {

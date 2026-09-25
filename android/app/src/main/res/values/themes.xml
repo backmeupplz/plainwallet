@@ -14,5 +14,7 @@
     <color name="sheet">#E9ECF2</color>
     <color name="muted">#6A7390</color>
     <color name="pen">#2443C4</color>
+    <!-- the band behind the status and address bars while the wallet shows, in both themes -->
+    <color name="wallet">#2443C4</color>
     <bool name="light">true</bool>
 </resources>
