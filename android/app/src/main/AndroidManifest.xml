@@ -7,7 +7,7 @@
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/icon"
         android:label="Plain Wallet"
-        android:theme="@android:style/Theme.DeviceDefault.DayNight">
+        android:theme="@style/Theme.PlainWallet">
         <!-- handles rotation etc. itself: recreating the activity would drop the unlocked session and pending approvals -->
         <activity
             android:name=".MainActivity"
