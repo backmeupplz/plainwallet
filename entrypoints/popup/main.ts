@@ -5,7 +5,7 @@ import { analyze, type Subject, type Verdict } from '@/lib/jev'
 import { lookup, type Level, type Lookup, type Party } from '@/lib/lookup'
 import { megapotSettings } from '@/lib/megapot'
 import { addDerivedAccount, addWallet, exportAccount, isUnlocked, load, lock, removeAccount, repair, save, seedSources, signer, TAMPERED, touch, unlock, type Network, type State, type Token } from '@/lib/store'
-import { newMnemonic, parseSecret } from '@/lib/wallet'
+import { checkSecret, newMnemonic, parseSecret } from '@/lib/wallet'
 import type { Pending } from '../background'
 
 const app = document.getElementById('app')!
@@ -100,6 +100,27 @@ const armed = (button: HTMLButtonElement) => {
   return button
 }
 
+/** A seed phrase / private key box that lowercases what you type and says, as you go, what's missing or wrong. */
+function secretBox(changed: () => void = () => {}) {
+  // spellcheck off: browsers' cloud ("enhanced") spellcheck would otherwise upload whatever is typed here
+  const input = h('textarea', { rows: 3, placeholder: 'Seed phrase or private key', spellcheck: false, autocomplete: 'off', autocapitalize: 'off' })
+  const note = h('p', { ariaLive: 'polite' })
+  let ok = false
+  input.oninput = () => {
+    const { selectionStart, selectionEnd } = input
+    if (input.value !== input.value.toLowerCase()) {
+      input.value = input.value.toLowerCase()
+      input.setSelectionRange(selectionStart, selectionEnd)
+    }
+    const check = checkSecret(input.value)
+    ok = check.ok
+    note.textContent = check.message
+    note.className = check.ok ? 'ok' : check.bad ? 'bad' : ''
+    changed()
+  }
+  return { input, note, ok: () => ok }
+}
+
 function walletForm(first: boolean) {
   if (!walletMode) return [
     h('p', {}, first ? 'How would you like to get started?' : 'How would you like to add a wallet?'),
@@ -107,10 +128,20 @@ function walletForm(first: boolean) {
     h('button', { onclick: act(() => (walletMode = 'import')) }, 'Enter seed phrase or private key'),
   ]
   const importing = walletMode === 'import'
-  // spellcheck off: browsers' cloud ("enhanced") spellcheck would otherwise upload whatever is typed here
-  const secret = h('textarea', { rows: 3, placeholder: 'Seed phrase or private key', spellcheck: false, autocomplete: 'off', autocapitalize: 'off' })
+  const secret = secretBox(() => update())
   const pw = field('Password (min 12 characters)', { type: 'password' })
   const pw2 = field('Repeat password', { type: 'password' })
+  // Checked as you type; the button waits until everything is right.
+  const pwNote = h('p', { ariaLive: 'polite' })
+  const pwOk = () => pw.input.value.length >= 12 && pw.input.value === pw2.input.value
+  const update = () => {
+    const [a, b] = [pw.input.value, pw2.input.value]
+    const [text, className] = a.length < 12 ? [a ? `${12 - a.length} more character${a.length === 11 ? '' : 's'}` : '', '']
+      : !b ? ['', ''] : a === b ? ['Passwords match', 'ok'] : a.startsWith(b) ? ['', ''] : ['Passwords don’t match', 'bad']
+    Object.assign(pwNote, { textContent: text, className })
+    submit.disabled = (importing && !secret.ok()) || (first && !pwOk())
+  }
+  pw.input.oninput = pw2.input.oninput = update
   const password = () => {
     if (!first) return undefined
     if (pw.input.value.length < 12) throw new Error('Password must be at least 12 characters')
@@ -121,15 +152,17 @@ function walletForm(first: boolean) {
     pendingPassword = password()
     seed = newMnemonic()
   })
+  const submit = h('button', { className: 'primary', onclick: importing ? act(async () => {
+    await addWallet(parseSecret(secret.input.value), password())
+    clearSetup()
+  }) : generate }, importing ? 'Import wallet' : 'Generate seed phrase')
+  update()
   return [
     h('button', { className: 'quiet', onclick: act(clearSetup) }, 'Back'),
     h('h2', {}, importing ? 'Import your wallet' : 'Create a new wallet'),
-    ...(importing ? [h('label', {}, 'Seed phrase or private key', secret)] : [h('p', {}, 'We’ll generate a new seed phrase for you to back up.')]),
-    ...(first ? [h('p', {}, 'Choose a password to protect your wallets on this device.'), pw.el, pw2.el] : []),
-    h('button', { className: 'primary', onclick: importing ? act(async () => {
-      await addWallet(parseSecret(secret.value), password())
-      clearSetup()
-    }) : generate }, importing ? 'Import wallet' : 'Generate seed phrase'),
+    ...(importing ? [h('label', {}, 'Seed phrase or private key', secret.input), secret.note] : [h('p', {}, 'We’ll generate a new seed phrase for you to back up.')]),
+    ...(first ? [h('p', {}, 'Choose a password to protect your wallets on this device.'), pw.el, pw2.el, pwNote] : []),
+    submit,
   ]
 }
 const seedScreen = () => [
@@ -413,8 +446,8 @@ async function accountDialog(s: State) {
       h('button', { className: 'primary', onclick: run(() => addDerivedAccount(Number(source.value))) }, 'Generate account'))
   }
   const importSecret = (mnemonic: boolean) => {
-    const input = h('textarea', { rows: 3, spellcheck: false, autocomplete: 'off', autocapitalize: 'off' })
-    content.replaceChildren(back(), h('label', {}, mnemonic ? 'Seed phrase' : 'Private key', input),
+    const { input, note } = secretBox()
+    content.replaceChildren(back(), h('label', {}, mnemonic ? 'Seed phrase' : 'Private key', input), note,
       h('button', { className: 'primary', onclick: run(() => {
         const secret = parseSecret(input.value)
         if (secret.startsWith('0x') === mnemonic) throw new Error(mnemonic ? 'Enter a seed phrase, not a private key' : 'Enter a private key, not a seed phrase')

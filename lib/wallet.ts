@@ -14,6 +14,27 @@ export function parseSecret(input: string): string {
   throw new Error('Not a valid seed phrase or private key')
 }
 
+/** Feedback while a seed phrase or private key is being typed; `ok` exactly when parseSecret would accept it.
+ * `bad`: wrong already, not just unfinished. */
+export function checkSecret(input: string): { ok: boolean; message: string; bad?: boolean } {
+  const s = input.trim().toLowerCase()
+  if (!s) return { ok: false, message: '' }
+  // Hex, unless it could still be a seed word (a-f only, at most 8 letters: "add", "decade")
+  if (/^0x/.test(s) || (/^[0-9a-f]+$/.test(s) && (s.length > 8 || /\d/.test(s)))) {
+    const hex = s.replace(/^0x/, '')
+    if (!/^[0-9a-f]*$/.test(hex)) return { ok: false, bad: true, message: 'A private key is only 0-9 and a-f' }
+    return hex.length === 64 ? { ok: true, message: 'Private key' }
+      : { ok: false, bad: hex.length > 64, message: `Private key: ${hex.length} of 64 characters` }
+  }
+  const words = s.split(/\s+/)
+  const typing = !/\s$/.test(input) // the last word may be half typed
+  const unknown = words.find((w, i) => !english.includes(w) && !(typing && i === words.length - 1 && english.some((e) => e.startsWith(w))))
+  if (unknown) return { ok: false, bad: true, message: `“${unknown}” isn’t a seed phrase word` }
+  if (![12, 15, 18, 21, 24].includes(words.length)) return { ok: false, bad: words.length > 24, message: `${words.length} of 12 or 24 words` }
+  if (!validateMnemonic(words.join(' '), english)) return { ok: false, bad: true, message: 'These words don’t form a seed phrase: check their order and spelling' }
+  return { ok: true, message: `Valid ${words.length}-word seed phrase` }
+}
+
 // Keep legacy strings readable; derived accounts carry their index inside the encrypted vault.
 export type Secret = string | { mnemonic: string; addressIndex: number }
 export const mnemonicOf = (secret: Secret) => typeof secret === 'string' ? (secret.startsWith('0x') ? undefined : secret) : secret.mnemonic
