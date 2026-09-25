@@ -9,7 +9,8 @@
     "dev": "wxt",
     "build": "wxt build",
     "zip": "wxt zip",
-    "test": "node test.js && node test-reset.js"
+    "test": "node test.js && node test-reset.js && node test-android.js",
+    "build:android": "wxt build -b android"
   },
   "dependencies": {
     "@noble/hashes": "1.8.0",

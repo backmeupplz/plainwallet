@@ -1,3 +1,7 @@
 node_modules
 .output
 .wxt
+android/.gradle
+android/app/build
+android/build
+android/local.properties

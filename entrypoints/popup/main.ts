@@ -37,7 +37,7 @@ type Checks = { simulation?: Promise<Simulation>; lookup?: Promise<Lookup> }
 const analyses = new Map<string, Checks & { verdict?: Promise<Verdict> }>() // per approval id: redraws don't ask (and bill) again
 
 // Children are appended as text nodes, so dapp-supplied strings can never become markup.
-function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, unknown> = {}, ...children: (Node | string)[]) {
+export function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, unknown> = {}, ...children: (Node | string)[]) {
   const el = Object.assign(document.createElement(tag), props)
   el.append(...children)
   return el
@@ -56,6 +56,8 @@ const act = (fn: () => unknown) => async () => {
   }
   await render()
 }
+/** Filled in by the Android app (entrypoints/android): its favorite sites above the balances, fingerprint unlock. */
+export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [] }
 const icons = {
   lock: 'M7 11V7a5 5 0 0 1 10 0v4 M5 11h14v10H5Z M12 15v2',
   settings: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z M9 3l-1 3-3 1-2 3 2 2-1 3 2 3 3-1 2 3h3l1-3 3-1 2-3-2-2 1-3-2-3-3 1-2-3Z',
@@ -185,7 +187,7 @@ function unlockScreen(waiting?: Pending) {
     }
   }
   return [header(), ...(waiting ? [h('p', {}, `${waiting.origin} is waiting for your approval. Unlock to review it.`)] : []),
-    pw.el, h('button', { className: 'primary', onclick: go }, 'Unlock'),
+    pw.el, h('button', { className: 'primary', onclick: go }, 'Unlock'), ...extras.unlock(),
     h('button', { className: 'quiet', onclick: resetDialog }, 'Forgot password?')]
 }
 
@@ -669,6 +671,7 @@ async function settingsDialog(s: State) {
           return key ? browser.storage.local.set({ jevKey: key }) : browser.storage.local.remove('jevKey')
         }) }, 'Save API key'))),
     megapotSection(m, run),
+    ...extras.settings(),
     h('p', {}, `Plain Wallet ${browser.runtime.getManifest().version} · `,
       h('a', { href: 'https://github.com/backmeupplz/plainwallet', target: '_blank', rel: 'noreferrer' }, 'Source code on GitHub')))
 }
@@ -740,6 +743,7 @@ function mainScreen(s: State) {
   })
   return [
     header(iconButton('Settings', icons.settings, () => settingsDialog(s)), iconButton('Lock', icons.lock, act(lock))),
+    ...extras.home(),
     h('div', { className: 'selector-field' }, h('label', { htmlFor: 'network' }, 'Network'),
       h('div', { className: 'row' }, networks, iconButton('Manage networks', icons.edit, () => networkDialog(s)))),
     h('div', { className: 'selector-field' }, h('label', { htmlFor: 'account' }, 'Account'),
@@ -759,7 +763,7 @@ const tamperedScreen = () => [
   h('p', {}, 'This restores your accounts from the vault and resets networks, tokens, nicknames and connected sites.'),
 ]
 
-async function render() {
+export async function render() {
   currentWindowId ??= (await browser.windows.getCurrent()).id
   const s = await load().catch((e: Error) => e)
   const pending: Pending[] = await browser.runtime.sendMessage({ type: 'pending' })
