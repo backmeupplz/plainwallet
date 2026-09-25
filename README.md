@@ -67,6 +67,7 @@ Differences from the extension, beyond one tab and no downloads, uploads or link
 - The wallet page is a web page, so the RPC, Blockscout, Sourcify and Jev must allow cross-origin requests (public ones generally do); the extension's host permissions skip that check. Plain-http RPCs don't work.
 - The vault and settings live in the wallet page's `localStorage`, which sites can't reach (another origin); the unlock key only in its memory, so it is locked whenever Android ends the app. Nothing is backed up to the cloud.
 - A request's origin comes from the WebView (`addWebMessageListener`), never from the page, as in the extension.
+- Optional fingerprint unlock (Settings, with your password): Android keeps the vault key encrypted under a Keystore key that needs a strong biometric each time and is invalidated when fingerprints are added or removed. Anyone whose fingerprint is enrolled on the phone can unlock the wallet; export still asks for the password.
 
 ## Develop
 
