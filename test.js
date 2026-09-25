@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { registerHooks } from 'node:module'
 import { describeCall, foreignSignIn, parseAddress, parseAmount, publicRpc, signedView } from './lib/describe.ts'
-import { decryptVault, deriveKey, encryptVault, mac, newMeta, newMnemonic, parseSecret, toAccount } from './lib/wallet.ts'
+import { checkSecret, decryptVault, deriveKey, encryptVault, mac, newMeta, newMnemonic, parseSecret, toAccount } from './lib/wallet.ts'
 import { decodeFunctionData, encodeFunctionData, erc20Abi, hashTypedData, recoverMessageAddress } from 'viem'
 import { approveTickets, buyTicket, megapotAbi, megapotSettings, REFERRER, tick } from './lib/megapot.ts'
 
@@ -16,6 +16,14 @@ assert.equal(toAccount(parseSecret(`0x${KEY}`)).address, ADDRESS)
 assert.throws(() => parseSecret(MNEMONIC.replace('junk', 'test'))) // bad checksum
 assert.throws(() => parseSecret('0x1234'))
 assert.equal(parseSecret(newMnemonic()).split(' ').length, 12)
+// Typing feedback: ok exactly when parseSecret accepts; unfinished input isn't flagged as wrong
+for (const input of [MNEMONIC, MNEMONIC.toUpperCase(), KEY, `0x${KEY}`, `${KEY}0`, MNEMONIC.replace('junk', 'test'), 'test test', 'add', 'decade', '0x12', 'test tes', 'test tes ', 'hello wrld', ''])
+  assert.equal(checkSecret(input).ok, (() => { try { parseSecret(input); return true } catch { return false } })(), input)
+assert.ok(!checkSecret('test tes').bad) // "tes" may become "test"
+assert.ok(checkSecret('test tes ').bad)
+assert.ok(!checkSecret('add').bad && !checkSecret('decade').bad) // hex letters, but could be seed words
+assert.match(checkSecret('0x12').message, /2 of 64/)
+assert.ok(checkSecret(MNEMONIC.replace('junk', 'test')).bad) // bad checksum
 
 const meta = newMeta()
 const key = await deriveKey('hunter2', meta)
