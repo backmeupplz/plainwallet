@@ -184,7 +184,8 @@ const flatten = (value: unknown, path: string): Row[] =>
 const percent = (n: number) => `${Math.round(n * 100)}%`
 // How likely the bad thing is, as the color of its number. Jev puts ordinary requests from sites it doesn't know at
 // 15-30%, so only above that is it worth a second look; red once it's more likely than not.
-const risk = (label: string, p: number) => h('span', { className: p >= 0.5 ? 'bad' : p >= 0.3 ? 'warn' : 'ok' }, `${label} ${percent(p)}`)
+const WARN = 0.3
+const risk = (label: string, p: number) => h('span', { className: p >= 0.5 ? 'bad' : p >= WARN ? 'warn' : 'ok' }, `${label} ${percent(p)}`)
 
 type Fold = { summary: (Node | string)[]; rows: [string, Node | string][]; note?: string }
 /** One line that folds out into rows: filled in when `content` arrives, dropped if there turns out to be nothing to say. */
@@ -218,8 +219,11 @@ function lookupFold({ contract, spender, call }: Lookup): Fold | undefined {
 }
 function jevFold(v: Verdict, site: boolean): Fold {
   const others = v.ranked.slice(1, 4).filter(([, p]) => p >= 0.01).map(([k, p]) => `${k} ${percent(p)}`).join(', ')
+  // The summary names only the risks worth a second look; the green numbers stay in the details.
+  const risks: [string, number][] = [['scam', v.scam], ...(site ? [['fake site', v.lookalike!] as [string, number]] : [])]
+  const flagged = risks.filter(([, p]) => p >= WARN).flatMap(([label, p]) => [' · ', risk(label, p)])
   return {
-    summary: [v.action, ' · ', risk('scam', v.scam), ...(site ? [' · ', risk('fake site', v.lookalike!)] : [])],
+    summary: [v.action, ...(flagged.length ? flagged : [' · ', h('span', { className: 'ok' }, 'probably ok')])],
     rows: [['Action', `${v.action} (${percent(v.ranked[0]?.[1] ?? 0)})`], ...(others ? [['Or maybe', others] as [string, string]] : []),
       ['Scam risk', risk('', v.scam)], ...(site ? [['Fake site', risk('', v.lookalike!)] as [string, Node]] : [])],
     note: 'Jev (typesafe.ai) only sees the simulation, lookups and request details, and a site can word things to sway it.',
