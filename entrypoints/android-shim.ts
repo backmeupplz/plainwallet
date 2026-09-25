@@ -30,6 +30,8 @@ export default defineUnlistedScript({
       const write = async (entries: [string, unknown][]) => {
         const changes = Object.fromEntries(entries.map(([k, v]) => [k, { oldValue: read(k), newValue: clone(v) }]))
         for (const [k, v] of entries) v === undefined ? store.delete(k) : store.set(k, JSON.stringify(v))
+        // The app shows its address bar and browser only once there is a wallet.
+        if (name === 'local' && entries.some(([k]) => k === 'vault')) toNative({ type: 'setup', done: !!read('vault') })
         setTimeout(() => changed.fire(changes, name))
       }
       return {
@@ -133,6 +135,6 @@ export default defineUnlistedScript({
           if (open) { open = false; removed.fire(1) }
       }
     }
-    toNative({ type: 'ready' })
+    toNative({ type: 'ready', setup: !!JSON.parse(localStorage.getItem('vault') ?? '""') })
   },
 })

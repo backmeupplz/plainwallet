@@ -3,12 +3,15 @@ package com.github.backmeupplz.plainwallet;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.pm.ApplicationInfo;
+import android.content.res.ColorStateList;
 import android.graphics.Insets;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.inputmethod.EditorInfo;
@@ -23,6 +26,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.window.OnBackInvokedDispatcher;
 import androidx.webkit.JavaScriptReplyProxy;
@@ -52,8 +56,10 @@ public class MainActivity extends Activity {
     static final String WALLET = "https://" + WALLET_HOST;
 
     WebView wallet, browser;
+    LinearLayout bar; // hidden until there is a wallet
     EditText address;
     TextView star;
+    ProgressBar progress;
     JavaScriptReplyProxy walletPort, pagePort; // pagePort: the page in the browser, once its script said hello
     final List<String> queued = new ArrayList<>(); // for the wallet page until it's ready
     final Map<Integer, JavaScriptReplyProxy> waiting = new HashMap<>(); // request number -> the page that asked
@@ -111,6 +117,12 @@ public class MainActivity extends Activity {
             public void onReceivedTitle(WebView view, String title) {
                 page();
             }
+
+            @Override
+            public void onProgressChanged(WebView view, int percent) {
+                progress.setProgress(percent);
+                progress.setVisibility(percent < 100 ? View.VISIBLE : View.GONE);
+            }
         });
         WebViewCompat.addDocumentStartJavaScript(browser, asset("android-inpage.js"), Set.of("*"));
         // Every frame gets the object; only top-level pages are heard, as in the extension. The origin is the
@@ -130,45 +142,69 @@ public class MainActivity extends Activity {
             toWallet(json("type", "request", "n", requests, "origin", origin.toString(), "title", view.getTitle(), "data", data));
         });
 
+        // A browser's address bar: a rounded field showing the page without https:// (all of it while you edit),
+        // the star inside it; empty on the wallet, which is the new-tab page here.
         address = new EditText(this);
+        address.setBackground(null);
         address.setSingleLine();
-        address.setHint("Search or type a site");
+        address.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        address.setHint("Search or type web address");
         address.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         address.setImeOptions(EditorInfo.IME_ACTION_GO);
-        address.setSelectAllOnFocus(true);
         address.setOnEditorActionListener((v, action, event) -> {
             go(v.getText().toString());
             return true;
         });
+        address.setOnFocusChangeListener((v, focused) -> {
+            showAddress();
+            if (focused) address.selectAll();
+        });
         star = new TextView(this);
-        star.setText("☆");
-        star.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
-        star.setPadding(dp(12), 0, dp(12), 0);
-        star.setGravity(android.view.Gravity.CENTER);
+        star.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+        star.setGravity(Gravity.CENTER);
         star.setContentDescription("Favorite this site");
         star.setOnClickListener(v -> toWallet(json("type", "star")));
+        starred(false);
+        LinearLayout field = new LinearLayout(this);
+        GradientDrawable pill = new GradientDrawable();
+        pill.setColor(getColor(R.color.sheet));
+        pill.setCornerRadius(dp(22));
+        field.setBackground(pill);
+        field.setGravity(Gravity.CENTER_VERTICAL);
+        field.setPadding(dp(16), 0, 0, 0);
+        field.addView(address, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        field.addView(star, new LinearLayout.LayoutParams(dp(44), dp(44)));
         ImageButton home = new ImageButton(this, null, android.R.attr.borderlessButtonStyle);
         home.setImageResource(R.mipmap.icon);
         home.setScaleType(ImageButton.ScaleType.FIT_CENTER);
+        home.setPadding(dp(8), dp(8), dp(8), dp(8));
         home.setContentDescription("Wallet");
         home.setOnClickListener(v -> {
             if (wallet.getVisibility() == View.VISIBLE && browser.getUrl() != null) showWallet(false);
             else openWallet();
         });
+        bar = new LinearLayout(this);
+        bar.setGravity(Gravity.CENTER_VERTICAL);
+        bar.setPadding(dp(12), dp(6), dp(4), dp(6));
+        bar.setVisibility(View.GONE);
+        bar.addView(field, new LinearLayout.LayoutParams(0, dp(44), 1));
+        bar.addView(home, new LinearLayout.LayoutParams(dp(52), dp(52)));
 
-        LinearLayout bar = new LinearLayout(this);
-        bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        bar.setPadding(dp(8), dp(4), dp(4), dp(4));
-        bar.addView(address, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        bar.addView(star, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(48)));
-        bar.addView(home, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progress.setMax(100);
+        progress.setProgressTintList(ColorStateList.valueOf(getColor(R.color.pen)));
+        progress.setVisibility(View.GONE);
         FrameLayout views = new FrameLayout(this);
         views.addView(browser);
         views.addView(wallet);
+        views.addView(progress, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dp(4), Gravity.TOP));
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
+        root.setFocusableInTouchMode(true); // somewhere for focus to go when the address field lets go of it
         root.addView(bar);
         root.addView(views, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+        // Edge to edge on every version (Android 15+ insists anyway): the bars show the wallet's paper color.
+        getWindow().setDecorFitsSystemWindows(false);
         root.setOnApplyWindowInsetsListener((v, insets) -> {
             Insets i = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
             v.setPadding(i.left, i.top, i.right, i.bottom);
@@ -207,6 +243,7 @@ public class MainActivity extends Activity {
             switch (msg.getString("type")) {
                 case "ready":
                     walletPort = reply;
+                    setup(msg.getBoolean("setup"));
                     for (String m : queued) reply.postMessage(m);
                     queued.clear();
                     break;
@@ -233,7 +270,10 @@ public class MainActivity extends Activity {
                     open(msg.getString("url"));
                     break;
                 case "starred":
-                    star.setText(msg.getBoolean("on") ? "★" : "☆");
+                    starred(msg.getBoolean("on"));
+                    break;
+                case "setup":
+                    setup(msg.getBoolean("done"));
                     break;
             }
         } catch (JSONException ignored) {
@@ -249,8 +289,26 @@ public class MainActivity extends Activity {
     void page() {
         String url = browser.getUrl();
         if (url == null) return;
-        if (!address.hasFocus()) address.setText(url);
+        if (!address.hasFocus()) showAddress();
         toWallet(json("type", "page", "url", url, "title", browser.getTitle()));
+    }
+
+    void showAddress() {
+        String url = browser.getUrl();
+        boolean home = wallet.getVisibility() == View.VISIBLE || url == null;
+        address.setText(home ? "" : address.hasFocus() ? url : url.replaceFirst("^https://", "").replaceFirst("/$", ""));
+        star.setVisibility(home ? View.GONE : View.VISIBLE);
+    }
+
+    void starred(boolean on) {
+        star.setText(on ? "★" : "☆");
+        star.setTextColor(getColor(on ? R.color.pen : R.color.muted));
+    }
+
+    /** Before there is a wallet, there's only the wallet page: no address bar, no browser. */
+    void setup(boolean done) {
+        bar.setVisibility(done ? View.VISIBLE : View.GONE);
+        if (!done) showWallet(true);
     }
 
     void go(String text) {
@@ -276,6 +334,9 @@ public class MainActivity extends Activity {
     void showWallet(boolean on) {
         wallet.setVisibility(on ? View.VISIBLE : View.GONE);
         browser.setVisibility(on ? View.GONE : View.VISIBLE);
+        if (on) progress.setVisibility(View.GONE);
+        address.clearFocus();
+        showAddress();
     }
 
     /** Only http(s) sites, never the wallet page's own origin. */

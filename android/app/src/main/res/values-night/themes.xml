@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="paper">#151929</color>
+    <color name="sheet">#232941</color>
+    <color name="muted">#8E97B5</color>
+    <color name="pen">#8FA4FF</color>
     <bool name="light">false</bool>
 </resources>

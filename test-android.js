@@ -28,7 +28,7 @@ registerHooks({
 })
 
 ;(await import('./entrypoints/android-shim.ts')).default.main()
-assert.deepEqual(sent, [{ type: 'ready' }])
+assert.deepEqual(sent, [{ type: 'ready', setup: false }])
 const { addWallet, isUnlocked, load, save } = await import('./lib/store.ts')
 ;(await import('./entrypoints/background.ts')).default()
 const until = async (check) => { for (let i = 0; i < 400 && !(await check()); i++) await new Promise((r) => setTimeout(r, 5)) }
@@ -50,6 +50,7 @@ const approve = async (ok) => {
 
 await addWallet('test test test test test test test test test test test junk', 'android-password-1')
 const [address] = (await load()).addresses
+assert.ok(sent.some((m) => m.type === 'setup' && m.done)) // the app's address bar appears
 assert.deepEqual(await request('https://dapp.test', { id: 7, method: 'eth_chainId' }), { id: 7, result: '0x1' })
 // A page supplies only method and params: it can't pose as the wallet's own page, or pick its origin.
 assert.equal((await request('https://dapp.test', { id: 8, type: 'pending' })).error.code, -32600)
