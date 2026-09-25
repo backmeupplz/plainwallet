@@ -97,3 +97,4 @@ li::marker { color: var(--muted); font-size: 11px; }
 .favorites button > span:first-child { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; color: var(--on-pen); background: var(--pen); font-size: 15px; font-weight: 650; }
 .favorites button > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .favorites p { grid-column: 1 / -1; }
+.favorites img { width: 32px; height: 32px; border-radius: 8px; }

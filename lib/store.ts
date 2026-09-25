@@ -155,6 +155,14 @@ export const unlock = (password: string) =>
     await setKey(key)
   })
 
+/** Android fingerprint unlock: the vault key itself, which Android keeps behind your fingerprint. It has to open the
+ * vault (AES-GCM authenticates), just as a password-derived key does. */
+export const unlockWithKey = (key: string) =>
+  navigator.locks.request('vault', async () => {
+    await decryptVault(key, await storedVault()).catch(() => Promise.reject(new Error('Fingerprint unlock no longer fits this wallet; unlock with your password')))
+    await setKey(key)
+  })
+
 export const secrets = async (): Promise<Secret[]> => decryptVault(await unlockedKey(), await storedVault())
 
 /** The vault account at `index`. `addresses` in storage is plaintext and unauthenticated, the vault is not: make sure they agree. */

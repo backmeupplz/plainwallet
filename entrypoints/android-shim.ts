@@ -70,12 +70,12 @@ export default defineUnlistedScript({
       dispatchEvent(new Event('plainwallet-render'))
       return { id: 1 }
     }
-    // The one tab: whatever the browser shows.
-    let page = { url: '', title: '' }
+    // The one tab: whatever the browser shows. `icon`: its favicon as the app re-encoded it (a PNG data URL).
+    type Page = { url: string; title: string; icon?: string }
+    let page: Page = { url: '', title: '' }
     const origin = (url: string) => (URL.canParse(url) ? new URL(url).origin : 'null')
 
-    type Favorite = { url: string; title: string }
-    const favorites = async (): Promise<Favorite[]> => (await storage.local.get('favorites')).favorites ?? []
+    const favorites = async (): Promise<Page[]> => (await storage.local.get('favorites')).favorites ?? []
     const starred = async () => toNative({ type: 'starred', on: (await favorites()).some((f) => f.url === page.url) })
 
     const api = {
@@ -109,6 +109,10 @@ export default defineUnlistedScript({
     }
     ;(globalThis as any).browser = (globalThis as any).chrome = api
 
+    // For the wallet page's own Android code (entrypoints/android/main.ts): messages to and from the app.
+    const app = event<(msg: any) => void>()
+    ;(globalThis as any).plainwalletApp = { send: toNative, listen: app.addListener }
+
     native.onmessage = async ({ data }: { data: string }) => {
       const msg = JSON.parse(data)
       switch (msg.type) {
@@ -119,9 +123,15 @@ export default defineUnlistedScript({
           const response = await deliver({ method: request?.method, params: request?.params }, { origin: origin(msg.origin), tab: { id: 1, title: msg.title } })
           return toNative({ type: 'reply', n: msg.n, origin: msg.origin, data: JSON.stringify({ id: request?.id, ...response }) })
         }
-        case 'page': // the browser moved on
-          page = { url: msg.url, title: msg.title ?? '' }
+        case 'page': { // the browser moved on, or learned the page's title or icon
+          const icon = /^data:image\/png;base64,[a-z0-9+/=]{1,60000}$/i.test(msg.icon ?? '') ? msg.icon : undefined
+          page = { url: msg.url, title: msg.title ?? '', ...(icon && { icon }) }
+          // A favorite picks up its icon once the page has one.
+          const list = await favorites()
+          if (icon && list.some((f) => f.url === page.url && f.icon !== icon))
+            await storage.local.set({ favorites: list.map((f) => (f.url === page.url ? { ...f, icon } : f)) })
           return starred()
+        }
         case 'star': {
           if (!page.url) return
           const list = await favorites()
@@ -133,6 +143,9 @@ export default defineUnlistedScript({
           return dispatchEvent(new Event('plainwallet-render'))
         case 'back': // you backed out of an approval: like closing its window, which rejects what's waiting
           if (open) { open = false; removed.fire(1) }
+          return
+        default: // for the wallet page's own Android code (fingerprint unlock)
+          app.fire(msg)
       }
     }
     toNative({ type: 'ready', setup: !!JSON.parse(localStorage.getItem('vault') ?? '""') })

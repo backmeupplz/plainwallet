@@ -2,14 +2,23 @@ package com.github.backmeupplz.plainwallet;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
 import android.graphics.Insets;
 import android.graphics.drawable.GradientDrawable;
+import android.hardware.biometrics.BiometricManager;
+import android.hardware.biometrics.BiometricPrompt;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CancellationSignal;
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyPermanentlyInvalidatedException;
+import android.security.keystore.KeyProperties;
 import android.text.InputType;
+import android.util.Base64;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -33,14 +42,22 @@ import androidx.webkit.JavaScriptReplyProxy;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -58,7 +75,8 @@ public class MainActivity extends Activity {
     WebView wallet, browser;
     LinearLayout bar; // hidden until there is a wallet
     EditText address;
-    TextView star;
+    ImageButton star;
+    String icon; // the browser page's favicon, as a PNG data URL
     ProgressBar progress;
     JavaScriptReplyProxy walletPort, pagePort; // pagePort: the page in the browser, once its script said hello
     final List<String> queued = new ArrayList<>(); // for the wallet page until it's ready
@@ -108,6 +126,11 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                icon = null;
+            }
+
+            @Override
             public void doUpdateVisitedHistory(WebView view, String url, boolean reload) {
                 page();
             }
@@ -115,6 +138,15 @@ public class MainActivity extends Activity {
         browser.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onReceivedTitle(WebView view, String title) {
+                page();
+            }
+
+            // For favorites: re-encoded here, so the wallet page only ever gets a small PNG.
+            @Override
+            public void onReceivedIcon(WebView view, Bitmap favicon) {
+                ByteArrayOutputStream png = new ByteArrayOutputStream();
+                Bitmap.createScaledBitmap(favicon, 64, 64, true).compress(Bitmap.CompressFormat.PNG, 100, png);
+                icon = "data:image/png;base64," + Base64.encodeToString(png.toByteArray(), Base64.NO_WRAP);
                 page();
             }
 
@@ -159,9 +191,8 @@ public class MainActivity extends Activity {
             showAddress();
             if (focused) address.selectAll();
         });
-        star = new TextView(this);
-        star.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-        star.setGravity(Gravity.CENTER);
+        star = new ImageButton(this, null, android.R.attr.borderlessButtonStyle);
+        star.setScaleType(ImageButton.ScaleType.CENTER);
         star.setContentDescription("Favorite this site");
         star.setOnClickListener(v -> toWallet(json("type", "star")));
         starred(false);
@@ -219,6 +250,12 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (wallet != null) fingerprint(null); // you may have set up a fingerprint meanwhile
+    }
+
+    @Override
     @SuppressLint("GestureBackNavigation") // Android 11 and 12 only; newer ones use the callback in onCreate
     @SuppressWarnings("deprecation")
     public void onBackPressed() {
@@ -244,6 +281,7 @@ public class MainActivity extends Activity {
                 case "ready":
                     walletPort = reply;
                     setup(msg.getBoolean("setup"));
+                    fingerprint(null);
                     for (String m : queued) reply.postMessage(m);
                     queued.clear();
                     break;
@@ -275,6 +313,16 @@ public class MainActivity extends Activity {
                 case "setup":
                     setup(msg.getBoolean("done"));
                     break;
+                case "fingerprint-enable":
+                    enableFingerprint(msg.getString("key"));
+                    break;
+                case "fingerprint-disable":
+                    forgetFingerprint();
+                    fingerprint(null);
+                    break;
+                case "fingerprint-unlock":
+                    unlockWithFingerprint();
+                    break;
             }
         } catch (JSONException ignored) {
         }
@@ -290,7 +338,7 @@ public class MainActivity extends Activity {
         String url = browser.getUrl();
         if (url == null) return;
         if (!address.hasFocus()) showAddress();
-        toWallet(json("type", "page", "url", url, "title", browser.getTitle()));
+        toWallet(json("type", "page", "url", url, "title", browser.getTitle(), "icon", icon));
     }
 
     void showAddress() {
@@ -301,14 +349,115 @@ public class MainActivity extends Activity {
     }
 
     void starred(boolean on) {
-        star.setText(on ? "★" : "☆");
-        star.setTextColor(getColor(on ? R.color.pen : R.color.muted));
+        star.setImageResource(on ? R.drawable.star : R.drawable.star_border);
+        star.setImageTintList(ColorStateList.valueOf(getColor(on ? R.color.pen : R.color.muted)));
     }
 
     /** Before there is a wallet, there's only the wallet page: no address bar, no browser. */
     void setup(boolean done) {
         bar.setVisibility(done ? View.VISIBLE : View.GONE);
-        if (!done) showWallet(true);
+        if (!done) {
+            forgetFingerprint(); // a reset wallet's key opens nothing
+            showWallet(true);
+        }
+    }
+
+    // Fingerprint unlock: the vault key (what the wallet page keeps in memory while unlocked), encrypted under an
+    // Android Keystore key that needs a strong biometric for every use and dies when fingerprints are added or removed.
+    static final String FINGERPRINT = "fingerprint"; // the Keystore alias and the preferences file holding iv + data
+
+    SharedPreferences stored() {
+        return getSharedPreferences(FINGERPRINT, MODE_PRIVATE);
+    }
+
+    /** Tells the wallet page whether it can offer fingerprint unlock, and why the last attempt failed, if it did. */
+    void fingerprint(String error) {
+        boolean available = getSystemService(BiometricManager.class).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                == BiometricManager.BIOMETRIC_SUCCESS;
+        toWallet(json("type", "fingerprint", "available", available, "enabled", available && stored().contains("data"), "error", error));
+    }
+
+    void enableFingerprint(String key) {
+        try {
+            KeyGenerator generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
+            generator.init(new KeyGenParameterSpec.Builder(FINGERPRINT, KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                    .setUserAuthenticationRequired(true)
+                    .setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG)
+                    .setInvalidatedByBiometricEnrollment(true)
+                    .build());
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.ENCRYPT_MODE, generator.generateKey());
+            prompt("Turn on fingerprint unlock", cipher, done -> {
+                byte[] data = done.doFinal(key.getBytes(StandardCharsets.UTF_8));
+                stored().edit().putString("iv", Base64.encodeToString(done.getIV(), Base64.NO_WRAP))
+                        .putString("data", Base64.encodeToString(data, Base64.NO_WRAP)).apply();
+                fingerprint(null);
+            });
+        } catch (GeneralSecurityException e) {
+            fingerprint(e.getMessage());
+        }
+    }
+
+    void unlockWithFingerprint() {
+        // Only for the wallet you're looking at: never a prompt over a site.
+        if (wallet.getVisibility() != View.VISIBLE || !stored().contains("data")) return;
+        try {
+            KeyStore keys = KeyStore.getInstance("AndroidKeyStore");
+            keys.load(null);
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.DECRYPT_MODE, (SecretKey) keys.getKey(FINGERPRINT, null),
+                    new GCMParameterSpec(128, Base64.decode(stored().getString("iv", ""), Base64.NO_WRAP)));
+            prompt("Unlock Plain Wallet", cipher, done -> toWallet(json("type", "fingerprint-key",
+                    "key", new String(done.doFinal(Base64.decode(stored().getString("data", ""), Base64.NO_WRAP)), StandardCharsets.UTF_8))));
+        } catch (KeyPermanentlyInvalidatedException e) {
+            forgetFingerprint();
+            fingerprint("Fingerprints on this phone changed, so fingerprint unlock is off. Unlock with your password and turn it on again in Settings.");
+        } catch (GeneralSecurityException | IOException e) {
+            fingerprint(e.getMessage());
+        }
+    }
+
+    void forgetFingerprint() {
+        stored().edit().clear().apply();
+        try {
+            KeyStore keys = KeyStore.getInstance("AndroidKeyStore");
+            keys.load(null);
+            keys.deleteEntry(FINGERPRINT);
+        } catch (GeneralSecurityException | IOException ignored) {
+        }
+    }
+
+    interface Unlocked {
+        void run(Cipher cipher) throws GeneralSecurityException;
+    }
+
+    /** The system's fingerprint dialog; the cipher only works once it succeeds. */
+    void prompt(String title, Cipher cipher, Unlocked then) {
+        new BiometricPrompt.Builder(this)
+                .setTitle(title)
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                .setNegativeButton("Use password", getMainExecutor(), (dialog, which) -> {})
+                .build()
+                .authenticate(new BiometricPrompt.CryptoObject(cipher), new CancellationSignal(), getMainExecutor(),
+                        new BiometricPrompt.AuthenticationCallback() {
+                            @Override
+                            public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                                try {
+                                    then.run(result.getCryptoObject().getCipher());
+                                } catch (GeneralSecurityException e) {
+                                    fingerprint(e.getMessage());
+                                }
+                            }
+
+                            @Override
+                            public void onAuthenticationError(int code, CharSequence message) {
+                                boolean dismissed = code == BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED
+                                        || code == BiometricPrompt.BIOMETRIC_ERROR_CANCELED;
+                                if (!dismissed) fingerprint(message.toString());
+                            }
+                        });
     }
 
     void go(String text) {

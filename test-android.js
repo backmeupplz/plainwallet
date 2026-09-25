@@ -84,6 +84,17 @@ assert.deepEqual((await browser.storage.local.get('favorites')).favorites, [{ ur
 assert.deepEqual(sent.at(-1), { type: 'starred', on: true })
 await fromApp({ type: 'star' })
 assert.deepEqual((await browser.storage.local.get('favorites')).favorites, [])
+// Favicons: a favorite takes the page's icon when the app sends one, and only a PNG data URL.
+await fromApp({ type: 'star' })
+await fromApp({ type: 'page', url: 'https://other.test/swap', title: 'Other', icon: 'javascript:alert(1)' })
+assert.equal((await browser.storage.local.get('favorites')).favorites[0].icon, undefined)
+await fromApp({ type: 'page', url: 'https://other.test/swap', title: 'Other', icon: 'data:image/png;base64,iVBORw0KGgo=' })
+assert.equal((await browser.storage.local.get('favorites')).favorites[0].icon, 'data:image/png;base64,iVBORw0KGgo=')
+// Anything else from the app goes to the wallet page's own Android code.
+let heard
+plainwalletApp.listen((msg) => (heard = msg))
+await fromApp({ type: 'fingerprint', available: true, enabled: false })
+assert.deepEqual(heard, { type: 'fingerprint', available: true, enabled: false })
 
 // Auto-lock: an overdue alarm fires before anything reads the session key, even if no timer ran meanwhile.
 assert.ok(await isUnlocked())
