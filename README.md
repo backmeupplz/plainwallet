@@ -1,6 +1,6 @@
 # <img src="assets/icon.svg" width="28" align="top" alt=""> Plain Wallet
 
-A very minimal EVM wallet extension for Chrome and Firefox, and (work in progress) an Android app. ~1900 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
+A very minimal EVM wallet extension for Chrome and Firefox, and an Android app. ~1900 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
 
 > Not audited. Don't keep funds in it that you can't afford to lose.
 
@@ -51,9 +51,11 @@ npx wxt zip -b firefox --mv3   # → .output/plainwallet-<version>-firefox.zip
 
 The build is unsigned, so either load it temporarily from `about:debugging` (removed, with its storage, on restart), or in a browser that allows it (LibreWolf, Firefox Developer Edition/Nightly) set `xpinstall.signatures.required` to `false`, rename the zip to `.xpi` and open it in the browser. That pref turns off signature checks for every extension.
 
-### Android (work in progress, not yet tried on a device)
+### Android
 
-The same wallet as an app: an address bar with a ☆ to favorite the site, over a browser whose pages get Plain Wallet's provider, and the wallet itself (favorites on top of its home screen, then the usual screens and approvals). Needs Android 11+ and a current Android System WebView. With the Android SDK installed (Android Studio, or `ANDROID_HOME` pointing at one):
+The same wallet as an app: an address bar with a ☆ to favorite the site, over a browser whose pages get Plain Wallet's provider, and the wallet itself (favorites on top of its home screen, then the usual screens and approvals), with optional fingerprint unlock. Needs Android 11+ and a current Android System WebView.
+
+Download `plainwallet-<version>-android.apk` from the [latest release](https://github.com/backmeupplz/plainwallet/releases/latest) and open it on the phone (allow installing from your browser or file manager when asked). Releases are signed with the same key, so later ones install over it. Or build it, with the Android SDK installed (Android Studio, or `ANDROID_HOME` pointing at one):
 
 ```sh
 npm ci
