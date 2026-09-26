@@ -109,6 +109,7 @@ public class MainActivity extends Activity {
     boolean approving; // the wallet came up for an approval, not because you opened it
     boolean prompting; // a fingerprint prompt is showing
     long hiddenAt; // SystemClock.elapsedRealtime() when the app left the screen; 0 while it's on it
+    boolean debug; // a debug build, which is open to inspection anyway
 
     @Override
     protected void onCreate(Bundle saved) {
@@ -124,8 +125,9 @@ public class MainActivity extends Activity {
             return;
         }
 
-        // Debug builds only: lets Chrome DevTools (chrome://inspect) attach to both WebViews for testing.
-        WebView.setWebContentsDebuggingEnabled((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0);
+        // Debug builds only: Chrome DevTools (chrome://inspect) can attach to both WebViews, and screenshots are allowed.
+        debug = (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        WebView.setWebContentsDebuggingEnabled(debug);
         WebViewAssetLoader assets = new WebViewAssetLoader.Builder()
                 .addPathHandler("/", new WebViewAssetLoader.AssetsPathHandler(this)).build();
         wallet = new WebView(this) {
@@ -649,7 +651,7 @@ public class MainActivity extends Activity {
         // The wallet's screens (seed phrases, keys, balances) stay out of screenshots, screen recordings and the recents
         // thumbnail, and other apps' overlays are hidden while it shows. The blue band says it is the wallet: a website
         // can draw anything in its own area, but not up there.
-        if (on) getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        if (on && !debug) getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
         if (Build.VERSION.SDK_INT >= 31) getWindow().setHideOverlayWindows(on);
         root.setBackgroundColor(getColor(on ? R.color.wallet : R.color.paper));
