@@ -1,4 +1,4 @@
-package com.github.backmeupplz.plainwallet;
+package com.borodutch.plainwallet;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;

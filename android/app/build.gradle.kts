@@ -10,10 +10,10 @@ val web = tasks.register<Exec>("web") {
 tasks.named("preBuild") { dependsOn(web) }
 
 android {
-    namespace = "com.github.backmeupplz.plainwallet"
+    namespace = "com.borodutch.plainwallet"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.github.backmeupplz.plainwallet"
+        applicationId = "com.borodutch.plainwallet"
         minSdk = 30
         targetSdk = 36
         versionCode = version.split(".").map(String::toInt).let { (major, minor, patch) -> major * 10000 + minor * 100 + patch }
