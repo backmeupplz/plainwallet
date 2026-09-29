@@ -107,6 +107,8 @@
       .install .wide { grid-column: 1 / -1; }
       .slip .actions { margin-bottom: 20px; }
       .fingerprint { margin: 16px 0 0; font-size: 13px; color: var(--muted); }
+      .phones { display: grid; grid-template-columns: repeat(3, minmax(0, 220px)); gap: 20px; margin: 0; padding: 0; list-style: none; }
+      .phones img { display: block; width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 16px; box-shadow: 0 1px 2px #1b234012, 0 16px 32px -16px #1b234033; }
       .fingerprint code { display: block; overflow-wrap: anywhere; color: var(--ink); }
       .warn { margin-top: 32px; padding-left: 12px; border-left: 3px solid var(--stamp); color: var(--ink); font-size: 15px; }
 
@@ -190,14 +192,16 @@
             <h3>For Android <span class="mono">Android 11+</span></h3>
             <p>A browser with the wallet built in. Type a site and it gets Plain Wallet, with the same approvals as the extension. Star the sites you use to keep them on top of the wallet, and unlock with your fingerprint if you like.</p>
             <div class="actions">
-              <a class="button primary" href="https://github.com/backmeupplz/plainwallet/releases/latest">Download the APK</a>
+              <a class="button primary" href="https://play.google.com/store/apps/details?id=com.borodutch.plainwallet">Get it on Google Play</a>
+              <a class="button" href="https://github.com/backmeupplz/plainwallet/releases/latest">Or download the APK</a>
               <a class="button" href="https://github.com/backmeupplz/plainwallet#android">How it differs from the extension</a>
             </div>
-            <ol>
-              <li>On your phone, open the latest release and download <code>plainwallet-…-android.apk</code>.</li>
-              <li>Open it and allow installing from your browser when asked. Later releases install over it, keeping your wallet.</li>
-            </ol>
-            <p class="fingerprint">Releases are signed with this certificate (SHA-256):<code>1F:EC:2B:63:39:34:74:21:B0:C5:64:AB:19:EE:66:34:39:16:F7:FE:B0:81:62:C3:5F:C3:5C:9F:B5:9F:CB:83</code></p>
+            <ul class="phones">
+              <li><img src="android-home.png" width="540" height="1080" loading="lazy" alt="Plain Wallet on Android: the blue wallet band over the home screen, favorite dapps on top, then network, account and token balances." /></li>
+              <li><img src="android-send.png" width="540" height="1080" loading="lazy" alt="The Send form on Base: asset, recipient address and amount, then Review." /></li>
+              <li><img src="android-settings.png" width="540" height="1080" loading="lazy" alt="Settings: export and remove accounts, connected sites with Disconnect, and fingerprint unlock turned on." /></li>
+            </ul>
+            <p class="fingerprint">APKs from GitHub releases are signed with this certificate (SHA-256):<code>1F:EC:2B:63:39:34:74:21:B0:C5:64:AB:19:EE:66:34:39:16:F7:FE:B0:81:62:C3:5F:C3:5C:9F:B5:9F:CB:83</code></p>
           </div>
 
           <div class="slip">

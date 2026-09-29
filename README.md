@@ -55,7 +55,7 @@ The build is unsigned, so either load it temporarily from `about:debugging` (rem
 
 The same wallet as an app: an address bar with a ☆ to favorite the site, over a browser whose pages get Plain Wallet's provider, and the wallet itself (favorites on top of its home screen, then the usual screens and approvals), with optional fingerprint unlock. Needs Android 11+ and Android System WebView 140 or newer.
 
-Download `plainwallet-<version>-android.apk` from the [latest release](https://github.com/backmeupplz/plainwallet/releases/latest) and open it on the phone (allow installing from your browser or file manager when asked). Releases are signed with the same key, so later ones install over it. Or build it, with the Android SDK installed (Android Studio, or `ANDROID_HOME` pointing at one):
+Get it on [Google Play](https://play.google.com/store/apps/details?id=com.borodutch.plainwallet), or download `plainwallet-<version>-android.apk` from the [latest release](https://github.com/backmeupplz/plainwallet/releases/latest) and open it on the phone (allow installing from your browser or file manager when asked). Releases are signed with the same key, so later ones install over it. Or build it, with the Android SDK installed (Android Studio, or `ANDROID_HOME` pointing at one):
 
 ```sh
 npm ci
