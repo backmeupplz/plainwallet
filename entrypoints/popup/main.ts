@@ -56,8 +56,9 @@ const act = (fn: () => unknown) => async () => {
   }
   await render()
 }
-/** Filled in by the Android app (entrypoints/android): its favorite sites above the balances, fingerprint unlock. */
-export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [] }
+/** Filled in by the mobile apps (entrypoints/android): their favorite sites above the balances, fingerprint unlock;
+ * no Megapot on iOS, where the App Store doesn't allow lotteries. */
+export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [], megapot: true }
 const icons = {
   lock: 'M7 11V7a5 5 0 0 1 10 0v4 M5 11h14v10H5Z M12 15v2',
   settings: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z M9 3l-1 3-3 1-2 3 2 2-1 3 2 3 3-1 2 3h3l1-3 3-1 2-3-2-2 1-3-2-3-3 1-2-3Z',
@@ -684,7 +685,7 @@ async function settingsDialog(s: State) {
           const key = jev.input.value.trim()
           return key ? browser.storage.local.set({ jevKey: key }) : browser.storage.local.remove('jevKey')
         }) }, 'Save API key'))),
-    megapotSection(m, run),
+    ...(extras.megapot ? [megapotSection(m, run)] : []),
     ...extras.settings(),
     h('p', {}, `Plain Wallet ${browser.runtime.getManifest().version} · `,
       h('a', { href: 'https://github.com/backmeupplz/plainwallet', target: '_blank', rel: 'noreferrer' }, 'Source code on GitHub')))
