@@ -191,6 +191,8 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
         let view = WKWebView(frame: .zero, configuration: config)
         setUp(view)
         view.allowsLinkPreview = false
+        // Down to the screen's edge, dialogs' backdrops too; the page keeps clear of the home indicator (style.css).
+        view.scrollView.contentInsetAdjustmentBehavior = .never
         view.load(URLRequest(url: Self.walletPage))
         return view
     }
