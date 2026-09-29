@@ -6,3 +6,7 @@ android/app/build
 android/build
 android/local.properties
 *.hprof
+ios/web
+ios/build
+xcuserdata/
+ios/PlainWallet/Debug.swift
