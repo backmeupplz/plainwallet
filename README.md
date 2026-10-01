@@ -34,7 +34,9 @@ Prices, NFTs, built-in history, swaps, hardware wallets, ENS, gas editing (nonce
 
 ### Chrome (and Brave, Edge, other Chromium browsers)
 
-Build it from source:
+Install [Plain Wallet from the Chrome Web Store](https://chromewebstore.google.com/detail/plain-wallet/pmnbalegifiefmohkolfpclnmkooifcp), then pin it from the puzzle-piece menu so it stays in the toolbar. It updates automatically.
+
+Or build it from source:
 
 ```sh
 npm install
