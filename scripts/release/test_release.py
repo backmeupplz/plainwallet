@@ -13,6 +13,7 @@ import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
 import zipfile
+import xml.etree.ElementTree as ET
 
 import submit
 
@@ -72,6 +73,32 @@ class ReleaseTests(unittest.TestCase):
         manifest["browser_specific_settings"]["gecko"]["id"] = "different"
         with self.assertRaises(ValueError):
             validate_manifest(manifest, "0.2.3", "firefox")
+
+    def test_android_metadata_checksums_and_strict_verification(self):
+        # Maven Central provenance and published sidecars: docs/STORE_RELEASE.md.
+        metadata = ET.parse(ROOT / "android/gradle/verification-metadata.xml")
+        ns = {"v": "https://schema.gradle.org/dependency-verification"}
+        self.assertEqual(metadata.findtext("v:configuration/v:verify-metadata", namespaces=ns), "true")
+        self.assertIsNone(metadata.find("v:configuration/v:trusted-artifacts", ns))
+        expected = [
+            ("com.google.guava", "guava-parent", "33.4.0-jre", "pom", "3a499ed34a0d9ee0f1bcc39230021a1cd4e2f7dd0426ab6844f585465d41dcd7"),
+            ("org.junit", "junit-bom", "5.10.2", "module", "de23b114b3e4119a8fe6eb17bed5a3852816698bace67071579d6d927ebb080a"),
+            ("org.junit", "junit-bom", "5.11.0-M2", "module", "86477abcf490d6ca059aa9973cb108d22a506f49d1a5569bb32cc6cbf43c2cce"),
+        ]
+        for group, name, version, extension, digest in expected:
+            with self.subTest(group=group, name=name, version=version):
+                path = f"v:components/v:component[@group='{group}'][@name='{name}'][@version='{version}']/v:artifact[@name='{name}-{version}.{extension}']"
+                artifacts = metadata.findall(path, ns)
+                self.assertEqual(len(artifacts), 1)
+                checksums = list(artifacts[0])
+                self.assertEqual(len(checksums), 1)
+                self.assertEqual(checksums[0].tag, "{" + ns["v"] + "}sha256")
+                self.assertEqual(checksums[0].get("value"), digest)
+                self.assertEqual(list(checksums[0]), [])  # No alternate accepted hashes.
+        workflow = (ROOT / ".github/workflows/store-release.yml").read_text()
+        self.assertIn("./gradlew --no-daemon --dependency-verification strict bundleRelease", workflow)
+        self.assertNotRegex(workflow, r"--dependency-verification[ =]+(?:off|lenient)\b")
+        self.assertNotIn("--write-verification-metadata", workflow)
 
     def test_android_binary_manifest(self):
         def varint(n):

@@ -81,6 +81,20 @@ GITHUB_EVENT_NAME=push python3 scripts/release/build.py ci
 
 AMO reviewers: unpack `firefox-source.zip`; use the pinned Node version, `npm ci` then `npm exec -- wxt build -b firefox --mv3`. Compare the resulting `.output/firefox-mv3/` files to the submitted zip (manifest at zip root). No Android SDK is needed for Firefox. The source zip is `git archive` of the exact commit: includes lockfile, .npmrc, sources and these instructions; excludes node_modules, caches, build output and untracked secrets. Extension zip entries have fixed timestamps and ordering. CI builds/tests both extensions and the unsigned AAB, packages them, and verifies their versions/identity. It does not emulate an authenticated store or prove store acceptance.
 
+### Android metadata checksum provenance (2026-10-03)
+
+CI run `37156582089` exposed three missing metadata artifacts, not changed dependency versions. Only their exact SHA-256 entries were added to `android/gradle/verification-metadata.xml`; existing checksums, metadata verification and the workflow’s strict mode are unchanged.
+
+Each artifact was downloaded independently from both `https://repo.maven.apache.org/maven2/` and `https://repo1.maven.org/maven2/` using system curl with its normal TLS certificate/hostname verification and curlrc disabled (no insecure flags). The two responses were byte-for-byte identical. SHA-256 was calculated locally; published checksum sidecars from **both** endpoints also matched. These are two canonical endpoints of the same repository, not independent publisher attestations.
+
+| Artifact path relative to either endpoint | Bytes | Verified SHA-256 | Published sidecar |
+| --- | ---: | --- | --- |
+| `com/google/guava/guava-parent/33.4.0-jre/guava-parent-33.4.0-jre.pom` | 21100 | `3a499ed34a0d9ee0f1bcc39230021a1cd4e2f7dd0426ab6844f585465d41dcd7` | `.sha1`: `ee79b87abc4ef9b3591db13c59de368c7b03dc79` |
+| `org/junit/junit-bom/5.10.2/junit-bom-5.10.2.module` | 6995 | `de23b114b3e4119a8fe6eb17bed5a3852816698bace67071579d6d927ebb080a` | `.sha256`: same SHA-256 |
+| `org/junit/junit-bom/5.11.0-M2/junit-bom-5.11.0-M2.module` | 7104 | `86477abcf490d6ca059aa9973cb108d22a506f49d1a5569bb32cc6cbf43c2cce` | `.sha256`: same SHA-256 |
+
+Append the sidecar suffix to the artifact URL. Guava’s `.sha256` sidecar returned 404; its published SHA-1 was supplemental evidence only, and the Gradle allowlist still uses the locally calculated SHA-256 cross-checked against both downloads. The offline release regression test pins all three exact entries, rejects alternate hashes for them and checks strict workflow verification. Full dependency resolution remains a CI gate.
+
 ## Reruns, partial failures and recovery
 
 - Matrix fail-fast is off. Each store has an isolated environment, timeout and outcome. The report preserves successful stores if another fails; GitHub's run still fails for failed stores. Prefer **Re-run failed jobs**, retaining the original unsigned artifact. Rebuilding may produce a different Android binary hash; the journal rejects different bytes for the same release rather than uploading them under the old version.
