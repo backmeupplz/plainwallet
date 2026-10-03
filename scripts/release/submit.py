@@ -44,6 +44,7 @@ def request(url, token, method="GET", body=None, content_type="application/json"
                 data = r.read()
                 return json.loads(data) if data else {}
         except HTTPError as e:
+            e.close()  # Do not leave an error body/response for GC warnings or logging.
             if missing and e.code == 404:
                 return None
             if method == "GET" and e.code in (429, 500, 502, 503, 504) and attempt < 2:

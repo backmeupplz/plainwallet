@@ -66,13 +66,14 @@ The workflow uploads to listed, waits for processed+valid, verifies version/chan
 
 ## Reproduce and verify without credentials
 
-Linux Ubuntu 24.04, Node **22.16.0**, npm supplied with that Node release, Python 3, JDK 21 and Android SDK with API 36. The Gradle wrapper, distribution hash and dependency verification metadata are checked in. Never weaken dependency verification to make CI pass.
+Linux Ubuntu 24.04, Node **26.8.2**, npm supplied with that Node release, Python 3, JDK 21 and Android SDK with API 36. The Gradle wrapper, distribution hash and dependency verification metadata are checked in. Never weaken dependency verification to make CI pass.
 
 ```sh
 npm ci
 npm test
 python3 -m unittest discover -s scripts/release -p 'test_*.py'
 npm run build
+npm exec -- tsc --noEmit
 npm exec -- wxt build -b firefox --mv3
 (cd android && ./gradlew --no-daemon --dependency-verification strict bundleRelease)
 GITHUB_EVENT_NAME=push python3 scripts/release/build.py ci

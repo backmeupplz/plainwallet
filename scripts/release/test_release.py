@@ -1,6 +1,8 @@
 import base64
 import hashlib
 import subprocess
+from contextlib import redirect_stdout
+from urllib.parse import parse_qs, urlparse
 import copy
 import io
 import json
@@ -11,6 +13,10 @@ import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
 import zipfile
+
+import submit
+
+ROOT = Path(__file__).resolve().parents[2]
 
 from build import release_version, validate_manifest, validate_android, archive
 from submit import Journal, preflight, chrome, firefox, play, request, APIError, signed_bundle
@@ -235,6 +241,109 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(result["chrome"], "STAGED")
         self.assertEqual(result["play"], "committed-for-review")
         self.assertIn("not submitted", result["firefox"])
+
+    def test_workflow_uses_verified_node_and_typechecks_generated_wxt_types(self):
+        workflow = (ROOT / ".github/workflows/store-release.yml").read_text()
+        self.assertIn("node-version: '26.8.2'", workflow)
+        self.assertIn("Node **26.8.2**", (ROOT / "docs/STORE_RELEASE.md").read_text())
+        self.assertLess(workflow.index("npm run build"), workflow.index("npm exec -- tsc --noEmit"))
+        self.assertNotIn("22.16.0", workflow)
+
+    def test_chrome_async_upload_polls_before_single_submission(self):
+        reads = iter([{}, {"lastAsyncUploadState": "IN_PROGRESS"}, {"lastAsyncUploadState": "SUCCEEDED"}])
+        writes, sleeps = [], []
+        def api(url, token, **kw):
+            if url.endswith(":fetchStatus"):
+                return next(reads)
+            writes.append(url)
+            if url.endswith(":upload"):
+                return {"uploadState": "IN_PROGRESS"}
+            self.assertEqual(kw["body"]["publishType"], "STAGED_PUBLISH")
+            return {"state": "PENDING_REVIEW"}
+        self.assertEqual(chrome(META, ENV, MemoryJournal(), api, pause=sleeps.append)["state"], "PENDING_REVIEW")
+        self.assertEqual(sleeps, [10, 10])
+        self.assertEqual(len(writes), 2)
+
+    def test_chrome_async_upload_timeout_does_not_submit(self):
+        reads, writes, sleeps = [], [], []
+        def api(url, token, **kw):
+            if url.endswith(":fetchStatus"):
+                reads.append(url)
+                return {"lastAsyncUploadState": "IN_PROGRESS"}
+            writes.append(url)
+            self.assertTrue(url.endswith(":upload"))
+            return {"uploadState": "IN_PROGRESS"}
+        with self.assertRaisesRegex(ValueError, "upload not successful"):
+            chrome(META, ENV, MemoryJournal(), api, pause=sleeps.append)
+        self.assertEqual(len(reads), 31)  # initial status plus 30 bounded polls
+        self.assertEqual(len(writes), 1)
+        self.assertEqual(sleeps, [10] * 30)
+
+    def test_submit_entrypoint_rejects_event_and_artifact_mismatch_before_network(self):
+        env = {**ENV, "GH_TOKEN": "fake", "GITHUB_REPOSITORY": "backmeupplz/plainwallet", "STORE_SETUP_CONFIRMED": "true", "GITHUB_EVENT_NAME": "release", "GITHUB_EVENT_PATH": "event.json", "GITHUB_SHA": META["sha"]}
+        meta = {**META, "sha256": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in Path("release-out").iterdir()}}
+        cases = [("sha", "b" * 40, "immutable release"), ("releaseId", 2, "immutable release"), ("version", "0.2.4", "tag/package version mismatch"), ("hash", "0" * 64, "Artifact hash mismatch"), ("event", "push", "only be used on release events")]
+        for field, value, expected_error in cases:
+            with self.subTest(field=field):
+                test_meta, test_env = copy.deepcopy(meta), dict(env)
+                if field == "hash":
+                    test_meta["sha256"]["chrome.zip"] = value
+                elif field == "event":
+                    test_env["GITHUB_EVENT_NAME"] = value
+                else:
+                    test_meta[field] = value
+                Path("release-out/release.json").write_text(json.dumps(test_meta))
+                Path("event.json").write_text(json.dumps(EVENT))
+                with patch.dict(os.environ, test_env, clear=True), patch("sys.argv", ["submit.py", "chrome"]), patch("submit.Journal") as network, redirect_stdout(io.StringIO()):
+                    with self.assertRaises(SystemExit) as failed:
+                        submit.main()
+                    self.assertEqual(failed.exception.code, 1)
+                    network.assert_not_called()
+                outcome = json.loads(Path("outcome.json").read_text())
+                self.assertEqual(outcome["state"], "failed")
+                self.assertIn(expected_error, outcome["error"])
+
+    def test_real_journal_http_roundtrip_replay_and_metadata_binding(self):
+        assets, records, writes, calls = {}, {}, [], []
+        def transport(req, **kw):
+            self.assertEqual(req.get_header("Authorization"), "Bearer fixture-token")
+            if req.get_method() == "GET":
+                self.assertIn("/releases/1/assets?", req.full_url)
+                return io.BytesIO(json.dumps(list(assets.values())).encode())
+            self.assertEqual(req.get_method(), "POST")
+            self.assertTrue(req.full_url.startswith("https://uploads.github.com/"))
+            name = parse_qs(urlparse(req.full_url).query)["name"][0]
+            self.assertNotIn(name, assets)
+            writes.append(name)
+            records[name] = json.loads(req.data)
+            asset = {"name": name, "browser_download_url": "https://github.com/fixture/" + name}
+            assets[name] = asset
+            return io.BytesIO(json.dumps(asset).encode())
+        def download(url, **kw):
+            self.assertIsInstance(url, str)  # token-free public asset request
+            return io.BytesIO(json.dumps(records[url.rsplit("/", 1)[1]]).encode())
+        env = {"GH_TOKEN": "fixture-token", "GITHUB_REPOSITORY": "backmeupplz/plainwallet"}
+        with patch("urllib.request.OpenerDirector.open", side_effect=transport), patch("submit.urlopen", side_effect=download):
+            first = Journal("chrome", META, env)
+            first.once("upload", lambda: calls.append(1) or {"id": "upload-id"}, lambda r: r)
+            resumed = Journal("chrome", META, env)
+            self.assertEqual(resumed.once("upload", lambda: self.fail("duplicate store upload"), lambda r: r), {"id": "upload-id"})
+            self.assertEqual(calls, [1])
+            self.assertEqual(writes, ["submission-chrome-upload-started.json", "submission-chrome-upload-receipt.json"])
+            wrong = Journal("chrome", {**META, "sha": "b" * 40}, env)
+            with self.assertRaisesRegex(ValueError, "Journal artifact/commit mismatch"):
+                wrong.read(wrong.name("upload", "receipt"))
+
+    def test_real_journal_failed_marker_prevents_store_mutation(self):
+        error = HTTPError("https://uploads.github.com", 403, "denied", {}, io.BytesIO(b"private error"))
+        def transport(req, **kw):
+            if req.get_method() == "GET":
+                return io.BytesIO(b"[]")
+            raise error
+        with patch("urllib.request.OpenerDirector.open", side_effect=transport):
+            journal = Journal("chrome", META, {"GH_TOKEN": "fixture-token", "GITHUB_REPOSITORY": "backmeupplz/plainwallet"})
+            with self.assertRaises(APIError):
+                journal.once("upload", lambda: self.fail("store write without durable marker"), lambda r: r)
 
     @unittest.skipUnless(os.environ.get("JAVA_HOME"), "JDK unavailable locally; exercised in CI")
     def test_real_isolated_signer_and_wrong_certificate(self):
