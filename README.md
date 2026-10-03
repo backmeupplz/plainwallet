@@ -76,6 +76,10 @@ The wallet always sits under a blue band across the top of the screen; a website
 - A request's origin comes from the WebView (`addWebMessageListener`), never from the page, as in the extension.
 - Optional fingerprint unlock (Settings, with your password): Android keeps the vault key encrypted under a Keystore key that needs a strong biometric each time and is invalidated when fingerprints are added or removed. Anyone whose fingerprint is enrolled on the phone can unlock the wallet; export still asks for the password.
 
+## Store releases
+
+Published stable GitHub releases can submit updates to Play, Chrome Web Store and AMO after owner setup. See [store release setup, publication choices and recovery](docs/STORE_RELEASE.md). Credentials and store approval are not included; review submission is not public rollout.
+
 ## Develop
 
 Contributing? Read [CONTRIBUTING.md](CONTRIBUTING.md); AI coding agents should also read [AGENTS.md](AGENTS.md).

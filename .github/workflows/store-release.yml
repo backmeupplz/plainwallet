@@ -1,0 +1,162 @@
+name: Store release
+on:
+  release:
+    types: [published]
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+# One release at a time, across tags: stores have one editable submission slot.
+concurrency:
+  group: store-release-${{ github.event_name == 'release' && 'production' || github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.event_name != 'release' || (!github.event.release.prerelease && !github.event.release.draft)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '26.8.2'
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Credential-free tests and builds
+        run: |
+          python3 -m unittest discover -s scripts/release -p 'test_*.py'
+          npm ci
+          npm test
+          npm run build
+          npm exec -- tsc --noEmit
+          npm exec -- wxt build -b firefox --mv3
+          cd android
+          ./gradlew --no-daemon --dependency-verification strict bundleRelease
+      - name: Bind package, manifests and AAB to immutable release
+        run: python3 scripts/release/build.py ci
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: unsigned-release
+          path: release-out/
+          if-no-files-found: error
+          retention-days: 30
+  submit:
+    if: github.repository == 'backmeupplz/plainwallet' && github.event_name == 'release' && !github.event.release.prerelease && !github.event.release.draft
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        store: [chrome, firefox, play]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: store-${{ matrix.store }}
+    permissions:
+      contents: write # append-only release submission journal, not source/tag edits
+      id-token: write # short-lived Google credentials, environment-constrained trust
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/release
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: unsigned-release
+          path: release-out
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        if: matrix.store == 'play'
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Verify setup gates before authentication
+        env:
+          CONFIRMED: ${{ vars.STORE_SETUP_CONFIRMED }}
+          AUTO_PUBLISH_APPROVED: ${{ vars.STORE_AUTO_PUBLISH_APPROVED }}
+          PLAY_TRACK: ${{ vars.PLAY_TRACK }}
+          PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED: ${{ vars.PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED }}
+          PLAY_MANAGED_PUBLISHING_CONFIRMED: ${{ vars.PLAY_MANAGED_PUBLISHING_CONFIRMED }}
+          AMO_AUTO_PUBLISH_APPROVED: ${{ vars.AMO_AUTO_PUBLISH_APPROVED }}
+          WIF_PROVIDER: ${{ vars.GOOGLE_WIF_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ vars.GOOGLE_SERVICE_ACCOUNT }}
+          STORE: ${{ matrix.store }}
+        run: |
+          test "$CONFIRMED" = true || { echo 'Configure protected store environment; see docs/STORE_RELEASE.md'; exit 1; }
+          test "$AUTO_PUBLISH_APPROVED" = true || { echo 'Owner must confirm automatic public publication after approval'; exit 1; }
+          if [ "$STORE" = play ]; then
+            test "$PLAY_TRACK" = production && test "$PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED" = true && test "$PLAY_MANAGED_PUBLISHING_CONFIRMED" != true || { echo 'Play requires production and managed publishing disabled; remove obsolete enabled confirmation'; exit 1; }
+          elif [ "$STORE" = firefox ]; then
+            test "$AMO_AUTO_PUBLISH_APPROVED" = true || { echo 'Owner must approve AMO listed automatic publication'; exit 1; }
+          fi
+          if [ "$STORE" != firefox ]; then
+            test -n "$WIF_PROVIDER" && test -n "$SERVICE_ACCOUNT"
+          fi
+      - id: google
+        if: matrix.store != 'firefox'
+        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        with:
+          workload_identity_provider: ${{ vars.GOOGLE_WIF_PROVIDER }}
+          service_account: ${{ vars.GOOGLE_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: ${{ matrix.store == 'play' && 'https://www.googleapis.com/auth/androidpublisher' || 'https://www.googleapis.com/auth/chromewebstore' }}
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Sign only with JDK, request review and automatic publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GOOGLE_ACCESS_TOKEN: ${{ steps.google.outputs.access_token }}
+          STORE_SETUP_CONFIRMED: ${{ vars.STORE_SETUP_CONFIRMED }}
+          STORE_AUTO_PUBLISH_APPROVED: ${{ vars.STORE_AUTO_PUBLISH_APPROVED }}
+          PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED: ${{ vars.PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED }}
+          CHROME_PUBLISHER_ID: ${{ vars.CHROME_PUBLISHER_ID }}
+          CHROME_ITEM_ID: ${{ vars.CHROME_ITEM_ID }}
+          PLAY_TRACK: ${{ vars.PLAY_TRACK }}
+          PLAY_MANAGED_PUBLISHING_CONFIRMED: ${{ vars.PLAY_MANAGED_PUBLISHING_CONFIRMED }}
+          PLAY_APP_SIGNING_CONFIRMED: ${{ vars.PLAY_APP_SIGNING_CONFIRMED }}
+          ANDROID_UPLOAD_CERT_SHA256: ${{ vars.ANDROID_UPLOAD_CERT_SHA256 }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          AMO_ADDON_ID: ${{ vars.AMO_ADDON_ID }}
+          AMO_AUTO_PUBLISH_APPROVED: ${{ vars.AMO_AUTO_PUBLISH_APPROVED }}
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+          STORE: ${{ matrix.store }}
+        run: python3 scripts/release/submit.py "$STORE"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: outcome-${{ matrix.store }}-${{ github.run_attempt }}
+          path: outcome.json
+          if-no-files-found: warn
+          retention-days: 90
+  report:
+    if: always() && github.repository == 'backmeupplz/plainwallet' && github.event_name == 'release' && !github.event.release.prerelease && !github.event.release.draft
+    needs: [build, submit]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/release
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: outcome-*
+          path: outcomes
+      - name: Notify repository owner with independent per-store outcomes
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/release/report.py
