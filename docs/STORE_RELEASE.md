@@ -11,7 +11,7 @@ The workflow is **not proof that any store is configured, submitted, approved or
 
 ## GitHub protection, permissions and trigger
 
-Create environments **store-chrome**, **store-play**, **store-firefox** in Settings → Environments *before* releasing. Require owner review, prevent self-review/bypass where available, restrict deployments to protected `v*` tags, and protect those tags against deletion/updates and unreviewed creation. Require reviewed PRs and green build CI before tagging. An environment name alone is **not** protection: GitHub otherwise auto-creates it without rules. The approver must check the released SHA/workflow/scripts, artifacts and store gates on every approval.
+Owner decision (2026-10-03): **publishing the GitHub release is the only human approval**. Create environments **store-chrome** and **store-play** in Settings → Environments before releasing; create **store-firefox** only when the owner explicitly re-enables it. Do not add required-reviewer or wait-timer gates. Keep administrator bypass disabled and restrict deployments to `v*` tags; protect those tags against deletion/updates and unreviewed creation. Require reviewed PRs and green build CI before tagging. An environment name alone is not protection: GitHub otherwise auto-creates it without rules. The release publisher must check the released SHA/workflow/scripts, artifacts and store gates before publishing.
 
 All environments: set variables `STORE_SETUP_CONFIRMED=true` and `STORE_AUTO_PUBLISH_APPROVED=true` only after these checks and the automatic-publication decision above. Missing credentials/gates still fail closed; merging this change does not configure or activate any store. The common gate and store-specific publication gates are checked before Google authentication and again in Python preflight. Store secrets must exist only in that store's environment (not repository/org-wide secrets exposed to other jobs). The build job has read-only contents permission, no environment and no OIDC. Submission runs on fresh runners without npm/Gradle/dependency execution; only Python stdlib and JDK signing tools. No build cache is restored in privileged jobs. Actions are pinned to full commits; review pin updates.
 
@@ -40,7 +40,7 @@ Variables:
 | Name | Required value |
 |---|---|
 | `PLAY_TRACK` | Exactly `production`; internal, alpha, beta and custom tracks are refused |
-| `PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED` | `true` only after Publishing overview shows managed publishing **disabled**; recheck each approval |
+| `PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED` | `true` only after Publishing overview shows managed publishing **disabled**; recheck before publishing each release |
 | `PLAY_APP_SIGNING_CONFIRMED` | `true` after verifying enrollment/upgrade identity |
 | `ANDROID_UPLOAD_CERT_SHA256` | Current approved upload certificate fingerprint, 64 hexadecimal characters, no colons |
 
@@ -61,6 +61,10 @@ Upload uses v2 media.upload; only SUCCEEDED proceeds. Publish uses `DEFAULT_PUBL
 Reruns only accept an exact-version PENDING_REVIEW as automatic when its receipt proves `DEFAULT_PUBLISH` at 100%; fetchStatus itself does not expose publish type. **Legacy/uncertain pending reviews and every STAGED version fail closed for explicit owner reconciliation**, with no upload, repeated review or second publish. The API documents that publishing a previously staged version can release it without review, but this workflow deliberately does not auto-transition older held submissions. Inspect its exact version, release journal and Console with the owner; explicitly reconcile/publicly release the held version and record evidence (or wait for an already automatic pending review). Never fabricate a DEFAULT_PUBLISH receipt for a historical staged request. Once the exact version is PUBLISHED, a read-only rerun reports that state without another submission. Other pending versions, rejected/cancelled versions and policy warnings require manual reconciliation.
 
 ### AMO: store-firefox
+
+**Paused by owner (2026-10-03)** while the existing version awaits review. No AMO credentials, environment, OIDC token or API calls are acquired for a paused store. Do not cancel/replace the existing review or automatically resume when it finishes. The Firefox build and submission implementation remain available.
+
+Repository-level variable `STORE_FIREFOX_PAUSED` defaults to `true` (also when empty); only an explicit `false` enables Firefox selection. Set it to `false` only after an explicit owner re-enable request and completion of the environment setup below. Equivalent `STORE_CHROME_PAUSED` and `STORE_PLAY_PAUSED` controls default to `false`. These must be repository variables, not environment variables: the credential-free selection job runs before environment acquisition. Values other than lowercase `true`/`false` fail closed. Paused stores are omitted from the submission matrix and reported as `state: paused`, `submission: skipped`, not failures or successful submissions. Enabled stores retain every existing setup/publication/credential gate. If every store is paused, submission is skipped and the report still records each pause. A pause applies only to a new selection attempt; it cannot cancel an already running submission.
 
 Use an AMO account listed as an author of the existing GUID, preferably a dedicated release account with no unrelated add-ons. Generate API credentials in the AMO developer hub. Secrets: `AMO_JWT_ISSUER` and `AMO_JWT_SECRET`. Variables: `AMO_ADDON_ID=plainwallet@backmeupplz`; `AMO_AUTO_PUBLISH_APPROVED=true` **only after explicit owner consent**. JWTs are short-lived and never printed.
 

@@ -47,13 +47,41 @@ jobs:
           path: release-out/
           if-no-files-found: error
           retention-days: 30
-  submit:
+  select-stores:
     if: github.repository == 'backmeupplz/plainwallet' && github.event_name == 'release' && !github.event.release.prerelease && !github.event.release.draft
-    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      stores: ${{ steps.select.outputs.stores }}
+      has_stores: ${{ steps.select.outputs.has_stores }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/release
+      - id: select
+        name: Select enabled stores without environment access
+        env:
+          STORE_CHROME_PAUSED: ${{ vars.STORE_CHROME_PAUSED }}
+          STORE_FIREFOX_PAUSED: ${{ vars.STORE_FIREFOX_PAUSED }}
+          STORE_PLAY_PAUSED: ${{ vars.STORE_PLAY_PAUSED }}
+        run: python3 scripts/release/stores.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: paused-outcomes-${{ github.run_attempt }}
+          path: paused-outcomes/
+          if-no-files-found: ignore
+          retention-days: 90
+  submit:
+    if: needs.select-stores.outputs.has_stores == 'true'
+    needs: [build, select-stores]
     strategy:
       fail-fast: false
       matrix:
-        store: [chrome, firefox, play]
+        store: ${{ fromJSON(needs.select-stores.outputs.stores) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: store-${{ matrix.store }}
@@ -139,7 +167,7 @@ jobs:
           retention-days: 90
   report:
     if: always() && github.repository == 'backmeupplz/plainwallet' && github.event_name == 'release' && !github.event.release.prerelease && !github.event.release.draft
-    needs: [build, submit]
+    needs: [build, select-stores, submit]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -155,6 +183,12 @@ jobs:
         with:
           pattern: outcome-*
           path: outcomes
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        if: always()
+        with:
+          pattern: paused-outcomes-*
+          path: outcomes
+          merge-multiple: true
       - name: Notify repository owner with independent per-store outcomes
         if: always()
         env:

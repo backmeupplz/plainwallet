@@ -23,7 +23,7 @@ def main():
     title = "Store submissions: " + release["tag_name"] + " (release " + str(release["id"]) + ")"
     rows = outcomes("outcomes")
     run = "https://github.com/" + env["GITHUB_REPOSITORY"] + "/actions/runs/" + env["GITHUB_RUN_ID"]
-    body = "@backmeupplz — store submission outcomes. Release policy is automatic publication after approval for all stores; Play targets production. Only successful per-store outcomes confirm a submission request. Submitted is not approved/live.\n\n"
+    body = "@backmeupplz — store submission outcomes. Release policy is automatic publication after approval for enabled stores; Play targets production. Only successful per-store outcomes confirm a submission request. Paused/skipped stores made no submission attempt in that reported attempt. Submitted is not approved/live.\n\n"
     body += "Release: " + release["html_url"] + "\nRun: " + run + "\n\n"
     for row in rows:
         body += "### " + row["store"] + "\n\x60\x60\x60json\n" + json.dumps(row, indent=2) + "\n\x60\x60\x60\n"
