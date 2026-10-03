@@ -77,16 +77,17 @@ def preflight(store, env):
     needed(env, "GH_TOKEN", "GITHUB_REPOSITORY")
     require(env["GITHUB_REPOSITORY"] == "backmeupplz/plainwallet", "Store submission restricted to upstream repository")
     require(env.get("STORE_SETUP_CONFIRMED") == "true", "Owner must confirm listing ownership and protected environment setup")
+    require(env.get("STORE_AUTO_PUBLISH_APPROVED") == "true", "Explicit owner consent to automatic public publication after approval is required")
     if store == "chrome":
         needed(env, "GOOGLE_ACCESS_TOKEN", "CHROME_PUBLISHER_ID", "CHROME_ITEM_ID")
         require(env["CHROME_ITEM_ID"] == "pmnbalegifiefmohkolfpclnmkooifcp", "Unexpected Chrome listing")
         require(re.fullmatch(r"[a-zA-Z0-9_-]+", env["CHROME_PUBLISHER_ID"]), "Invalid publisher ID")
     elif store == "play":
         needed(env, "GOOGLE_ACCESS_TOKEN", "PLAY_TRACK", "ANDROID_KEYSTORE_BASE64", "ANDROID_KEY_ALIAS", "ANDROID_STORE_PASSWORD", "ANDROID_KEY_PASSWORD", "ANDROID_UPLOAD_CERT_SHA256")
-        require(env.get("PLAY_MANAGED_PUBLISHING_CONFIRMED") == "true", "Owner must enable/confirm managed publishing before each release")
+        require(env.get("PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED") == "true", "Owner must confirm managed publishing is disabled before each release")
+        require(env.get("PLAY_MANAGED_PUBLISHING_CONFIRMED") != "true", "Remove obsolete managed-publishing-enabled confirmation")
         require(env.get("PLAY_APP_SIGNING_CONFIRMED") == "true", "Existing Play App Signing/upload key must be confirmed")
-        require(re.fullmatch(r"[A-Za-z0-9_-]+", env["PLAY_TRACK"]), "Invalid Play track")
-        require(env["PLAY_TRACK"] != "internal", "Internal testing is not a store-review submission")
+        require(env["PLAY_TRACK"] == "production", "Play track must be production")
         require(re.fullmatch(r"[0-9A-Fa-f]{64}", env["ANDROID_UPLOAD_CERT_SHA256"]), "Upload certificate SHA256 must be 64 hex characters")
     elif store == "firefox":
         needed(env, "AMO_JWT_ISSUER", "AMO_JWT_SECRET", "AMO_ADDON_ID")
@@ -153,14 +154,19 @@ def chrome(meta, env, journal, api=request, pause=time.sleep):
     token = env["GOOGLE_ACCESS_TOKEN"]
     status = api(base + ":fetchStatus", token)
     require(not status.get("takenDown") and not status.get("warned"), "Chrome policy warning/takedown requires owner action")
+    review = journal.read(journal.name("review", "receipt"))
     for key in ("submittedItemRevisionStatus", "publishedItemRevisionStatus"):
         revision = status.get(key, {})
         if any(c.get("crxVersion") == meta["version"] for c in revision.get("distributionChannels", [])):
             state = revision.get("state")
-            require(state in ("PENDING_REVIEW", "STAGED", "PUBLISHED"), "Existing Chrome version needs console reconciliation")
-            return {"store": "chrome", "version": meta["version"], "item": name, "state": state, "existing": True}
+            require(state != "STAGED", "Chrome STAGED is held, not automatic publication: explicit owner reconciliation required; no publish/review repeated")
+            require(state in ("PENDING_REVIEW", "PUBLISHED"), "Existing Chrome version needs console reconciliation")
+            if state == "PENDING_REVIEW":
+                # fetchStatus does not expose publishType; old/uncertain reviews may be held.
+                require(review and review.get("publishType") == "DEFAULT_PUBLISH" and review.get("deployPercentage") == 100, "Chrome pending review lacks automatic-publication receipt; explicit owner reconciliation required")
+            return {"store": "chrome", "version": meta["version"], "item": name, "state": state, "existing": True, "publication": "public" if state == "PUBLISHED" else "automatic-after-approval"}
     require(not status.get("submittedItemRevisionStatus"), "Another Chrome submission exists; do not replace it")
-    require(journal.read(journal.name("review", "receipt")) is None, "Chrome review receipt disagrees with current status; reconcile in console")
+    require(review is None, "Chrome review receipt disagrees with current status; reconcile in console")
     uploaded = journal.once("upload", lambda: api("https://chromewebstore.googleapis.com/upload/v2/" + name + ":upload", token, method="POST", body=Path("release-out/chrome.zip").read_bytes(), content_type="application/zip"), lambda r: {"uploadState": r.get("uploadState"), "name": r.get("name"), "crxVersion": r.get("crxVersion")})
     require(not uploaded["crxVersion"] or uploaded["crxVersion"] == meta["version"], "Chrome upload version mismatch")
     state = uploaded["uploadState"]
@@ -170,9 +176,9 @@ def chrome(meta, env, journal, api=request, pause=time.sleep):
         pause(10)
         state = api(base + ":fetchStatus", token).get("lastAsyncUploadState")
     require(state == "SUCCEEDED", "Chrome upload not successful; no review requested")
-    submitted = journal.once("review", lambda: api(base + ":publish", token, method="POST", body={"publishType": "STAGED_PUBLISH", "skipReview": False, "blockOnWarnings": True}), lambda r: {"name": r.get("name"), "state": r.get("state")})
-    require(submitted["state"] in ("PENDING_REVIEW", "STAGED"), "Chrome did not confirm review/staging")
-    return {"store": "chrome", "version": meta["version"], "item": name, **submitted}
+    submitted = journal.once("review", lambda: api(base + ":publish", token, method="POST", body={"publishType": "DEFAULT_PUBLISH", "deployInfos": [{"deployPercentage": 100}], "skipReview": False, "blockOnWarnings": True}), lambda r: {"name": r.get("name"), "state": r.get("state"), "publishType": "DEFAULT_PUBLISH", "deployPercentage": 100})
+    require(submitted["state"] in ("PENDING_REVIEW", "PUBLISHED"), "Chrome did not confirm automatic publication/review; reconcile in console")
+    return {"store": "chrome", "version": meta["version"], "item": name, **submitted, "publication": "public" if submitted["state"] == "PUBLISHED" else "automatic-after-approval"}
 
 
 def amo_token(env):
@@ -191,6 +197,7 @@ def firefox(meta, env, journal, api=request, pause=time.sleep):
     # Existing listing only: never silently create duplicate addon/listing.
     listing = call(addon)
     require(listing.get("guid") == env["AMO_ADDON_ID"], "AMO listing GUID mismatch")
+    require(not any(listing.get(k) for k in ("is_disabled", "is_disabled_by_developer", "is_disabled_by_mozilla")), "AMO listing disabled; owner reconciliation required")
     version = call(addon + "versions/" + meta["version"] + "/", missing=True)
     if version:
         require(version.get("source") and version.get("channel") == "listed", "Existing AMO version lacks listed source submission")
@@ -214,10 +221,11 @@ def firefox(meta, env, journal, api=request, pause=time.sleep):
         data, kind = multipart({"upload": upload["uuid"], "license": "MIT"}, {"source": "release-out/firefox-source.zip"})
         created = journal.once("review", lambda: call(addon + "versions/", method="POST", body=data, content_type=kind), lambda r: {"id": r["id"]})
         version = call(addon + "versions/" + str(created["id"]) + "/")
-    require(version.get("version") == meta["version"] and version.get("source"), "AMO did not confirm version with source")
+    require(version.get("version") == meta["version"] and version.get("source") and version.get("channel") == "listed", "AMO did not confirm listed version with source")
+    require(not version.get("is_disabled"), "AMO version disabled; owner reconciliation required")
     state = version.get("file", {}).get("status")
     require(state in ("unreviewed", "public"), "AMO submission rejected/disabled; not a successful review submission")
-    return {"store": "firefox", "version": meta["version"], "versionId": version["id"], "state": state, "autoPublishApproved": True}
+    return {"store": "firefox", "version": meta["version"], "versionId": version["id"], "state": state, "autoPublishApproved": True, "publication": "public" if state == "public" else "automatic-after-approval"}
 
 
 def signed_bundle(env):
@@ -244,10 +252,14 @@ def signed_bundle(env):
 def play(meta, env, journal, api=request, sign=signed_bundle):
     base = "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/com.borodutch.plainwallet/edits"
     token = env["GOOGLE_ACCESS_TOKEN"]
+    require(env.get("PLAY_TRACK") == "production", "Play track must be production")
+    track_receipt = journal.read(journal.name("track", "receipt"))
+    require(not track_receipt or track_receipt.get("track") == "production", "Existing Play track receipt is not production; explicit owner reconciliation required")
     # A committed receipt prevents replay even if review is still asynchronous.
     previous = journal.read(journal.name("commit", "receipt"))
     if previous:
-        return {"store": "play", "version": meta["version"], "versionCode": meta["versionCode"], "editId": previous["id"], "state": "committed-for-review; verify Publishing overview", "existing": True}
+        require(previous.get("track") == "production" and previous.get("managedPublishingDisabledConfirmed") is True, "Legacy Play commit lacks automatic-production publication confirmation; explicit owner reconciliation required; no resubmission")
+        return {"store": "play", "version": meta["version"], "versionCode": meta["versionCode"], "editId": previous["id"], "track": "production", "state": "committed-for-review; verify Publishing overview", "publication": "automatic-after-approval; console setting owner-confirmed, not API-verified", "existing": True}
     edit = journal.once("edit", lambda: api(base, token, method="POST", body={}), lambda r: {"id": r["id"]})
     path = base + "/" + edit["id"]
     track_url = path + "/tracks/" + quote(env["PLAY_TRACK"], safe="")
@@ -266,10 +278,11 @@ def play(meta, env, journal, api=request, sign=signed_bundle):
         data = sign(env)
         receipt = journal.once("bundle", lambda: api("https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/com.borodutch.plainwallet/edits/" + edit["id"] + "/bundles?uploadType=media", token, method="POST", body=data, content_type="application/octet-stream"), lambda r: {"versionCode": r["versionCode"], "sha256": r.get("sha256")})
     require(receipt["versionCode"] == meta["versionCode"], "Play uploaded wrong versionCode")
-    journal.once("track", lambda: api(track_url, token, method="PUT", body={"track": env["PLAY_TRACK"], "releases": [{"name": meta["version"], "versionCodes": [str(meta["versionCode"])], "status": "completed"}]}), lambda r: {"track": r["track"]})
-    journal.once("validate", lambda: api(path + ":validate", token, method="POST", body={}), lambda r: {"valid": True})
-    committed = journal.once("commit", lambda: api(path + ":commit?changesNotSentForReview=false", token, method="POST", body={}), lambda r: {"id": r["id"]})
-    return {"store": "play", "version": meta["version"], "versionCode": meta["versionCode"], "editId": committed["id"], "track": env["PLAY_TRACK"], "state": "committed-for-review; verify Publishing overview"}
+    track_receipt = journal.once("track", lambda: api(track_url, token, method="PUT", body={"track": env["PLAY_TRACK"], "releases": [{"name": meta["version"], "versionCodes": [str(meta["versionCode"])], "status": "completed"}]}), lambda r: {"track": r["track"]})
+    require(track_receipt.get("track") == "production", "Play did not confirm production track; no commit")
+    journal.once("validate", lambda: api(path + ":validate", token, method="POST"), lambda r: {"valid": True})
+    committed = journal.once("commit", lambda: api(path + ":commit?changesNotSentForReview=false&changesInReviewBehavior=ERROR_IF_IN_REVIEW", token, method="POST"), lambda r: {"id": r["id"], "track": "production", "managedPublishingDisabledConfirmed": True})
+    return {"store": "play", "version": meta["version"], "versionCode": meta["versionCode"], "editId": committed["id"], "track": "production", "state": "committed-for-review; verify Publishing overview", "publication": "automatic-after-approval; console setting owner-confirmed, not API-verified"}
 
 
 def main():

@@ -137,11 +137,164 @@ class ReleaseTests(unittest.TestCase):
         for store in ("chrome", "firefox", "play"):
             with self.assertRaisesRegex(ValueError, "Missing configuration"):
                 preflight(store, {})
-        env = {**ENV, "GH_TOKEN": "fake", "GITHUB_REPOSITORY": "backmeupplz/plainwallet", "STORE_SETUP_CONFIRMED": "true"}
+        env = {**ENV, "GH_TOKEN": "fake", "GITHUB_REPOSITORY": "backmeupplz/plainwallet", "STORE_SETUP_CONFIRMED": "true", "STORE_AUTO_PUBLISH_APPROVED": "true"}
         preflight("chrome", env)
         with self.assertRaisesRegex(ValueError, "explicit owner consent"):
             preflight("firefox", env)
         preflight("firefox", {**env, "AMO_AUTO_PUBLISH_APPROVED": "true"})
+
+
+    def test_all_stores_require_new_automatic_publication_consent(self):
+        env = {**ENV, "GH_TOKEN": "fake", "GITHUB_REPOSITORY": "backmeupplz/plainwallet", "STORE_SETUP_CONFIRMED": "true", "AMO_AUTO_PUBLISH_APPROVED": "true", "PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED": "true", "PLAY_APP_SIGNING_CONFIRMED": "true", "ANDROID_KEYSTORE_BASE64": "fake", "ANDROID_KEY_ALIAS": "fake", "ANDROID_STORE_PASSWORD": "fake", "ANDROID_KEY_PASSWORD": "fake", "ANDROID_UPLOAD_CERT_SHA256": "a" * 64}
+        for store in ("chrome", "firefox", "play"):
+            for value in (None, "", "false", "TRUE"):
+                with self.subTest(store=store, value=value), self.assertRaisesRegex(ValueError, "Explicit owner consent"):
+                    preflight(store, {**env, "STORE_AUTO_PUBLISH_APPROVED": value})
+            preflight(store, {**env, "STORE_AUTO_PUBLISH_APPROVED": "true"})
+        env["STORE_AUTO_PUBLISH_APPROVED"] = "true"
+        for field, value, error in (("PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED", "", "managed publishing is disabled"), ("PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED", "false", "managed publishing is disabled"), ("PLAY_MANAGED_PUBLISHING_CONFIRMED", "true", "obsolete"), ("PLAY_TRACK", "internal", "must be production"), ("PLAY_TRACK", "beta", "must be production"), ("PLAY_TRACK", "alpha", "must be production"), ("PLAY_TRACK", "custom-track", "must be production"), ("PLAY_TRACK", "Production", "must be production")):
+            with self.subTest(field=field, value=value), self.assertRaisesRegex(ValueError, error):
+                preflight("play", {**env, field: value})
+
+    def test_workflow_pre_auth_publication_gates_execute_fail_closed(self):
+        workflow = (ROOT / ".github/workflows/store-release.yml").read_text()
+        gate = workflow.split("      - name: Verify setup gates before authentication\n", 1)[1].split("      - id: google\n", 1)[0]
+        script = "\n".join(line[10:] for line in gate.split("        run: |\n", 1)[1].splitlines())
+        for name in ("STORE_AUTO_PUBLISH_APPROVED", "PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED", "PLAY_MANAGED_PUBLISHING_CONFIRMED", "PLAY_TRACK", "AMO_AUTO_PUBLISH_APPROVED"):
+            self.assertEqual(workflow.count("vars." + name + " }}"), 2)
+        env = {"CONFIRMED": "true", "AUTO_PUBLISH_APPROVED": "true", "WIF_PROVIDER": "fixture", "SERVICE_ACCOUNT": "fixture", "PLAY_TRACK": "production", "PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED": "true", "PLAY_MANAGED_PUBLISHING_CONFIRMED": "", "AMO_AUTO_PUBLISH_APPROVED": "true"}
+        for store in ("chrome", "firefox", "play"):
+            def run(changes):
+                return subprocess.run(["/bin/bash", "-eu", "-c", script], env={**env, "STORE": store, **changes}, capture_output=True).returncode
+            self.assertEqual(run({}), 0)
+            self.assertNotEqual(run({"AUTO_PUBLISH_APPROVED": ""}), 0)
+            self.assertNotEqual(run({"CONFIRMED": ""}), 0)
+            if store == "play":
+                for bad in ({"PLAY_TRACK": "beta"}, {"PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED": ""}, {"PLAY_MANAGED_PUBLISHING_CONFIRMED": "true"}):
+                    self.assertNotEqual(run(bad), 0)
+            if store == "firefox":
+                self.assertNotEqual(run({"AMO_AUTO_PUBLISH_APPROVED": ""}), 0)
+
+    def test_chrome_default_publish_reruns_pending_then_public_without_writes(self):
+        journal, writes = MemoryJournal(), []
+        remote = {}
+        def api(url, token, **kw):
+            if url.endswith(":fetchStatus"):
+                return remote
+            writes.append((url, kw))
+            if url.endswith(":upload"):
+                return {"uploadState": "SUCCEEDED", "crxVersion": META["version"]}
+            self.assertEqual(kw["body"], {"publishType": "DEFAULT_PUBLISH", "deployInfos": [{"deployPercentage": 100}], "skipReview": False, "blockOnWarnings": True})
+            remote["submittedItemRevisionStatus"] = {"state": "PENDING_REVIEW", "distributionChannels": [{"crxVersion": META["version"], "deployPercentage": 100}]}
+            return {"state": "PENDING_REVIEW"}
+        self.assertEqual(chrome(META, ENV, journal, api)["publication"], "automatic-after-approval")
+        for _ in range(2):
+            self.assertEqual(chrome(META, ENV, journal, api)["state"], "PENDING_REVIEW")
+        revision = remote.pop("submittedItemRevisionStatus")
+        revision["state"] = "PUBLISHED"
+        remote["publishedItemRevisionStatus"] = revision
+        self.assertEqual(chrome(META, ENV, journal, api)["publication"], "public")
+        self.assertEqual(len(writes), 2)  # One upload and one review, ever.
+        self.assertEqual(journal.read(journal.name("review", "receipt"))["publishType"], "DEFAULT_PUBLISH")
+
+    def test_chrome_legacy_staged_or_pending_requires_reconciliation_no_writes(self):
+        for state in ("STAGED", "PENDING_REVIEW"):
+            for receipt in (None, {"state": "PENDING_REVIEW"}, {"state": "STAGED", "publishType": "STAGED_PUBLISH"}):
+                with self.subTest(state=state, receipt=receipt):
+                    journal = MemoryJournal()
+                    if receipt:
+                        journal.put(journal.name("review", "receipt"), receipt)
+                    journal.put(journal.name("review", "started"), {"state": "started"})
+                    def api(url, token, **kw):
+                        self.assertEqual(kw.get("method", "GET"), "GET")
+                        return {"submittedItemRevisionStatus": {"state": state, "distributionChannels": [{"crxVersion": META["version"]}]}}
+                    for _ in range(2):
+                        with self.assertRaisesRegex(ValueError, "reconciliation required"):
+                            chrome(META, ENV, journal, api)
+
+    def test_chrome_unexpected_staged_response_never_counts_as_automatic_success(self):
+        journal = MemoryJournal()
+        def api(url, token, **kw):
+            if url.endswith(":fetchStatus"):
+                return {}
+            if url.endswith(":upload"):
+                return {"uploadState": "SUCCEEDED"}
+            return {"state": "STAGED"}
+        with self.assertRaisesRegex(ValueError, "did not confirm automatic"):
+            chrome(META, ENV, journal, api)
+        with self.assertRaisesRegex(ValueError, "receipt disagrees"):
+            chrome(META, ENV, journal, api)
+
+    def test_chrome_immediate_published_response_is_not_resubmitted(self):
+        journal = MemoryJournal()
+        def api(url, token, **kw):
+            if url.endswith(":fetchStatus"):
+                if journal.read(journal.name("review", "receipt")):
+                    return {"publishedItemRevisionStatus": {"state": "PUBLISHED", "distributionChannels": [{"crxVersion": META["version"]}]}}
+                return {}
+            if url.endswith(":upload"):
+                return {"uploadState": "SUCCEEDED"}
+            return {"state": "PUBLISHED"}
+        for _ in range(2):
+            self.assertEqual(chrome(META, ENV, journal, api)["publication"], "public")
+
+    def test_play_legacy_commit_or_nonproduction_track_fails_without_network(self):
+        for operation, receipt in (("commit", {"id": "old-edit"}), ("commit", {"id": "old-edit", "track": "beta", "managedPublishingDisabledConfirmed": True}), ("commit", {"id": "old-edit", "track": "production", "managedPublishingDisabledConfirmed": False}), ("track", {"track": "beta"})):
+            journal = MemoryJournal()
+            journal.put(journal.name(operation, "receipt"), receipt)
+            for _ in range(2):
+                with self.assertRaisesRegex(ValueError, "reconciliation required"):
+                    play(META, ENV, journal, api=lambda *a, **kw: self.fail("legacy state must not resubmit"))
+        with self.assertRaisesRegex(ValueError, "must be production"):
+            play(META, {**ENV, "PLAY_TRACK": "beta"}, MemoryJournal(), api=lambda *a, **kw: self.fail("nonproduction write"))
+
+    def test_play_existing_review_error_does_not_cancel_or_retry(self):
+        journal, commits = MemoryJournal(), []
+        journal.put(journal.name("edit", "receipt"), {"id": "e"})
+        journal.put(journal.name("bundle", "receipt"), {"versionCode": 203})
+        journal.put(journal.name("track", "receipt"), {"track": "production"})
+        def api(url, token, **kw):
+            if ":commit" in url:
+                self.assertEqual(parse_qs(urlparse(url).query), {"changesNotSentForReview": ["false"], "changesInReviewBehavior": ["ERROR_IF_IN_REVIEW"]})
+                commits.append(url)
+                raise APIError(400)
+            return {}
+        with self.assertRaises(APIError):
+            play(META, ENV, journal, api)
+        with self.assertRaisesRegex(ValueError, "Uncertain commit"):
+            play(META, ENV, journal, api)
+        self.assertEqual(len(commits), 1)
+
+    def test_firefox_existing_public_and_disabled_versions_no_writes(self):
+        version = {"id": 7, "version": META["version"], "channel": "listed", "source": "source.zip", "file": {"status": "public"}}
+        listing = {"guid": ENV["AMO_ADDON_ID"]}
+        def api(url, token, **kw):
+            self.assertEqual(kw.get("method", "GET"), "GET")
+            return version if "/versions/" in url else listing
+        for _ in range(2):
+            self.assertEqual(firefox(META, ENV, MemoryJournal(), api)["publication"], "public")
+        version["is_disabled"] = True
+        with self.assertRaisesRegex(ValueError, "version disabled"):
+            firefox(META, ENV, MemoryJournal(), api)
+        version["is_disabled"] = False
+        listing["is_disabled_by_developer"] = True
+        with self.assertRaisesRegex(ValueError, "listing disabled"):
+            firefox(META, ENV, MemoryJournal(), api)
+
+    def test_report_distinguishes_automatic_intent_from_live_evidence(self):
+        import report
+        Path("event.json").write_text(json.dumps({"release": {"id": 1, "tag_name": "v0.2.3", "html_url": "https://github.com/fixture/release"}}))
+        env = {"GITHUB_EVENT_NAME": "release", "GITHUB_EVENT_PATH": "event.json", "GITHUB_REPOSITORY": "backmeupplz/plainwallet", "GITHUB_RUN_ID": "1", "GITHUB_STEP_SUMMARY": "summary.md", "GH_TOKEN": "fixture"}
+        rows = [{"store": "chrome", "state": "PENDING_REVIEW", "publication": "automatic-after-approval"}, {"store": "play", "state": "failed", "error": "Legacy Play commit"}, {"store": "firefox", "state": "public", "publication": "public"}]
+        calls = []
+        def api(url, token, **kw):
+            calls.append(kw)
+            return [] if kw.get("method", "GET") == "GET" else {}
+        with patch.dict(os.environ, env, clear=True), patch("report.outcomes", return_value=rows), patch("report.request", side_effect=api):
+            report.main()
+        body = calls[-1]["body"]["body"]
+        for expected in ("Submitted is not approved/live", "Play targets production", "owner-confirmed, not API-verified", "STAGED or legacy/uncertain", '"state": "failed"', '"state": "public"'):
+            self.assertIn(expected, body)
 
     def test_journal_idempotent_and_uncertain_write_stops(self):
         journal = MemoryJournal()
@@ -165,7 +318,7 @@ class ReleaseTests(unittest.TestCase):
                 return {}
             if url.endswith(":upload"):
                 return {"uploadState": "SUCCEEDED", "crxVersion": "0.2.3"}
-            self.assertEqual(kw["body"], {"publishType": "STAGED_PUBLISH", "skipReview": False, "blockOnWarnings": True})
+            self.assertEqual(kw["body"], {"publishType": "DEFAULT_PUBLISH", "deployInfos": [{"deployPercentage": 100}], "skipReview": False, "blockOnWarnings": True})
             return {"state": "PENDING_REVIEW", "name": "fixture"}
         result = chrome(META, ENV, MemoryJournal(), api)
         self.assertEqual(result["state"], "PENDING_REVIEW")
@@ -173,7 +326,8 @@ class ReleaseTests(unittest.TestCase):
         def staged(url, token, **kw):
             self.assertEqual(kw.get("method", "GET"), "GET")
             return {"submittedItemRevisionStatus": {"state": "STAGED", "distributionChannels": [{"crxVersion": "0.2.3"}]}}
-        self.assertEqual(chrome(META, ENV, MemoryJournal(), staged)["state"], "STAGED")
+        with self.assertRaisesRegex(ValueError, "STAGED is held"):
+            chrome(META, ENV, MemoryJournal(), staged)
 
     def test_chrome_validation_failure_never_submits(self):
         def api(url, token, **kw):
@@ -239,13 +393,28 @@ class ReleaseTests(unittest.TestCase):
             if "uploadType=media" in url:
                 return {"versionCode": 203, "sha256": "fixture"}
             if "/tracks/" in url:
-                self.assertEqual(kw["body"]["releases"][0]["status"], "completed")
+                self.assertEqual(kw["body"], {"track": "production", "releases": [{"name": META["version"], "versionCodes": ["203"], "status": "completed"}]})
+                self.assertTrue(url.endswith("/tracks/production"))
                 return {"track": "production"}
             return {"id": "edit-id"}
         result = play(META, ENV, journal, api, sign=lambda e: b"signed-fixture")
         self.assertEqual(result["editId"], "edit-id")
-        self.assertTrue(calls[-1][0].endswith(":commit?changesNotSentForReview=false"))
+        self.assertTrue(calls[-1][0].endswith(":commit?changesNotSentForReview=false&changesInReviewBehavior=ERROR_IF_IN_REVIEW"))
+        self.assertNotIn("body", calls[-1][1])
+        self.assertEqual(result["track"], "production")
+        self.assertIn("automatic-after-approval", result["publication"])
         play(META, ENV, journal, api=lambda *a, **kw: self.fail("duplicate Play call"))
+
+    def test_play_wrong_track_response_never_commits(self):
+        journal = MemoryJournal()
+        journal.put(journal.name("edit", "receipt"), {"id": "e"})
+        journal.put(journal.name("bundle", "receipt"), {"versionCode": 203})
+        def api(url, token, **kw):
+            self.assertNotIn(":commit", url)
+            self.assertNotIn(":validate", url)
+            return {"track": "beta"} if kw.get("method") == "PUT" else {}
+        with self.assertRaisesRegex(ValueError, "did not confirm production"):
+            play(META, ENV, journal, api)
 
     def test_play_validation_failure_never_commits(self):
         journal = MemoryJournal()
@@ -261,12 +430,12 @@ class ReleaseTests(unittest.TestCase):
             play(META, ENV, journal, api)
 
     def test_partial_results_keep_success_when_other_store_fails(self):
-        for store, state, attempt in (("chrome", "STAGED", 1), ("play", "failed", 1), ("play", "committed-for-review", 2)):
+        for store, state, attempt in (("chrome", "PENDING_REVIEW", 1), ("play", "failed", 1), ("play", "committed-for-review", 2)):
             d = Path("outcomes", "outcome-" + store + "-" + str(attempt))
             d.mkdir(parents=True)
             (d / "outcome.json").write_text(json.dumps({"store": store, "state": state}))
         result = {r["store"]: r["state"] for r in outcomes("outcomes")}
-        self.assertEqual(result["chrome"], "STAGED")
+        self.assertEqual(result["chrome"], "PENDING_REVIEW")
         self.assertEqual(result["play"], "committed-for-review")
         self.assertIn("not submitted", result["firefox"])
 
@@ -286,7 +455,7 @@ class ReleaseTests(unittest.TestCase):
             writes.append(url)
             if url.endswith(":upload"):
                 return {"uploadState": "IN_PROGRESS"}
-            self.assertEqual(kw["body"]["publishType"], "STAGED_PUBLISH")
+            self.assertEqual(kw["body"]["publishType"], "DEFAULT_PUBLISH")
             return {"state": "PENDING_REVIEW"}
         self.assertEqual(chrome(META, ENV, MemoryJournal(), api, pause=sleeps.append)["state"], "PENDING_REVIEW")
         self.assertEqual(sleeps, [10, 10])
@@ -308,7 +477,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(sleeps, [10] * 30)
 
     def test_submit_entrypoint_rejects_event_and_artifact_mismatch_before_network(self):
-        env = {**ENV, "GH_TOKEN": "fake", "GITHUB_REPOSITORY": "backmeupplz/plainwallet", "STORE_SETUP_CONFIRMED": "true", "GITHUB_EVENT_NAME": "release", "GITHUB_EVENT_PATH": "event.json", "GITHUB_SHA": META["sha"]}
+        env = {**ENV, "GH_TOKEN": "fake", "GITHUB_REPOSITORY": "backmeupplz/plainwallet", "STORE_SETUP_CONFIRMED": "true", "STORE_AUTO_PUBLISH_APPROVED": "true", "GITHUB_EVENT_NAME": "release", "GITHUB_EVENT_PATH": "event.json", "GITHUB_SHA": META["sha"]}
         meta = {**META, "sha256": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in Path("release-out").iterdir()}}
         cases = [("sha", "b" * 40, "immutable release"), ("releaseId", 2, "immutable release"), ("version", "0.2.4", "tag/package version mismatch"), ("hash", "0" * 64, "Artifact hash mismatch"), ("event", "push", "only be used on release events")]
         for field, value, expected_error in cases:

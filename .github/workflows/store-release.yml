@@ -78,11 +78,22 @@ jobs:
       - name: Verify setup gates before authentication
         env:
           CONFIRMED: ${{ vars.STORE_SETUP_CONFIRMED }}
+          AUTO_PUBLISH_APPROVED: ${{ vars.STORE_AUTO_PUBLISH_APPROVED }}
+          PLAY_TRACK: ${{ vars.PLAY_TRACK }}
+          PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED: ${{ vars.PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED }}
+          PLAY_MANAGED_PUBLISHING_CONFIRMED: ${{ vars.PLAY_MANAGED_PUBLISHING_CONFIRMED }}
+          AMO_AUTO_PUBLISH_APPROVED: ${{ vars.AMO_AUTO_PUBLISH_APPROVED }}
           WIF_PROVIDER: ${{ vars.GOOGLE_WIF_PROVIDER }}
           SERVICE_ACCOUNT: ${{ vars.GOOGLE_SERVICE_ACCOUNT }}
           STORE: ${{ matrix.store }}
         run: |
           test "$CONFIRMED" = true || { echo 'Configure protected store environment; see docs/STORE_RELEASE.md'; exit 1; }
+          test "$AUTO_PUBLISH_APPROVED" = true || { echo 'Owner must confirm automatic public publication after approval'; exit 1; }
+          if [ "$STORE" = play ]; then
+            test "$PLAY_TRACK" = production && test "$PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED" = true && test "$PLAY_MANAGED_PUBLISHING_CONFIRMED" != true || { echo 'Play requires production and managed publishing disabled; remove obsolete enabled confirmation'; exit 1; }
+          elif [ "$STORE" = firefox ]; then
+            test "$AMO_AUTO_PUBLISH_APPROVED" = true || { echo 'Owner must approve AMO listed automatic publication'; exit 1; }
+          fi
           if [ "$STORE" != firefox ]; then
             test -n "$WIF_PROVIDER" && test -n "$SERVICE_ACCOUNT"
           fi
@@ -96,11 +107,13 @@ jobs:
           access_token_scopes: ${{ matrix.store == 'play' && 'https://www.googleapis.com/auth/androidpublisher' || 'https://www.googleapis.com/auth/chromewebstore' }}
           create_credentials_file: false
           export_environment_variables: false
-      - name: Sign only with JDK, upload and request review
+      - name: Sign only with JDK, request review and automatic publication
         env:
           GH_TOKEN: ${{ github.token }}
           GOOGLE_ACCESS_TOKEN: ${{ steps.google.outputs.access_token }}
           STORE_SETUP_CONFIRMED: ${{ vars.STORE_SETUP_CONFIRMED }}
+          STORE_AUTO_PUBLISH_APPROVED: ${{ vars.STORE_AUTO_PUBLISH_APPROVED }}
+          PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED: ${{ vars.PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED }}
           CHROME_PUBLISHER_ID: ${{ vars.CHROME_PUBLISHER_ID }}
           CHROME_ITEM_ID: ${{ vars.CHROME_ITEM_ID }}
           PLAY_TRACK: ${{ vars.PLAY_TRACK }}

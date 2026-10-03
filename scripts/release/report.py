@@ -23,11 +23,11 @@ def main():
     title = "Store submissions: " + release["tag_name"] + " (release " + str(release["id"]) + ")"
     rows = outcomes("outcomes")
     run = "https://github.com/" + env["GITHUB_REPOSITORY"] + "/actions/runs/" + env["GITHUB_RUN_ID"]
-    body = "@backmeupplz — store submission outcomes. Submitted is not approved/live.\n\n"
+    body = "@backmeupplz — store submission outcomes. Release policy is automatic publication after approval for all stores; Play targets production. Only successful per-store outcomes confirm a submission request. Submitted is not approved/live.\n\n"
     body += "Release: " + release["html_url"] + "\nRun: " + run + "\n\n"
     for row in rows:
         body += "### " + row["store"] + "\n\x60\x60\x60json\n" + json.dumps(row, indent=2) + "\n\x60\x60\x60\n"
-    body += "\nPlay commit requests review but the API does not expose reviewer state: confirm Publishing overview. Chrome STAGED is approved, not live. AMO public is approved and may already be live.\n"
+    body += "\nPlay commit requests review with managed publishing disabled (owner-confirmed, not API-verified); confirm Changes in review and eventual production availability in Publishing overview. Chrome PENDING_REVIEW with a DEFAULT_PUBLISH receipt will publish after approval; STAGED or legacy/uncertain pending reviews require explicit reconciliation, not another submission. Chrome PUBLISHED and AMO public indicate public store state; pending states never prove live availability. Legacy Play commits are not proof of automatic production rollout.\n"
     with open(env["GITHUB_STEP_SUMMARY"], "a") as f:
         f.write(body)
     base = "https://api.github.com/repos/" + env["GITHUB_REPOSITORY"] + "/issues"
