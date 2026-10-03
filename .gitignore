@@ -6,3 +6,7 @@ android/app/build
 android/build
 android/local.properties
 *.hprof
+__pycache__/
+release-out/
+outcome.json
+outcomes/
