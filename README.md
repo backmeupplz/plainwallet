@@ -28,7 +28,9 @@ A very minimal EVM wallet extension for Chrome and Firefox, and an Android app. 
 
 ## What it doesn't
 
-Prices, NFTs, built-in history, swaps, hardware wallets, ENS, gas editing (nonce and fees come from the RPC).
+Portfolio/token prices, NFTs, built-in history, swaps, hardware wallets, ENS, gas editing (nonce and fees come from the RPC).
+
+Network-fee reviews show the native estimated max fee and approximate USD from validated Chainlink feeds on the same network’s RPC. Positive USD fees below $0.001 show <$0.001. Unsupported networks (including Gnosis/xDAI), invalid/stale feeds and outages show USD unavailable without blocking signing. No price-tracking service or extra wallet-address disclosure; see [feed mappings, freshness and limitations](docs/fee-prices.md).
 
 ## Install
 
