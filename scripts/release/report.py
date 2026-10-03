@@ -8,9 +8,13 @@ from build import require
 
 def outcomes(root):
     results = {}
-    for p in sorted(Path(root).glob("outcome-*/outcome.json"), key=lambda p: int(p.parent.name.rsplit("-", 1)[1])):
+    paths = list(Path(root).glob("selection-*/outcome.json")) + list(Path(root).glob("outcome-*/outcome.json"))
+    # Selection resets stale outcomes on a full rerun; actual results win ties.
+    for p in sorted(paths, key=lambda p: (int(p.parent.name.rsplit("-", 1)[1]), p.parent.name.startswith("outcome-"))):
         value = json.loads(p.read_text())
         require(value["store"] in ("chrome", "firefox", "play"), "Invalid outcome store")
+        value["attempt"] = int(p.parent.name.rsplit("-", 1)[1])
+        value["evidence"] = "submission-job" if p.parent.name.startswith("outcome-") else "selection"
         results[value["store"]] = value
     return [results.get(store, {"store": store, "state": "not submitted: build/setup/authentication did not complete"}) for store in ("chrome", "firefox", "play")]
 
@@ -23,7 +27,7 @@ def main():
     title = "Store submissions: " + release["tag_name"] + " (release " + str(release["id"]) + ")"
     rows = outcomes("outcomes")
     run = "https://github.com/" + env["GITHUB_REPOSITORY"] + "/actions/runs/" + env["GITHUB_RUN_ID"]
-    body = "@backmeupplz — store submission outcomes. Release policy is automatic publication after approval for enabled stores; Play targets production. Only successful per-store outcomes confirm a submission request. Paused/skipped stores made no submission attempt in that reported attempt. Submitted is not approved/live.\n\n"
+    body = "@backmeupplz — store submission outcomes. Release policy is automatic publication after approval for enabled stores; Play targets production. Only successful per-store outcomes confirm a submission request. Each outcome includes its evidence attempt; older outcomes are historical, not proof of current-attempt success. Paused/skipped stores made no submission attempt in that reported attempt. Submitted is not approved/live.\n\n"
     body += "Release: " + release["html_url"] + "\nRun: " + run + "\n\n"
     for row in rows:
         body += "### " + row["store"] + "\n\x60\x60\x60json\n" + json.dumps(row, indent=2) + "\n\x60\x60\x60\n"

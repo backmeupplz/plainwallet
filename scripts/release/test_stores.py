@@ -27,7 +27,7 @@ class StoreSelectionTests(unittest.TestCase):
         output = dict(line.split("=", 1) for line in (root / "output").read_text().splitlines())
         self.assertEqual(json.loads(output["stores"]), ["chrome", "play"])
         self.assertEqual(output["has_stores"], "true")
-        rows = {r["store"]: r for r in outcomes(root / "paused-outcomes")}
+        rows = {r["store"]: r for r in outcomes(root / "selection-outcomes")}
         self.assertEqual(rows["firefox"]["state"], "paused")
         self.assertEqual(rows["firefox"]["submission"], "skipped")
         self.assertNotEqual(rows["chrome"]["state"], "paused")
@@ -37,25 +37,25 @@ class StoreSelectionTests(unittest.TestCase):
         root, result = self.select({"STORE_FIREFOX_PAUSED": "false"})
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('stores=["chrome", "firefox", "play"]', (root / "output").read_text())
-        self.assertFalse((root / "paused-outcomes").exists())
+        self.assertTrue(all("selected" in r["state"] for r in outcomes(root / "selection-outcomes")))
 
     def test_all_paused_emits_no_matrix_jobs_and_three_outcomes(self):
         root, result = self.select({"STORE_" + s.upper() + "_PAUSED": "true" for s in STORES})
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual((root / "output").read_text(), "stores=[]\nhas_stores=false\n")
-        self.assertEqual([r["state"] for r in outcomes(root / "paused-outcomes")], ["paused"] * 3)
+        self.assertEqual([r["state"] for r in outcomes(root / "selection-outcomes")], ["paused"] * 3)
 
     def test_invalid_configuration_fails_before_output(self):
         for value in ("TRUE", "False", "yes", " false "):
             root, result = self.select({"STORE_FIREFOX_PAUSED": value})
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse((root / "output").exists())
-            self.assertFalse((root / "paused-outcomes").exists())
+            self.assertFalse((root / "selection-outcomes").exists())
 
     def test_pause_report_preserves_other_store_success_and_failure(self):
         root, result = self.select({})
         self.assertEqual(result.returncode, 0, result.stderr)
-        folder = root / "paused-outcomes"
+        folder = root / "selection-outcomes"
         for store, state in (("chrome", "PENDING_REVIEW"), ("play", "failed")):
             d = folder / ("outcome-" + store + "-2")
             d.mkdir()
@@ -80,5 +80,5 @@ class StoreSelectionTests(unittest.TestCase):
         self.assertIn("store: ${{ fromJSON(needs.select-stores.outputs.stores) }}", workflow)
         self.assertIn("fail-fast: false", workflow)
         self.assertIn("needs: [build, select-stores, submit]", workflow)
-        self.assertIn("pattern: paused-outcomes-*", workflow)
+        self.assertIn("pattern: selection-outcomes-*", workflow)
         self.assertIn("merge-multiple: true", workflow)

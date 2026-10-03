@@ -27,10 +27,10 @@ def main():
         output.write("stores=" + json.dumps(enabled) + "\n")
         output.write("has_stores=" + str(bool(enabled)).lower() + "\n")
     for store in STORES:
-        if store not in enabled:
-            directory = Path("paused-outcomes") / ("outcome-" + store + "-" + os.environ["GITHUB_RUN_ATTEMPT"])
-            directory.mkdir(parents=True, exist_ok=True)
-            (directory / "outcome.json").write_text(json.dumps(paused_outcome(store)) + "\n")
+        directory = Path("selection-outcomes") / ("selection-" + store + "-" + os.environ["GITHUB_RUN_ATTEMPT"])
+        directory.mkdir(parents=True, exist_ok=True)
+        outcome = paused_outcome(store) if store not in enabled else {"store": store, "state": "not submitted: selected, but no submission outcome recorded"}
+        (directory / "outcome.json").write_text(json.dumps(outcome) + "\n")
 
 
 if __name__ == "__main__":
