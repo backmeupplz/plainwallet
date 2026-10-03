@@ -75,7 +75,10 @@ export function nativeUsd(network: Network): Promise<Quote | undefined> {
     feed.sequencer ? read(feed.sequencer) : undefined,
   ]).then(([chainId, decimals, round, sequencer]) => chainId === network.id
     ? validateQuote(decimals, round, feed.decimals, feed.maxAge, Date.now(), sequencer) : undefined)
-  const promise = Promise.race([request, timeout]).catch(() => undefined).finally(() => clearTimeout(timer))
+  const promise = Promise.race([request, timeout]).catch(() => undefined).finally(() => {
+    controller.abort() // Promise.all can reject while sibling response bodies are still pending.
+    clearTimeout(timer)
+  })
   if (cache.size >= 16) cache.delete(cache.keys().next().value!)
   const entry = { until: now + CACHE_MS, promise }
   cache.set(key, entry)

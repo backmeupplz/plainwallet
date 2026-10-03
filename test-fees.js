@@ -93,6 +93,41 @@ assert.equal(await nativeUsd(timedNetwork),undefined)
 globalThis.fetch = workingFetch
 globalThis.setTimeout = realSetTimeout
 
+// An early RPC error must abort siblings already waiting for response bodies, not just return unavailable.
+const stalledBodies = []
+let releaseRpcError
+const rpcErrorGate = new Promise((resolve) => { releaseRpcError = resolve })
+globalThis.fetch = async (url, init) => {
+  const body = JSON.parse(init.body)
+  if (body.method === 'eth_chainId') {
+    await rpcErrorGate // Let all three Base oracle response bodies begin reading first.
+    return new Response(JSON.stringify({ jsonrpc: '2.0', id: body.id, error: { code: -32603, message: 'RPC failed' } }))
+  }
+  const stalled = { signal: init.signal, reading: false, cancelled: false }
+  stalledBodies.push(stalled)
+  return new Response(new ReadableStream({
+    start(controller) {
+      init.signal.addEventListener('abort', () => {
+        stalled.cancelled = true
+        controller.error(init.signal.reason)
+      }, { once: true })
+    },
+    pull() {
+      stalled.reading = true
+      if (stalledBodies.length === 3 && stalledBodies.every((s) => s.reading)) releaseRpcError()
+      return new Promise(() => {}) // Headers arrived, but the provider never sends the body.
+    },
+  }, { highWaterMark: 0 }))
+}
+try {
+  assert.equal(await nativeUsd(network(8453)), undefined)
+  assert.equal(stalledBodies.length, 3)
+  assert.ok(stalledBodies.every((s) => s.reading), 'all sibling body reads started before the RPC error')
+  assert.ok(stalledBodies.every((s) => s.signal.aborted && s.cancelled), 'early RPC failure cancels every stalled sibling body')
+} finally {
+  globalThis.fetch = workingFetch
+}
+
 // Exercise the actual fee DOM helper with delayed network/account/transaction review replacements.
 registerHooks({ resolve(specifier, context, next) {
   if (specifier === '@/lib/fee-usd') specifier = new URL('./lib/fee-usd.ts', import.meta.url).href
