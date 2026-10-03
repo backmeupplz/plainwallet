@@ -7,6 +7,7 @@ import { megapotSettings } from '@/lib/megapot'
 import { addDerivedAccount, addWallet, exportAccount, isUnlocked, load, lock, removeAccount, repair, save, seedSources, signer, TAMPERED, touch, unlock, type Network, type State, type Token } from '@/lib/store'
 import { checkSecret, newMnemonic, parseSecret } from '@/lib/wallet'
 import type { Pending } from '../background'
+import { feeValue } from './fee'
 
 const app = document.getElementById('app')!
 let error = ''
@@ -225,7 +226,7 @@ function resetDialog() {
     confirmation.el, remove)
 }
 
-type Row = [label: string, value: string]
+type Row = [label: string, value: string | Node]
 const rowList = (rows: Row[]) => h('dl', {}, ...rows.flatMap(([label, value]) => [h('dt', {}, label), h('dd', {}, value)]))
 // Nested data as dotted rows. The prefix keeps dapp-chosen field names from posing as the wallet's own rows.
 const flatten = (value: unknown, path: string): Row[] =>
@@ -372,12 +373,12 @@ function describe(p: Pending): { title: string; rows?: Row[]; text?: string } {
       case 'plainwallet_megapot': // the wallet's own, see Settings
         return {
           title: d.step === 'approve' ? 'Approve USDC for Megapot tickets?' : 'Buy a Megapot ticket?',
-          rows: [['To', d.to], ['Max fee', `${d.fee} ${p.network.symbol}`], ['Data', d.data]],
+          rows: [['To', d.to], ['Estimated max fee', feeValue(p.network, d.fee)], ['Data', d.data]],
         }
       case 'eth_sendTransaction':
         return {
           title: d.to ? 'Send transaction' : 'Deploy contract',
-          rows: [['To', d.to ?? '(new contract)'], ['Value', `${d.value} ${p.network.symbol}`], ['Max fee', `${d.fee} ${p.network.symbol}`], ['Data', d.data]],
+          rows: [['To', d.to ?? '(new contract)'], ['Value', `${d.value} ${p.network.symbol}`], ['Estimated max fee', feeValue(p.network, d.fee)], ['Data', d.data]],
         }
     }
   } catch {}
@@ -605,7 +606,7 @@ function sendDialog(s: State, network: Network, tokens: Token[]) {
         ['Network', networkLabel(network)], ['From', from], ['To', recipient],
         ['Amount', `${formatUnits(value, decimals)} ${token?.symbol ?? network.symbol}`],
         ...(token ? [['Token contract', token.address] as Row] : []),
-        ['Max fee', `${formatEther(fee)} ${network.symbol}`],
+        ['Estimated max fee', feeValue(network, fee)],
       ])),
       ...secondOpinion('transaction', {
         network: network.name, to: request.to!, value: `${formatEther(request.value ?? 0n)} ${network.symbol}`,
