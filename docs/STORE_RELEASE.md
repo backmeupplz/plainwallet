@@ -83,17 +83,18 @@ AMO reviewers: unpack `firefox-source.zip`; use the pinned Node version, `npm ci
 
 ### Android metadata checksum provenance (2026-10-03)
 
-CI run `37156582089` exposed three missing metadata artifacts, not changed dependency versions. Only their exact SHA-256 entries were added to `android/gradle/verification-metadata.xml`; existing checksums, metadata verification and the workflow’s strict mode are unchanged.
+CI run `37156582089` exposed three missing metadata artifacts, not changed dependency versions. Follow-up run `37157044284` passed those checks and exposed the missing `org.apache.groovy:groovy-bom:4.0.29` POM in `:app:androidLintTool`. The existing Groovy BOM entry contained only its module checksum; no trusted POM checksum was replaced. Only these four exact SHA-256 entries were added to `android/gradle/verification-metadata.xml`; existing checksums, dependency versions, metadata verification and the workflow’s strict mode are unchanged.
 
 Each artifact was downloaded independently from both `https://repo.maven.apache.org/maven2/` and `https://repo1.maven.org/maven2/` using system curl with its normal TLS certificate/hostname verification and curlrc disabled (no insecure flags). The two responses were byte-for-byte identical. SHA-256 was calculated locally; published checksum sidecars from **both** endpoints also matched. These are two canonical endpoints of the same repository, not independent publisher attestations.
 
 | Artifact path relative to either endpoint | Bytes | Verified SHA-256 | Published sidecar |
 | --- | ---: | --- | --- |
 | `com/google/guava/guava-parent/33.4.0-jre/guava-parent-33.4.0-jre.pom` | 21100 | `3a499ed34a0d9ee0f1bcc39230021a1cd4e2f7dd0426ab6844f585465d41dcd7` | `.sha1`: `ee79b87abc4ef9b3591db13c59de368c7b03dc79` |
+| `org/apache/groovy/groovy-bom/4.0.29/groovy-bom-4.0.29.pom` | 27277 | `c24277dec93f146bcda25f5ae4391d6527e384e2132efa32184c1e852b42bca9` | `.sha256`: same SHA-256 |
 | `org/junit/junit-bom/5.10.2/junit-bom-5.10.2.module` | 6995 | `de23b114b3e4119a8fe6eb17bed5a3852816698bace67071579d6d927ebb080a` | `.sha256`: same SHA-256 |
 | `org/junit/junit-bom/5.11.0-M2/junit-bom-5.11.0-M2.module` | 7104 | `86477abcf490d6ca059aa9973cb108d22a506f49d1a5569bb32cc6cbf43c2cce` | `.sha256`: same SHA-256 |
 
-Append the sidecar suffix to the artifact URL. Guava’s `.sha256` sidecar returned 404; its published SHA-1 was supplemental evidence only, and the Gradle allowlist still uses the locally calculated SHA-256 cross-checked against both downloads. The offline release regression test pins all three exact entries, rejects alternate hashes for them and checks strict workflow verification. Full dependency resolution remains a CI gate.
+Append the sidecar suffix to the artifact URL. Guava’s `.sha256` sidecar returned 404; its published SHA-1 was supplemental evidence only, and the Gradle allowlist still uses the locally calculated SHA-256 cross-checked against both downloads. The offline release regression test pins all four exact entries, rejects alternate hashes for them and checks strict workflow verification. Full dependency resolution remains a CI gate.
 
 ## Reruns, partial failures and recovery
 

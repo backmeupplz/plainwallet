@@ -82,6 +82,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertIsNone(metadata.find("v:configuration/v:trusted-artifacts", ns))
         expected = [
             ("com.google.guava", "guava-parent", "33.4.0-jre", "pom", "3a499ed34a0d9ee0f1bcc39230021a1cd4e2f7dd0426ab6844f585465d41dcd7"),
+            ("org.apache.groovy", "groovy-bom", "4.0.29", "pom", "c24277dec93f146bcda25f5ae4391d6527e384e2132efa32184c1e852b42bca9"),
             ("org.junit", "junit-bom", "5.10.2", "module", "de23b114b3e4119a8fe6eb17bed5a3852816698bace67071579d6d927ebb080a"),
             ("org.junit", "junit-bom", "5.11.0-M2", "module", "86477abcf490d6ca059aa9973cb108d22a506f49d1a5569bb32cc6cbf43c2cce"),
         ]
