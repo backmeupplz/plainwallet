@@ -1,9 +1,16 @@
 // Shared by redraws in this view; never stores a password or changes the vault's lock lifecycle.
 let pending = false
-let current: { form: HTMLFormElement; update: () => void } | undefined
+let current: { form: HTMLFormElement; update: () => void; focus: () => void } | undefined
 let generation = 0
 let closed = false
-addEventListener('pagehide', () => { closed = true; generation++ })
+let failure = ''
+// Harmless locked-view redraws share feedback; navigation/authentication starts a new lifecycle.
+export function invalidateUnlockView() {
+  generation++
+  failure = ''
+  current = undefined
+}
+addEventListener('pagehide', () => { closed = true; generation++; failure = '' })
 addEventListener('pageshow', () => {
   closed = false
   if (current?.form.isConnected) current.update()
@@ -32,9 +39,9 @@ export function unlockForm(unlock: (password: string) => Promise<unknown>, done:
     form.ariaBusy = String(pending)
     input.disabled = button.disabled = pending
     button.textContent = pending ? 'Unlocking...' : 'Unlock'
-    status.textContent = pending ? 'Unlocking your wallet…' : ''
+    status.textContent = pending ? 'Unlocking your wallet…' : failure
   }
-  current = { form, update }
+  current = { form, update, focus: () => input.focus() }
   update()
   const active = () => current?.form === form && form.isConnected && !closed
   form.onsubmit = async (event) => {
@@ -42,7 +49,9 @@ export function unlockForm(unlock: (password: string) => Promise<unknown>, done:
     if (pending || !active()) return
     const started = generation
     const stillActive = () => active() && started === generation
+    const sameView = () => started === generation && !closed && current?.form.isConnected
     pending = true
+    failure = ''
     update()
     let password = input.value
     try {
@@ -52,21 +61,18 @@ export function unlockForm(unlock: (password: string) => Promise<unknown>, done:
       password = ''
       if (stillActive()) await done()
     } catch (e) {
-      if (stillActive()) {
-        status.textContent = e instanceof Error && e.message === 'Wrong password'
+      if (sameView()) {
+        failure = e instanceof Error && e.message === 'Wrong password'
           ? 'Wrong password. Please try again.' : 'Could not unlock your wallet. Please try again.'
       }
     } finally {
       password = ''
       input.value = ''
       pending = false
-      if (stillActive()) {
-        form.ariaBusy = 'false'
-        input.disabled = button.disabled = false
-        button.textContent = 'Unlock'
-        if (status.textContent === 'Unlocking your wallet…') status.textContent = ''
-        input.focus()
-      } else if (!closed && current?.form.isConnected) current.update()
+      if (!closed && current?.form.isConnected) {
+        current.update()
+        if (sameView()) current.focus()
+      }
     }
   }
   // Keep the live region outside aria-busy: assistive technology need not defer the progress announcement.

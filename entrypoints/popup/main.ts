@@ -8,7 +8,7 @@ import { addDerivedAccount, addWallet, autolock, exportAccount, isUnlocked, load
 import { checkSecret, newMnemonic, parseSecret } from '@/lib/wallet'
 import type { Pending } from '../background'
 import { feeValue } from './fee'
-import { unlockForm } from './unlock'
+import { invalidateUnlockView, unlockForm } from './unlock'
 
 const app = document.getElementById('app')!
 let renderId = 0
@@ -802,6 +802,7 @@ export async function render(stillCurrent = () => true) {
     screen = pending.length ? approvalScreen(pending[0]!, pending.length - 1) : mainScreen(s)
   }
   if (mine !== renderId || viewClosed || !stillCurrent()) return
+  if (s instanceof Error || seed || !s.vault || unlocked) invalidateUnlockView()
   app.replaceChildren(...(error ? [h('div', { className: 'error', role: 'alert' }, error)] : []), ...screen)
 }
 
@@ -810,6 +811,7 @@ render()
 browser.storage.onChanged.addListener((changes, area) => {
   if (area !== 'session' || !('key' in changes || 'mined' in changes)) return
   if ('mined' in changes) cached = undefined
+  if ('key' in changes) invalidateUnlockView()
   if (changes.key && !changes.key.newValue) {
     clearSetup()
     document.querySelectorAll('dialog').forEach((dialog) => dialog.close())

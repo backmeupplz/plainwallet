@@ -22,7 +22,7 @@ const frame = async () => {
   await Promise.resolve()
 }
 const paint = async () => { await frame(); await frame() }
-const { unlockForm } = await import('./entrypoints/popup/unlock.ts')
+const { invalidateUnlockView, unlockForm } = await import('./entrypoints/popup/unlock.ts')
 const deferred = () => {
   let resolve, reject
   const promise = new Promise((yes, no) => { resolve = yes; reject = no })
@@ -116,7 +116,7 @@ assert.equal(renders, 2)
 await submit(ui) // retained detached event handler cannot start another unlock
 assert.equal(frames.length, 0)
 
-// A redraw during work must neither allow another operation nor publish a stale result/error.
+// A harmless locked-view redraw preserves failure feedback and retry without a duplicate operation.
 for (const outcome of ['resolve', 'reject']) {
   ui = replacement
   ui.input.value = 'synthetic password'
@@ -133,7 +133,38 @@ for (const outcome of ['resolve', 'reject']) {
   await attempt
   assert.equal(renders, 2)
   busy(replacement, false)
+  assert.equal(replacement.status.textContent, outcome === 'reject' ? 'Wrong password. Please try again.' : '')
+  replacement.form.isConnected = false
+  replacement = mount()
+  assert.equal(replacement.status.textContent, outcome === 'reject' ? 'Wrong password. Please try again.' : '')
+}
+ui = replacement
+operation = deferred()
+attempt = submit(ui)
+assert.match(ui.status.textContent, /^Unlocking/)
+await paint()
+operation.resolve()
+await attempt
+assert.equal(renders, 3)
+assert.equal(ui.status.textContent, '')
+
+// Navigation or a newer authentication lifecycle must not inherit a late failure or completion.
+for (const outcome of ['resolve', 'reject']) {
+  operation = deferred()
+  ui.input.value = 'synthetic password'
+  attempt = submit(ui)
+  await paint()
+  invalidateUnlockView()
+  ui.form.isConnected = false
+  replacement = mount()
+  busy(replacement, true)
+  await submit(replacement)
+  operation[outcome](outcome === 'reject' ? new Error('Wrong password') : undefined)
+  await attempt
+  assert.equal(renders, 3)
+  busy(replacement, false)
   assert.equal(replacement.status.textContent, '')
+  ui = replacement
 }
 
 // pagehide cancels delayed work even when nodes remain connected (and after a bfcache restore).
@@ -147,23 +178,30 @@ for (const restore of [false, true]) {
   await paint()
   await attempt
   assert.equal(calls, count)
-  assert.equal(renders, 2)
+  assert.equal(renders, 3)
   events.dispatchEvent(new Event('pageshow'))
   busy(ui, false)
   replacement = mount()
   busy(replacement, false)
 }
 
-// Closing after unlock starts does not cancel crypto or mutate its lock lifecycle, only UI completion.
-ui = replacement
-operation = deferred()
-attempt = submit(ui)
-await paint()
-events.dispatchEvent(new Event('pagehide'))
-operation.resolve()
-await attempt
-assert.equal(renders, 2)
-events.dispatchEvent(new Event('pageshow'))
+// Closing after unlock starts suppresses both outcomes, including a restore before rejection.
+for (const outcome of ['resolve', 'reject']) {
+  ui = replacement
+  ui.input.value = 'synthetic password'
+  operation = deferred()
+  attempt = submit(ui)
+  await paint()
+  events.dispatchEvent(new Event('pagehide'))
+  if (outcome === 'reject') events.dispatchEvent(new Event('pageshow'))
+  operation[outcome](outcome === 'reject' ? new Error('Wrong password') : undefined)
+  await attempt
+  assert.equal(renders, 3)
+  events.dispatchEvent(new Event('pageshow'))
+  busy(ui, false)
+  assert.equal(ui.status.textContent, '')
+  replacement = mount()
+}
 ui = mount()
 busy(ui, false)
 ui.form.isConnected = false
@@ -181,12 +219,12 @@ assert.ok((await readFile(new URL('./entrypoints/android/main.ts', import.meta.u
 // source-extraction pattern too; the unlock form above is imported directly, not reimplemented here.
 const renderSource = popup.slice(popup.indexOf('export async function render('), popup.indexOf('\nrender()\n')).replace('export ', '').replace(': Pending[]', '').replace(': (Node | string)[]', '').replace('(e: Error)', '(e)').replace('pending[0]!', 'pending[0]').replace(' as string | undefined', '')
 const makeRender = new Function('env',
-  'let { browser, load, isUnlocked, touch, mainScreen, approvalScreen, unlockScreen, app } = env; ' +
+  'let { browser, load, isUnlocked, touch, mainScreen, approvalScreen, unlockScreen, app, invalidateUnlockView } = env; ' +
   "let renderId = 0, viewClosed = false, currentWindowId, seed = '', error = '', jevKey; " +
   "const TAMPERED = 'tampered'; " + renderSource +
   '; return { render, close() { viewClosed = true; renderId++ } }')
 const loads = [], settings = [], drawn = []
-let unlocked = false
+let unlocked = false, invalidations = 0
 const env = {
   browser: {
     windows: { getCurrent: async () => ({ id: 1 }) },
@@ -196,6 +234,7 @@ const env = {
   load: () => { const gate = deferred(); loads.push(gate); return gate.promise },
   isUnlocked: async () => unlocked,
   touch() {},
+  invalidateUnlockView() { invalidations++ },
   mainScreen: () => ['home'], approvalScreen: () => ['approval'], unlockScreen: () => ['locked'],
   app: { replaceChildren: (...nodes) => drawn.push(nodes) },
 }
@@ -239,4 +278,28 @@ renderer.close()
 loads[5].resolve({ vault: true })
 await old
 assert.equal(drawn.length, 2, 'closed view cannot redraw')
+assert.equal(invalidations, 0, 'locked redraws and stale renders preserve the unlock lifecycle')
+renderer = makeRender(env)
+unlocked = true
+old = renderer.render()
+await tick()
+loads[6].resolve({ vault: true })
+await tick()
+settings[1].resolve({})
+await old
+assert.equal(invalidations, 1, 'navigation out of the locked screen invalidates feedback')
+
+// Exercise the production storage-event routing: mined preserves feedback; key changes invalidate it.
+const listenerSource = popup.slice(popup.indexOf('browser.storage.onChanged.addListener'), popup.indexOf('// ponytail: MV3'))
+let listener, storageRenders = 0
+new Function('browser', 'invalidateUnlockView', 'clearSetup', 'document', 'render',
+  'let cached; ' + listenerSource)(
+  { storage: { onChanged: { addListener(fn) { listener = fn } } } },
+  () => invalidations++, () => {}, { querySelectorAll: () => [] }, () => storageRenders++)
+listener({ mined: { newValue: 1 } }, 'session')
+assert.equal(invalidations, 1)
+listener({ key: { newValue: 'synthetic' } }, 'session')
+listener({ key: {} }, 'session')
+assert.equal(invalidations, 3)
+assert.equal(storageRenders, 3)
 console.log('unlock feedback, paint boundary, single-flight retries/redraws and detached lifecycle ok')
