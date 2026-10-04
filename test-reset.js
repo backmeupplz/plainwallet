@@ -34,7 +34,7 @@ registerHooks({
     return next(specifier, context)
   },
 })
-const { addWallet, addDerivedAccount, exportAccount, removeAccount, seedSources, load, lock, repair, save, secrets, isUnlocked, unlock } = await import('./lib/store.ts')
+const { addWallet, addDerivedAccount, autolock, exportAccount, removeAccount, seedSources, load, lock, repair, save, secrets, setAutolock, isUnlocked, unlock } = await import('./lib/store.ts')
 const { deriveKey, encryptVault, newMeta, toAccount } = await import('./lib/wallet.ts')
 const { default: start } = await import('./entrypoints/background.ts')
 start()
@@ -71,9 +71,21 @@ await addWallet(secondSeed)
 assert.equal((await seedSources()).length, 2)
 await addDerivedAccount(5)
 assert.equal((await load()).addresses[6], toAccount({ mnemonic: secondSeed, addressIndex: 1 }).address)
+// Auto-lock off clears the alarm and survives lock/unlock; a value the wallet didn't write keeps auto-lock on.
+assert.ok(alarms.has('lock') && (await autolock()))
+await setAutolock(false)
+assert.ok(!alarms.has('lock') && !(await autolock()))
+const off = browser.storage.local.data.noAutolock
+browser.storage.local.data.noAutolock = 'forged'
+assert.ok(await autolock())
+browser.storage.local.data.noAutolock = off
 await lock()
+assert.ok(await autolock()) // nothing to check it with while locked
 await assert.rejects(addDerivedAccount(0), /locked/)
 await unlock('old-password-123')
+assert.ok(!alarms.has('lock') && !(await autolock()))
+await setAutolock(true)
+assert.ok(alarms.has('lock') && (await autolock()))
 assert.equal((await secrets())[0], mnemonic)
 assert.equal(toAccount((await secrets())[6]).address, (await load()).addresses[6])
 await addWallet('0x' + '12'.repeat(32))

@@ -129,8 +129,21 @@ export const reset = () => navigator.locks.request('vault', async () => {
   await browser.alarms.clear('lock')
 })
 
+// Auto-lock off is stored as a MAC under the vault key: a website's process (Firefox) can delete it, which only turns
+// auto-lock back on, but can't write it. Off still locks on browser restart (storage.session) and with the Lock button.
+const NO_AUTOLOCK = 'auto-lock off'
+export const autolock = async () => {
+  const key = await sessionKey()
+  return !key || (await browser.storage.local.get('noAutolock')).noAutolock !== (await mac(key, NO_AUTOLOCK))
+}
+export const setAutolock = async (on: boolean) => {
+  if (on) await browser.storage.local.remove('noAutolock')
+  else await browser.storage.local.set({ noAutolock: await mac(await unlockedKey(), NO_AUTOLOCK) })
+  await touch()
+}
+
 /** Auto-lock: (re)armed on unlock and on every use of the popup. An alarm, because it outlives the service worker. */
-export const touch = () => browser.alarms.create('lock', { delayInMinutes: 15 })
+export const touch = async () => (await autolock()) ? browser.alarms.create('lock', { delayInMinutes: 15 }) : browser.alarms.clear('lock')
 const setKey = async (key: string) => (await browser.storage.session.set({ key }), touch())
 
 export const unlock = (password: string) =>
