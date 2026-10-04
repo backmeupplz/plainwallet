@@ -1,5 +1,5 @@
 // Display only. No account, wallet client, signing, third-party price API, or cross-chain RPC.
-import { createPublicClient, http, isAddress, parseAbi } from 'viem'
+import { createPublicClient, http, isAddress, parseAbi, type ContractFunctionParameters } from 'viem'
 import type { Network } from './store'
 
 // Vetted proxies and heartbeat bounds: docs/fee-prices.md. Never infer a feed from a symbol.
@@ -19,6 +19,8 @@ const abi = parseAbi([
 ])
 type Round = readonly [bigint, bigint, bigint, bigint, bigint]
 export type Quote = { answer: bigint; decimals: number; receivedAt: number; expiresAt: number }
+// Multicall3, as in lib/chain.ts: deployed at this address on every chain above.
+const MULTICALL3 = '0xcA11bde05977b3631167028862bE2a173976CA11'
 const CACHE_MS = 30_000
 const TIMEOUT_MS = 5_000
 const cache = new Map<string, { until: number; promise: Promise<Quote | undefined> }>()
@@ -63,20 +65,33 @@ export function nativeUsd(network: Network): Promise<Quote | undefined> {
   const key = JSON.stringify([network.id, network.rpc, network.symbol]), now = Date.now()
   const previous = cache.get(key)
   if (previous && previous.until > now && previous.until - CACHE_MS <= now) return previous.promise.then((q) => q && freshQuote(q) ? q : undefined)
-  const controller = new AbortController()
-  const c = createPublicClient({ ccipRead: false, transport: http(network.rpc, {
-    retryCount: 0, timeout: TIMEOUT_MS, fetchOptions: { redirect: 'error', credentials: 'omit', signal: controller.signal },
-  }) })
-  const read = (address: `0x${string}`) => c.readContract({ address, abi, functionName: 'latestRoundData' })
+  const stop = new AbortController()
+  const reads = () => {
+    if (stop.signal.aborted) return Promise.reject(stop.signal.reason)
+    const attempt = new AbortController()
+    stop.signal.addEventListener('abort', () => attempt.abort(), { once: true })
+    const c = createPublicClient({ ccipRead: false, transport: http(network.rpc, {
+      retryCount: 0, timeout: TIMEOUT_MS, fetchOptions: { redirect: 'error', credentials: 'omit', signal: attempt.signal },
+    }) })
+    const round = (address: `0x${string}`) => ({ address, abi, functionName: 'latestRoundData' }) as const
+    return Promise.all([
+      c.getChainId(),
+      c.multicall({ multicallAddress: MULTICALL3, allowFailure: false, contracts: [
+        { address: feed.address, abi, functionName: 'decimals' }, round(feed.address), ...(feed.sequencer ? [round(feed.sequencer)] : []),
+      ] as ContractFunctionParameters[] }) as Promise<[number, Round, Round?]>,
+    ]).then(([chainId, [decimals, price, sequencer]]) => [chainId, decimals, price, sequencer] as const)
+      .finally(() => attempt.abort()) // Promise.all can reject while a sibling response body is still pending.
+  }
   let timer: ReturnType<typeof setTimeout>
-  const timeout = new Promise<undefined>((resolve) => { timer = setTimeout(() => { controller.abort(); resolve(undefined) }, TIMEOUT_MS) })
-  const request = Promise.all([
-    c.getChainId(), c.readContract({ address: feed.address, abi, functionName: 'decimals' }), read(feed.address),
-    feed.sequencer ? read(feed.sequencer) : undefined,
-  ]).then(([chainId, decimals, round, sequencer]) => chainId === network.id
+  const timeout = new Promise<undefined>((resolve) => { timer = setTimeout(() => { stop.abort(); resolve(undefined) }, TIMEOUT_MS) })
+  const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+  // Public RPCs ration eth_call per IP (mainnet.base.org: -32016 "over rate limit"), and a review screen opening spends
+  // some: one eth_call for all three reads, retried while the timeout allows.
+  const request = reads().catch(() => pause(1000).then(reads)).catch(() => pause(2000).then(reads))
+    .then(([chainId, decimals, round, sequencer]) => chainId === network.id
     ? validateQuote(decimals, round, feed.decimals, feed.maxAge, Date.now(), sequencer) : undefined)
   const promise = Promise.race([request, timeout]).catch(() => undefined).finally(() => {
-    controller.abort() // Promise.all can reject while sibling response bodies are still pending.
+    stop.abort()
     clearTimeout(timer)
   })
   if (cache.size >= 16) cache.delete(cache.keys().next().value!)
