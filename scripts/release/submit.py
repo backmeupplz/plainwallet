@@ -148,6 +148,13 @@ class Journal:
         return result
 
 
+def older(version, than):
+    try:
+        return tuple(int(p) for p in str(version).split(".")) < tuple(int(p) for p in than.split("."))
+    except ValueError:
+        return False
+
+
 def chrome(meta, env, journal, api=request, pause=time.sleep):
     name = "publishers/" + env["CHROME_PUBLISHER_ID"] + "/items/" + env["CHROME_ITEM_ID"]
     base = "https://chromewebstore.googleapis.com/v2/" + name
@@ -165,7 +172,13 @@ def chrome(meta, env, journal, api=request, pause=time.sleep):
                 # fetchStatus does not expose publishType; old/uncertain reviews may be held.
                 require(review and review.get("publishType") == "DEFAULT_PUBLISH" and review.get("deployPercentage") == 100, "Chrome pending review lacks automatic-publication receipt; explicit owner reconciliation required")
             return {"store": "chrome", "version": meta["version"], "item": name, "state": state, "existing": True, "publication": "public" if state == "PUBLISHED" else "automatic-after-approval"}
-    require(not status.get("submittedItemRevisionStatus"), "Another Chrome submission exists; do not replace it")
+    # Owner decision (2026-10-04): a new release replaces an older version still in review. Never a held, newer or
+    # unrecognized submission.
+    pending = status.get("submittedItemRevisionStatus")
+    if pending:
+        versions = [c.get("crxVersion") for c in pending.get("distributionChannels", [])]
+        require(pending.get("state") == "PENDING_REVIEW" and versions and all(older(v, meta["version"]) for v in versions), "Another Chrome submission exists; only an older pending review is replaced")
+        journal.once("cancel", lambda: api(base + ":cancelSubmission", token, method="POST", body={}), lambda r: {"cancelled": versions})
     require(review is None, "Chrome review receipt disagrees with current status; reconcile in console")
     uploaded = journal.once("upload", lambda: api("https://chromewebstore.googleapis.com/upload/v2/" + name + ":upload", token, method="POST", body=Path("release-out/chrome.zip").read_bytes(), content_type="application/zip"), lambda r: {"uploadState": r.get("uploadState"), "name": r.get("name"), "crxVersion": r.get("crxVersion")})
     require(not uploaded["crxVersion"] or uploaded["crxVersion"] == meta["version"], "Chrome upload version mismatch")
@@ -267,6 +280,8 @@ def play(meta, env, journal, api=request, sign=signed_bundle):
     # No overwrites of another pending rollout. Empty track or completed releases only.
     track = next((t for t in tracks if t["track"] == env["PLAY_TRACK"]), {})
     require(all(r.get("status") == "completed" for r in track.get("releases", [])), "Play track has draft/staged rollout; reconcile manually")
+    # The commit below replaces changes in review: only ever with a newer versionCode.
+    require(all(int(c) <= meta["versionCode"] for r in track.get("releases", []) for c in r.get("versionCodes", [])), "Newer Play release exists; reconcile manually")
     for t in tracks:
         for r in t.get("releases", []):
             if str(meta["versionCode"]) in r.get("versionCodes", []):
@@ -281,7 +296,7 @@ def play(meta, env, journal, api=request, sign=signed_bundle):
     track_receipt = journal.once("track", lambda: api(track_url, token, method="PUT", body={"track": env["PLAY_TRACK"], "releases": [{"name": meta["version"], "versionCodes": [str(meta["versionCode"])], "status": "completed"}]}), lambda r: {"track": r["track"]})
     require(track_receipt.get("track") == "production", "Play did not confirm production track; no commit")
     journal.once("validate", lambda: api(path + ":validate", token, method="POST"), lambda r: {"valid": True})
-    committed = journal.once("commit", lambda: api(path + ":commit?changesNotSentForReview=false&changesInReviewBehavior=ERROR_IF_IN_REVIEW", token, method="POST"), lambda r: {"id": r["id"], "track": "production", "managedPublishingDisabledConfirmed": True})
+    committed = journal.once("commit", lambda: api(path + ":commit?changesNotSentForReview=false&changesInReviewBehavior=CANCEL_IN_REVIEW_AND_SUBMIT", token, method="POST"), lambda r: {"id": r["id"], "track": "production", "managedPublishingDisabledConfirmed": True})
     return {"store": "play", "version": meta["version"], "versionCode": meta["versionCode"], "editId": committed["id"], "track": "production", "state": "committed-for-review; verify Publishing overview", "publication": "automatic-after-approval; console setting owner-confirmed, not API-verified"}
 
 
