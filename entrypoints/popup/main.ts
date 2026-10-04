@@ -4,7 +4,7 @@ import { describeCall, parseAddress, parseAmount, spenderOf } from '@/lib/descri
 import { analyze, type Subject, type Verdict } from '@/lib/jev'
 import { lookup, type Level, type Lookup, type Party } from '@/lib/lookup'
 import { megapotSettings } from '@/lib/megapot'
-import { addDerivedAccount, addWallet, exportAccount, isUnlocked, load, lock, removeAccount, repair, save, seedSources, signer, TAMPERED, touch, unlock, type Network, type State, type Token } from '@/lib/store'
+import { addDerivedAccount, addWallet, autolock, exportAccount, isUnlocked, load, lock, removeAccount, repair, save, seedSources, setAutolock, signer, TAMPERED, touch, unlock, type Network, type State, type Token } from '@/lib/store'
 import { checkSecret, newMnemonic, parseSecret } from '@/lib/wallet'
 import type { Pending } from '../background'
 import { feeValue } from './fee'
@@ -57,8 +57,9 @@ const act = (fn: () => unknown) => async () => {
   }
   await render()
 }
-/** Filled in by the Android app (entrypoints/android): its favorite sites above the balances, fingerprint unlock. */
-export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [] }
+/** Filled in by the Android app (entrypoints/android): its favorite sites above the balances, fingerprint unlock, and
+ * no auto-lock switch (the app locks itself when you leave it). */
+export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [], autolockSetting: true }
 const icons = {
   lock: 'M7 11V7a5 5 0 0 1 10 0v4 M5 11h14v10H5Z M12 15v2',
   settings: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z M9 3l-1 3-3 1-2 3 2 2-1 3 2 3 3-1 2 3h3l1-3 3-1 2-3-2-2 1-3-2-3-3 1-2-3Z',
@@ -660,6 +661,8 @@ function removeDialog(s: State) {
 async function settingsDialog(s: State) {
   const m = megapotSettings((await browser.storage.local.get('megapot')).megapot)
   const { content, run, dialog } = modal('Settings')
+  const locks = h('input', { type: 'checkbox', checked: await autolock() })
+  locks.onchange = run(() => setAutolock(locks.checked), false)
   const sites = h('div', { className: 'dialog-content' })
   const empty = () => { if (!sites.childElementCount) sites.append(h('p', {}, 'No connected sites.')) }
   for (const [site, accounts] of Object.entries(s.connections)) {
@@ -676,6 +679,8 @@ async function settingsDialog(s: State) {
   const jev = field('API key', { type: 'password', value: jevKey, autocomplete: 'off', spellcheck: false })
   content.append(h('button', { onclick: () => { dialog.close(); exportDialog(s) } }, 'Export seeds / private keys'),
     h('button', { onclick: () => { dialog.close(); removeDialog(s) } }, 'Remove account'),
+    ...(extras.autolockSetting ? [h('label', { className: 'acknowledgment' }, locks, 'Lock after 15 minutes without use'),
+      h('p', {}, 'When off, the wallet stays unlocked until you lock it or restart the browser.')] : []),
     h('h2', {}, 'Connected sites'), sites,
     h('details', { className: 'fold' },
       h('summary', {}, 'Jev transaction check: ', h('span', {}, jevKey ? 'on' : 'off')),
