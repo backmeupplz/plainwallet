@@ -21,6 +21,14 @@ Only **release.published**, with `draft=false` and `prerelease=false`, submits. 
 
 Use canonical `vMAJOR.MINOR.PATCH` matching package.json. The immutable event SHA must equal the checkout and current tag target; moved tags fail. Generated Chrome/Firefox manifests and the actual AAB protobuf manifest must match. The existing Android mapping is preserved: `major*10000 + minor*100 + patch`; minor/patch must be 0–99, versionCode must be positive and within Play limits. Never reuse an existing store version or replace a tag to repair a release. No app code, vault format or identity is changed.
 
+## v0.2.5: Chrome-only unlock feedback release
+
+Owner scope (2026-10-04, agentboard #24): submit **Chrome only**, with automatic public rollout after approval. Build both extensions; no Play upload/track edit/commit, no AMO access/submission, and no iOS work. Shared package/Android build metadata advances to 0.2.5/205 for packaging only.
+
+Pre-change repository controls were Firefox `true`, Play absent (default enabled), Chrome absent (default enabled). Play was explicitly set to `STORE_PLAY_PAUSED=true`; preserve Firefox `true`. Leave these pauses in place after the run. The credential-free selector additionally caps immutable tag `v0.2.5` to Chrome, so full reruns cannot acquire Play/Firefox environments even if repository variables later change. Failed-jobs-only reruns retain that same Chrome-only matrix. Chrome's own pause still wins. A future authorized general release can intentionally set `STORE_PLAY_PAUSED=false` (or remove it) after inspecting active runs; Firefox requires its separate explicit re-enable authorization. Do not retag v0.2.5 or remove its selection cap to distribute it elsewhere.
+
+Before publishing, recheck tags/store versions, active release runs and the v0.2.4 Chrome journal. The existing submitter cancels older pending Chrome reviews before uploading a newer version (PR #15); **do not silently cancel**: inspect the exact remote state and record/confirm the applicable owner authorization before releasing if an older review is still pending. A receipt saying PENDING_REVIEW is not evidence that it remains pending now. Never repeat an uncertain mutation or fabricate a receipt. Record the exact v0.2.5 receipt and distinguish submitted/pending from approved/public in the originating report.
+
 ## Google OIDC setup (separate accounts per store)
 
 In a dedicated Google Cloud project:
