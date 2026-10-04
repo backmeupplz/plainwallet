@@ -248,14 +248,14 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "must be production"):
             play(META, {**ENV, "PLAY_TRACK": "beta"}, MemoryJournal(), api=lambda *a, **kw: self.fail("nonproduction write"))
 
-    def test_play_existing_review_error_does_not_cancel_or_retry(self):
+    def test_play_commit_error_is_not_retried(self):
         journal, commits = MemoryJournal(), []
         journal.put(journal.name("edit", "receipt"), {"id": "e"})
         journal.put(journal.name("bundle", "receipt"), {"versionCode": 203})
         journal.put(journal.name("track", "receipt"), {"track": "production"})
         def api(url, token, **kw):
             if ":commit" in url:
-                self.assertEqual(parse_qs(urlparse(url).query), {"changesNotSentForReview": ["false"], "changesInReviewBehavior": ["ERROR_IF_IN_REVIEW"]})
+                self.assertEqual(parse_qs(urlparse(url).query), {"changesNotSentForReview": ["false"], "changesInReviewBehavior": ["CANCEL_IN_REVIEW_AND_SUBMIT"]})
                 commits.append(url)
                 raise APIError(400)
             return {}
@@ -309,6 +309,36 @@ class ReleaseTests(unittest.TestCase):
             journal.once("review", fail, lambda r: r)
         with self.assertRaisesRegex(ValueError, "Uncertain"):
             journal.once("review", lambda: self.fail("unsafe retry"), lambda r: r)
+
+    def test_chrome_cancels_only_an_older_pending_review(self):
+        def pending(state, version):
+            return {"submittedItemRevisionStatus": {"state": state, "distributionChannels": [{"crxVersion": version}]}}
+        journal, writes, remote = MemoryJournal(), [], pending("PENDING_REVIEW", "0.2.2")
+        def api(url, token, **kw):
+            if url.endswith(":fetchStatus"):
+                return remote
+            writes.append(url.rsplit(":", 1)[1])
+            if url.endswith(":upload"):
+                return {"uploadState": "SUCCEEDED", "crxVersion": META["version"]}
+            return {"state": "PENDING_REVIEW"}
+        self.assertEqual(chrome(META, ENV, journal, api)["state"], "PENDING_REVIEW")
+        self.assertEqual(writes, ["cancelSubmission", "upload", "publish"])
+        self.assertEqual(journal.read(journal.name("cancel", "receipt")), {"cancelled": ["0.2.2"]})
+        for state, version in (("PENDING_REVIEW", "0.2.4"), ("PENDING_REVIEW", "0.10.0"), ("PENDING_REVIEW", "x"), ("STAGED", "0.2.2")):
+            with self.subTest(state=state, version=version):
+                def refuse(url, token, **kw):
+                    self.assertEqual(kw.get("method", "GET"), "GET")
+                    return pending(state, version)
+                with self.assertRaisesRegex(ValueError, "only an older pending review"):
+                    chrome(META, ENV, MemoryJournal(), refuse)
+
+    def test_play_refuses_to_replace_a_newer_release(self):
+        def api(url, token, **kw):
+            if url.endswith("/tracks"):
+                return {"tracks": [{"track": "production", "releases": [{"status": "completed", "versionCodes": ["204"]}]}]}
+            return {"id": "edit-id"}
+        with self.assertRaisesRegex(ValueError, "Newer Play release"):
+            play(META, ENV, MemoryJournal(), api, sign=lambda e: self.fail("must not sign"))
 
     def test_chrome_upload_submit_and_staged_replay_never_publishes(self):
         calls = []
@@ -399,7 +429,7 @@ class ReleaseTests(unittest.TestCase):
             return {"id": "edit-id"}
         result = play(META, ENV, journal, api, sign=lambda e: b"signed-fixture")
         self.assertEqual(result["editId"], "edit-id")
-        self.assertTrue(calls[-1][0].endswith(":commit?changesNotSentForReview=false&changesInReviewBehavior=ERROR_IF_IN_REVIEW"))
+        self.assertTrue(calls[-1][0].endswith(":commit?changesNotSentForReview=false&changesInReviewBehavior=CANCEL_IN_REVIEW_AND_SUBMIT"))
         self.assertNotIn("body", calls[-1][1])
         self.assertEqual(result["track"], "production")
         self.assertIn("automatic-after-approval", result["publication"])
