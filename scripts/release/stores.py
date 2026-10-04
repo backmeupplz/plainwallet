@@ -22,7 +22,10 @@ def paused_outcome(store):
 
 
 def main():
-    enabled = [store for store in STORES if not paused(store, os.environ)]
+    # Owner authorized v0.2.5 for Chrome only. Bind this cap to the immutable tag,
+    # not mutable pause variables: full reruns must never acquire Play/AMO environments.
+    chrome_only = os.environ.get("GITHUB_REF") == "refs/tags/v0.2.5"
+    enabled = [store for store in STORES if not paused(store, os.environ) and (not chrome_only or store == "chrome")]
     with open(os.environ["GITHUB_OUTPUT"], "a") as output:
         output.write("stores=" + json.dumps(enabled) + "\n")
         output.write("has_stores=" + str(bool(enabled)).lower() + "\n")

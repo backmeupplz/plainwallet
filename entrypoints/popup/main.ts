@@ -8,8 +8,13 @@ import { addDerivedAccount, addWallet, autolock, exportAccount, isUnlocked, load
 import { checkSecret, newMnemonic, parseSecret } from '@/lib/wallet'
 import type { Pending } from '../background'
 import { feeValue } from './fee'
+import { invalidateUnlockView, unlockForm } from './unlock'
 
 const app = document.getElementById('app')!
+let renderId = 0
+let viewClosed = false
+addEventListener('pagehide', () => { viewClosed = true; renderId++ })
+addEventListener('pageshow', () => { viewClosed = false })
 let error = ''
 let seed = '' // freshly generated phrase, shown once and only saved after the user confirms
 let pendingPassword: string | undefined // vault password entered alongside it (first wallet only)
@@ -194,16 +199,9 @@ const seedScreen = () => [
 
 /** `waiting`: the site whose request opened this window, so it's clear why the password is needed. */
 function unlockScreen(waiting?: Pending) {
-  const pw = field('Password', { type: 'password', autofocus: true })
-  const go = act(() => unlock(pw.input.value))
-  pw.input.onkeydown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      void go()
-    }
-  }
+  const { section, form } = unlockForm(unlock, async () => { error = ''; await render(() => form.isConnected) })
   return [header(), ...(waiting ? [h('p', {}, `${waiting.origin} is waiting for your approval. Unlock to review it.`)] : []),
-    pw.el, h('button', { className: 'primary', onclick: go }, 'Unlock'), ...extras.unlock(),
+    section, ...extras.unlock(),
     h('button', { className: 'quiet', onclick: resetDialog }, 'Forgot password?')]
 }
 
@@ -783,22 +781,28 @@ const tamperedScreen = () => [
   h('p', {}, 'This restores your accounts from the vault and resets networks, tokens, nicknames and connected sites.'),
 ]
 
-export async function render() {
+export async function render(stillCurrent = () => true) {
+  const mine = ++renderId
+  if (viewClosed || !stillCurrent()) return
   currentWindowId ??= (await browser.windows.getCurrent()).id
   const s = await load().catch((e: Error) => e)
   const pending: Pending[] = await browser.runtime.sendMessage({ type: 'pending' })
+  const unlocked = await isUnlocked()
+  if (mine !== renderId || viewClosed || !stillCurrent()) return
   let screen: (Node | string)[]
   if (s instanceof Error) {
     if (s.message !== TAMPERED) throw s
     screen = tamperedScreen()
   } else if (seed) screen = seedScreen()
   else if (!s.vault) screen = [header(), ...walletForm(true)]
-  else if (!(await isUnlocked())) screen = unlockScreen(pending[0])
+  else if (!unlocked) screen = unlockScreen(pending[0])
   else {
     touch() // using the wallet pushes the auto-lock back
     jevKey = ((await browser.storage.local.get('jevKey')).jevKey as string | undefined) ?? ''
     screen = pending.length ? approvalScreen(pending[0]!, pending.length - 1) : mainScreen(s)
   }
+  if (mine !== renderId || viewClosed || !stillCurrent()) return
+  if (s instanceof Error || seed || !s.vault || unlocked) invalidateUnlockView()
   app.replaceChildren(...(error ? [h('div', { className: 'error', role: 'alert' }, error)] : []), ...screen)
 }
 
@@ -807,6 +811,7 @@ render()
 browser.storage.onChanged.addListener((changes, area) => {
   if (area !== 'session' || !('key' in changes || 'mined' in changes)) return
   if ('mined' in changes) cached = undefined
+  if ('key' in changes) invalidateUnlockView()
   if (changes.key && !changes.key.newValue) {
     clearSetup()
     document.querySelectorAll('dialog').forEach((dialog) => dialog.close())

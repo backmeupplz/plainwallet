@@ -45,6 +45,23 @@ class StoreSelectionTests(unittest.TestCase):
         self.assertEqual((root / "output").read_text(), "stores=[]\nhas_stores=false\n")
         self.assertEqual([r["state"] for r in outcomes(root / "selection-outcomes")], ["paused"] * 3)
 
+    def test_v025_is_chrome_only_even_after_pause_controls_are_restored(self):
+        for variables in ({}, {"STORE_" + s.upper() + "_PAUSED": "false" for s in STORES}):
+            root, result = self.select({**variables, "GITHUB_REF": "refs/tags/v0.2.5"})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((root / "output").read_text(), 'stores=["chrome"]\nhas_stores=true\n')
+            rows = {r["store"]: r for r in outcomes(root / "selection-outcomes")}
+            for store in ("firefox", "play"):
+                self.assertEqual(rows[store]["submission"], "skipped")
+                self.assertEqual(rows[store]["state"], "paused")
+        root, result = self.select({"GITHUB_REF": "refs/tags/v0.2.5", "STORE_CHROME_PAUSED": "true"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((root / "output").read_text(), "stores=[]\nhas_stores=false\n")
+        # Later general releases can restore Play intentionally; Firefox remains paused by default.
+        root, result = self.select({"GITHUB_REF": "refs/tags/v0.2.6", "STORE_PLAY_PAUSED": "false"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('stores=["chrome", "play"]', (root / "output").read_text())
+
     def test_invalid_configuration_fails_before_output(self):
         for value in ("TRUE", "False", "yes", " false "):
             root, result = self.select({"STORE_FIREFOX_PAUSED": value})
