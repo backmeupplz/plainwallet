@@ -1,9 +1,9 @@
 import { defineConfig } from 'wxt'
 
 export default defineConfig({
-  // Firefox reviewers rebuild from the sources zip: it keeps .npmrc (no install scripts), not caches or the Android
-  // and Mac apps' build output.
-  zip: { dotSources: true, excludeSources: ['.git/**', '.wxt/**', 'android/.gradle/**', 'android/**/build/**', '**/*.hprof', 'macos/web/**', 'macos/safari/**', 'macos/build/**'] },
+  // Firefox reviewers rebuild from the sources zip: it keeps .npmrc (no install scripts), not caches or the
+  // Android, iOS and Mac apps' build output.
+  zip: { dotSources: true, excludeSources: ['.git/**', '.wxt/**', 'android/.gradle/**', 'android/**/build/**', '**/*.hprof', 'ios/web/**', 'ios/build/**', 'ios/PlainWallet/Debug.swift', 'macos/web/**', 'macos/safari/**', 'macos/build/**'] },
   manifest: ({ browser }) => ({
     name: 'Plain Wallet',
     permissions: ['storage', 'alarms', ...(browser === 'firefox' ? [] : browser === 'safari' ? ['nativeMessaging'] : ['sidePanel'])],

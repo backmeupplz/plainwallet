@@ -1,6 +1,6 @@
 # <img src="assets/icon.svg" width="28" align="top" alt=""> Plain Wallet
 
-A very minimal EVM wallet extension for Chrome, Firefox and Safari, and Android and Mac apps. ~1900 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
+A very minimal EVM wallet extension for Chrome, Firefox and Safari, and Android, iOS and Mac apps. ~1900 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
 
 > Not audited. Don't keep funds in it that you can't afford to lose.
 
@@ -93,6 +93,21 @@ The wallet always sits under a blue band across the top of the screen; a website
 - A request's origin comes from the WebView (`addWebMessageListener`), never from the page, as in the extension.
 - Optional fingerprint unlock (Settings, with your password): Android keeps the vault key encrypted under a Keystore key that needs a strong biometric each time and is invalidated when fingerprints are added or removed. Anyone whose fingerprint is enrolled on the phone can unlock the wallet; export still asks for the password.
 
+### iOS
+
+The Android app on iPhone (iOS 18+): the same wallet page and provider in a small Swift wrapper, `ios/PlainWallet/PlainWallet.swift`, with optional Face ID or Touch ID unlock. No Megapot: the App Store doesn't take apps that sell lottery tickets. Building needs a Mac with Xcode; the web half builds anywhere and goes in `ios/web`:
+
+```sh
+npm ci && npm run build:android && rm -rf ios/web && cp -R .output/android-mv3 ios/web
+open ios/PlainWallet.xcodeproj   # or xcodebuild -project ios/PlainWallet.xcodeproj -scheme PlainWallet ...
+```
+
+It differs from the Android app where iOS does:
+
+- Sites get a website data store of their own, so WebKit gives them their own web content process and storage, apart from the unlocked wallet's, which is served from the app's bundle under its own `plainwallet://` scheme that only the wallet's web view knows. A request's origin comes from WebKit (`WKScriptMessage.frameInfo.securityOrigin`), never from the page; each answer goes back to the page that asked, and only while the browser still shows that origin.
+- iOS can't keep the wallet out of screenshots. It shows a cover instead of the wallet in the app switcher and while the screen is recorded or mirrored (release builds). Third-party keyboards are turned off in the app, so seed phrases and passwords only ever go through Apple's. Plain-http sites don't load.
+- Optional Face ID or Touch ID unlock (Settings, with your password): the vault key sits in the Keychain on this device only, behind the Face ID enrolled when you turned it on (`biometryCurrentSet`), so changing Face ID or removing the passcode turns it off. Anyone whose face or finger is enrolled can unlock the wallet; export still asks for the password.
+
 ## Store releases
 
 Published stable GitHub releases can submit updates to Play, Chrome Web Store and AMO after owner setup. See [store release setup, publication choices and recovery](docs/STORE_RELEASE.md). Credentials and store approval are not included; review submission is not public rollout.
@@ -122,6 +137,7 @@ entrypoints/android-inpage.ts          Android: the provider, relaying to the ap
 entrypoints/android-shim.ts            Android: the extension API the background and popup use, over the app
 entrypoints/android/                   Android and Mac: the wallet page, background and popup in one, favorites on Android's home screen
 android/                               Android: MainActivity.java, the address bar and the two WebViews, relaying between them
+ios/                                   iOS: PlainWallet.swift, the same as MainActivity.java on WebKit, for entrypoints/android*
 macos/                                 Mac: PlainWallet.swift, the wallet page in a window (no browser), and the Safari extension's container
 assets/icon.svg                        the one icon source; `public/icon/*.png` are rendered from it with rsvg-convert
 ```

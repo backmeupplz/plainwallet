@@ -62,9 +62,10 @@ const act = (fn: () => unknown) => async () => {
   }
   await render()
 }
-/** Filled in by the apps (entrypoints/android): Android's favorite sites above the balances, fingerprint unlock, and
- * no auto-lock switch (the app locks itself when you leave it); the Mac app's own note under that switch. */
-export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [], autolockSetting: true,
+/** Filled in by the apps (entrypoints/android): the phones' favorite sites above the balances, fingerprint unlock, and
+ * no auto-lock switch (they lock themselves when you leave them); the Mac app's own note under that switch; no Megapot
+ * on iOS, where the App Store doesn't allow lotteries. */
+export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [], autolockSetting: true, megapot: true,
   autolockOff: 'When off, the wallet stays unlocked until you lock it or restart the browser.' }
 const icons = {
   lock: 'M7 11V7a5 5 0 0 1 10 0v4 M5 11h14v10H5Z M12 15v2',
@@ -689,7 +690,7 @@ async function settingsDialog(s: State) {
           const key = jev.input.value.trim()
           return key ? browser.storage.local.set({ jevKey: key }) : browser.storage.local.remove('jevKey')
         }) }, 'Save API key'))),
-    megapotSection(m, run),
+    ...(extras.megapot ? [megapotSection(m, run)] : []),
     ...extras.settings(),
     h('p', {}, `Plain Wallet ${browser.runtime.getManifest().version} · `,
       h('a', { href: 'https://github.com/backmeupplz/plainwallet', target: '_blank', rel: 'noreferrer' }, 'Source code on GitHub')))

@@ -255,7 +255,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.2.5;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.borodutch.plainwallet;
 				PRODUCT_NAME = "Plain Wallet";
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -283,7 +283,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.2.5;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.borodutch.plainwallet;
 				PRODUCT_NAME = "Plain Wallet";
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -309,7 +309,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MARKETING_VERSION = 0.2.5;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.borodutch.plainwallet.extension;
 				PRODUCT_NAME = "Plain Wallet Extension";
 				SKIP_INSTALL = YES;
@@ -335,7 +335,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MARKETING_VERSION = 0.2.5;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.borodutch.plainwallet.extension;
 				PRODUCT_NAME = "Plain Wallet Extension";
 				SKIP_INSTALL = YES;

@@ -13,4 +13,7 @@ outcomes/
 macos/web
 macos/safari
 macos/build
+ios/web
+ios/build
 xcuserdata/
+ios/PlainWallet/Debug.swift
