@@ -49,6 +49,8 @@ Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacke
 
 ### Firefox / LibreWolf
 
+Plain Wallet is waiting for review on Firefox Add-ons. Until it's listed there, build it yourself:
+
 ```sh
 npx wxt zip -b firefox --mv3   # → .output/plainwallet-<version>-firefox.zip
 ```
@@ -56,6 +58,8 @@ npx wxt zip -b firefox --mv3   # → .output/plainwallet-<version>-firefox.zip
 The build is unsigned, so either load it temporarily from `about:debugging` (removed, with its storage, on restart), or in a browser that allows it (LibreWolf, Firefox Developer Edition/Nightly) set `xpinstall.signatures.required` to `false`, rename the zip to `.xpi` and open it in the browser. That pref turns off signature checks for every extension.
 
 ### Safari and the Mac app
+
+Get [Plain Wallet on the Mac App Store](https://apps.apple.com/app/id6817506091) (in review; the link works once Apple approves it). Then open Safari → Settings → Extensions, turn on **Plain Wallet** and allow it on websites. The app's own window is the same wallet.
 
 One Mac app (macOS 14+) holds both: the extension for Safari, and the wallet in a window of its own: the Android app's wallet page without a browser, since dapps go through Safari. Both are the same wallet, kept in a file in the app's app group that the app and the extension's native handler read and write for them (`lib/shared-storage.ts`, `macos/Shared/Storage.swift`); each unlocks on its own. Building needs Xcode, and signing with the team in the app group's name (`ACWP4F58HZ`): without it macOS keeps both out of that file and the wallet shows an error.
 
@@ -94,6 +98,8 @@ The wallet always sits under a blue band across the top of the screen; a website
 - Optional fingerprint unlock (Settings, with your password): Android keeps the vault key encrypted under a Keystore key that needs a strong biometric each time and is invalidated when fingerprints are added or removed. Anyone whose fingerprint is enrolled on the phone can unlock the wallet; export still asks for the password.
 
 ### iOS
+
+Get [Plain Wallet on the App Store](https://apps.apple.com/app/id6817506091) (in review; the link works once Apple approves it).
 
 The Android app on iPhone (iOS 18+): the same wallet page and provider in a small Swift wrapper, `ios/PlainWallet/PlainWallet.swift`, with optional Face ID or Touch ID unlock. No Megapot: the App Store doesn't take apps that sell lottery tickets. Building needs a Mac with Xcode; the web half builds anywhere and goes in `ios/web`:
 

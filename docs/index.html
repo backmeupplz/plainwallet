@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Plain Wallet</title>
-    <meta name="description" content="A very minimal EVM wallet for Chrome, Firefox and Android. About 1,400 lines of TypeScript you can read in an evening." />
+    <meta name="description" content="A very minimal EVM wallet for Chrome, Firefox, Safari, Android, iPhone and Mac. About 1,400 lines of TypeScript you can read in an evening." />
     <link rel="canonical" href="https://plainwallet.app/" />
     <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#151929" media="(prefers-color-scheme: dark)" />
@@ -13,7 +13,7 @@
     <meta property="og:site_name" content="Plain Wallet" />
     <meta property="og:url" content="https://plainwallet.app/" />
     <meta property="og:title" content="Plain Wallet — a wallet you can read" />
-    <meta property="og:description" content="A very minimal EVM wallet for Chrome, Firefox and Android. About 1,400 lines of TypeScript, three runtime dependencies, MIT." />
+    <meta property="og:description" content="A very minimal EVM wallet for Chrome, Firefox, Safari, Android, iPhone and Mac. About 1,400 lines of TypeScript, three runtime dependencies, MIT." />
     <meta property="og:image" content="https://plainwallet.app/og.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
@@ -22,7 +22,7 @@
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Plain Wallet — a wallet you can read" />
-    <meta name="twitter:description" content="A very minimal EVM wallet for Chrome, Firefox and Android. About 1,400 lines of TypeScript, three runtime dependencies, MIT." />
+    <meta name="twitter:description" content="A very minimal EVM wallet for Chrome, Firefox, Safari, Android, iPhone and Mac. About 1,400 lines of TypeScript, three runtime dependencies, MIT." />
     <meta name="twitter:image" content="https://plainwallet.app/og.png" />
     <meta name="twitter:image:alt" content="Plain Wallet: a wallet you can read. The extension popup showing token balances, stamped NOT AUDITED." />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
@@ -109,6 +109,7 @@
       .fingerprint { margin: 16px 0 0; font-size: 13px; color: var(--muted); }
       .phones { display: grid; grid-template-columns: repeat(3, minmax(0, 220px)); gap: 20px; margin: 0; padding: 0; list-style: none; }
       .phones img { display: block; width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 16px; box-shadow: 0 1px 2px #1b234012, 0 16px 32px -16px #1b234033; }
+      .mac img { display: block; width: 100%; max-width: 360px; height: auto; border: 1px solid var(--rule); border-radius: 12px; box-shadow: 0 1px 2px #1b234012, 0 16px 32px -16px #1b234033; }
       .fingerprint code { display: block; overflow-wrap: anywhere; color: var(--ink); }
       .warn { margin-top: 32px; padding-left: 12px; border-left: 3px solid var(--stamp); color: var(--ink); font-size: 15px; }
 
@@ -140,7 +141,7 @@
       <div class="hero">
         <div>
           <h1>A wallet you can <em>read</em>.</h1>
-          <p class="lede">A very minimal EVM wallet for Chrome, Firefox and Android. About 1,400 lines of TypeScript — small enough to read in an evening, or have your agent read in a minute.</p>
+          <p class="lede">A very minimal EVM wallet for Chrome, Firefox, Safari, Android, iPhone and Mac. About 1,400 lines of TypeScript — small enough to read in an evening, or have your agent read in a minute.</p>
           <ul class="facts">
             <li>3 runtime deps</li>
             <li>no servers</li>
@@ -149,7 +150,9 @@
           </ul>
           <div class="actions">
             <a class="button primary" href="https://chromewebstore.google.com/detail/plain-wallet/pmnbalegifiefmohkolfpclnmkooifcp">Add to Chrome</a>
-            <a class="button" href="#android">Android app</a>
+            <a class="button" href="#android">Android</a>
+            <a class="button" href="#mac">Mac &amp; Safari</a>
+            <a class="button" href="#iphone">iPhone</a>
             <a class="button" href="https://github.com/backmeupplz/plainwallet">
               <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
               Read the source
@@ -212,6 +215,33 @@
             <p class="fingerprint">APKs from GitHub releases are signed with this certificate (SHA-256):<code>1F:EC:2B:63:39:34:74:21:B0:C5:64:AB:19:EE:66:34:39:16:F7:FE:B0:81:62:C3:5F:C3:5C:9F:B5:9F:CB:83</code></p>
           </div>
 
+          <div class="slip wide" id="mac">
+            <h3>For Mac and Safari <span class="mono">macOS 14+ · in App Store review</span></h3>
+            <p>One app, two ways to use it: the wallet in a window of its own, and the Plain Wallet extension for Safari, sharing the same wallet. After installing, open Safari → Settings → Extensions, turn on Plain Wallet and allow it on websites; sites then get it as their wallet, with the same approvals as the Chrome extension. It locks when your Mac sleeps or locks its screen.</p>
+            <div class="actions">
+              <a class="button primary" href="https://apps.apple.com/app/id6817506091">Mac App Store</a>
+              <a class="button" href="https://github.com/backmeupplz/plainwallet#safari-and-the-mac-app">How the Mac app works</a>
+            </div>
+            <div class="mac"><img src="mac.png" width="440" height="500" loading="lazy" alt="Plain Wallet on a Mac: a window with the network and account selectors above token balances, with Tokens and Send buttons." /></div>
+          </div>
+
+          <div class="slip wide" id="iphone">
+            <h3>For iPhone <span class="mono">iOS 18+ · in App Store review</span></h3>
+            <p>Like the Android app: a browser with the wallet built in. Type a site and it gets Plain Wallet; star the sites you use, and unlock with Face ID or Touch ID if you like.</p>
+            <div class="actions">
+              <a class="button primary" href="https://apps.apple.com/app/id6817506091">App Store</a>
+              <a class="button" href="https://github.com/backmeupplz/plainwallet#ios">How it differs from the extension</a>
+            </div>
+          </div>
+
+          <div class="slip wide" id="firefox">
+            <h3>For Firefox <span class="mono">LibreWolf too · add-on in review</span></h3>
+            <p>Plain Wallet is waiting for review on Firefox Add-ons. Until it's listed, build it yourself, then load it temporarily from <code>about:debugging</code>, or in LibreWolf or Firefox Developer Edition/Nightly turn off <code>xpinstall.signatures.required</code> and open the zip renamed to <code>.xpi</code>.</p>
+            <pre>git clone https://github.com/backmeupplz/plainwallet
+cd plainwallet
+npm ci && npx wxt zip -b firefox --mv3   # → .output/plainwallet-&lt;version&gt;-firefox.zip</pre>
+          </div>
+
           <div class="slip">
             <h3>For AI agents <span class="mono">review first</span></h3>
             <p>Paste this into Claude Code, Codex, Cursor or any agent that can run a shell.</p>
@@ -235,7 +265,7 @@ cd plainwallet
 npm ci && npm run build</pre>
               </li>
               <li>Open <code>chrome://extensions</code>, turn on <strong>Developer mode</strong>, click <strong>Load unpacked</strong> and pick <code>.output/chrome-mv3</code>.</li>
-              <li>Firefox / LibreWolf: <code>npx wxt zip -b firefox --mv3</code>, then load it as described in the <a href="https://github.com/backmeupplz/plainwallet#firefox--librewolf">README</a>.</li>
+              <li>Firefox / LibreWolf: <code>npx wxt zip -b firefox --mv3</code>, then load it as described <a href="#firefox">above</a>.</li>
             </ol>
           </div>
         </div>
