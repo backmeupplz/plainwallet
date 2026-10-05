@@ -1,8 +1,11 @@
-import Foundation
+import SafariServices
 
-// Safari loads the extension through this class; the extension sends no native messages, so it only answers.
+// The extension's storage.local (lib/shared-storage.ts): the wallet the app shares with it.
 final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     func beginRequest(with context: NSExtensionContext) {
-        context.completeRequest(returningItems: nil)
+        let request = (context.inputItems.first as? NSExtensionItem)?.userInfo?[SFExtensionMessageKey]
+        let response = NSExtensionItem()
+        response.userInfo = [SFExtensionMessageKey: Storage.handle(request)]
+        context.completeRequest(returningItems: [response])
     }
 }

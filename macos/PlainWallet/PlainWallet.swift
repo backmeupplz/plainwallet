@@ -5,13 +5,14 @@ import WebKit
 /*
  The Mac app: the mobile apps' wallet page (entrypoints/android*, the extension's background and popup in one page) in a
  window, with no browser of its own; dapps in Safari use the Safari extension that ships inside this app. The page is
- served from the bundle under a `plainwallet://` scheme that only its web view knows, and its storage is its own: the
- app and the Safari extension each keep their own wallet. The wallet locks when the Mac sleeps or its screen locks, and
- after 15 minutes without use unless that's turned off in Settings.
+ served from the bundle under a `plainwallet://` scheme that only its web view knows. Its storage.local is the file it
+ shares with the Safari extension (Shared/Storage.swift), so both show the same wallet; each unlocks on its own. The
+ wallet locks when the Mac sleeps or its screen locks, and after 15 minutes without use unless that's turned off.
  */
 
 @main
-final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate {
+final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKScriptMessageHandlerWithReply, WKNavigationDelegate,
+    WKUIDelegate {
     static let scheme = "plainwallet"
     static let walletPage = URL(string: "plainwallet://app/android.html?view=tab")!
     static let safariExtension = "com.borodutch.plainwallet.extension"
@@ -33,9 +34,11 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKNavi
         config.setURLSchemeHandler(Assets(), forURLScheme: Self.scheme)
         // What entrypoints/android-shim.ts talks to; answers come back through its onmessage (see deliver).
         config.userContentController.addUserScript(WKUserScript(source: """
-            window.plainwalletNative = { platform: 'macos', postMessage: (s) => webkit.messageHandlers.plainwalletNative.postMessage(s) }
+            window.plainwalletNative = { platform: 'macos', postMessage: (s) => webkit.messageHandlers.plainwalletNative.postMessage(s),
+              storage: (msg) => webkit.messageHandlers.plainwalletStorage.postMessage(msg) }
             """, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         config.userContentController.add(self, name: "plainwalletNative")
+        config.userContentController.addScriptMessageHandler(self, contentWorld: .page, name: "plainwalletStorage")
         wallet = WKWebView(frame: .zero, configuration: config)
         wallet.navigationDelegate = self
         wallet.uiDelegate = self
@@ -78,6 +81,15 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKNavi
         default: // the phones' browser and fingerprint messages: there's neither here
             break
         }
+    }
+
+    // The page's storage.local (lib/shared-storage.ts).
+    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage,
+                               replyHandler: @escaping @MainActor (Any?, String?) -> Void) {
+        guard message.webView === wallet, message.frameInfo.isMainFrame, message.frameInfo.securityOrigin.protocol == Self.scheme else {
+            return replyHandler(nil, "Not the wallet page")
+        }
+        replyHandler(Storage.handle(message.body), nil)
     }
 
     /** `msg` as JSON, for entrypoints/android-shim.ts. */

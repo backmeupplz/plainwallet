@@ -57,7 +57,7 @@ The build is unsigned, so either load it temporarily from `about:debugging` (rem
 
 ### Safari and the Mac app
 
-One Mac app (macOS 14+) holds both: the extension for Safari, and the wallet in a window of its own: the Android app's wallet page without a browser, since dapps go through Safari. The app and the extension keep separate wallets. Building needs Xcode:
+One Mac app (macOS 14+) holds both: the extension for Safari, and the wallet in a window of its own: the Android app's wallet page without a browser, since dapps go through Safari. Both are the same wallet, kept in a file in the app's app group that the app and the extension's native handler read and write for them (`lib/shared-storage.ts`, `macos/Shared/Storage.swift`); each unlocks on its own. Building needs Xcode, and signing with the team in the app group's name (`ACWP4F58HZ`): without it macOS keeps both out of that file and the wallet shows an error.
 
 ```sh
 npm ci && npm run build:macos      # the wallet page → macos/web, the Safari extension → macos/safari
@@ -68,7 +68,7 @@ Then turn it on in Safari → Settings → Extensions and allow it on websites. 
 
 - The wallet page is served from the app's bundle under a `plainwallet://` scheme that only its web view knows. Links open in your default browser; the page never navigates away.
 - As with the Android app, the RPC, Blockscout, Sourcify and Jev must allow cross-origin requests.
-- The vault and settings live in the page's `localStorage`, in the app's sandbox container; the unlock key only in its memory. It locks after 15 minutes without use (unless turned off in Settings), when the Mac sleeps or its screen locks, and when you close the window, which quits the app.
+- The vault and settings live in that shared file, `~/Library/Group Containers/ACWP4F58HZ.com.borodutch.plainwallet/storage.json`; the unlock key only in the page's memory. A change made in the app reaches dapps in Safari (a new account or network) only when they next ask. It locks after 15 minutes without use (unless turned off in Settings), when the Mac sleeps or its screen locks, and when you close the window, which quits the app.
 
 ### Android
 

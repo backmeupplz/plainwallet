@@ -6,7 +6,7 @@ export default defineConfig({
   zip: { dotSources: true, excludeSources: ['.git/**', '.wxt/**', 'android/.gradle/**', 'android/**/build/**', '**/*.hprof', 'macos/web/**', 'macos/safari/**', 'macos/build/**'] },
   manifest: ({ browser }) => ({
     name: 'Plain Wallet',
-    permissions: ['storage', 'alarms', ...(['firefox', 'safari'].includes(browser) ? [] : ['sidePanel'])],
+    permissions: ['storage', 'alarms', ...(browser === 'firefox' ? [] : browser === 'safari' ? ['nativeMessaging'] : ['sidePanel'])],
     // lets the background reach any user-specified RPC endpoint regardless of its CORS policy
     host_permissions: ['http://*/*', 'https://*/*'],
     // Firefox refuses MV3 extensions without an ID

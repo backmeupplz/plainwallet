@@ -791,8 +791,8 @@ export async function render(stillCurrent = () => true) {
   if (mine !== renderId || viewClosed || !stillCurrent()) return
   let screen: (Node | string)[]
   if (s instanceof Error) {
-    if (s.message !== TAMPERED) throw s
-    screen = tamperedScreen()
+    // Anything but tampering is storage failing to answer (in the Mac app: the file it shares with Safari).
+    screen = s.message === TAMPERED ? tamperedScreen() : [header(), h('div', { className: 'error', role: 'alert' }, `Can't read the wallet: ${s.message}`)]
   } else if (seed) screen = seedScreen()
   else if (!s.vault) screen = [header(), ...walletForm(true)]
   else if (!unlocked) screen = unlockScreen(pending[0])

@@ -51,6 +51,7 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		B10000000000000000000004 /* PlainWallet */ = {isa = PBXFileSystemSynchronizedRootGroup; path = PlainWallet; sourceTree = "<group>"; };
+		B10000000000000000000028 /* Shared */ = {isa = PBXFileSystemSynchronizedRootGroup; path = Shared; sourceTree = "<group>"; };
 		B10000000000000000000018 /* SafariExtension */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (B10000000000000000000019 /* Exceptions for "SafariExtension" folder in "PlainWallet Extension" target */, ); path = SafariExtension; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -60,6 +61,7 @@
 			children = (
 				B10000000000000000000004 /* PlainWallet */,
 				B10000000000000000000018 /* SafariExtension */,
+				B10000000000000000000028 /* Shared */,
 				B10000000000000000000001 /* web */,
 				B10000000000000000000007 /* Products */,
 			);
@@ -92,6 +94,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				B10000000000000000000004 /* PlainWallet */,
+				B10000000000000000000028 /* Shared */,
 			);
 			name = PlainWallet;
 			productName = PlainWallet;
@@ -111,6 +114,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				B10000000000000000000018 /* SafariExtension */,
+				B10000000000000000000028 /* Shared */,
 			);
 			name = "PlainWallet Extension";
 			productName = "PlainWallet Extension";
@@ -206,6 +210,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -233,6 +238,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = PlainWallet.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
@@ -259,6 +265,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = PlainWallet.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
@@ -284,6 +291,7 @@
 		B1000000000000000000001C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PlainWallet.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
@@ -308,6 +316,7 @@
 		B1000000000000000000001D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PlainWallet.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
