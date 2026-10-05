@@ -1,4 +1,4 @@
-// The Android app's wallet page (android/): the extension's background and popup in one page, on the API that
+// The apps' wallet page (android/, macos/): the extension's background and popup in one page, on the API that
 // entrypoints/android-shim.ts provides. The app shows it for the home screen and for approvals.
 import background from '../background'
 import { extras, h, rearm, render } from '../popup/main'
@@ -7,8 +7,12 @@ import { isUnlocked, unlock, unlockWithKey } from '@/lib/store'
 // Messages to and from the app, beyond what the shim handles itself.
 const app = (globalThis as any).plainwalletApp as { send(msg: object): void; listen(fn: (msg: any) => void): void }
 
+// The Mac app has no browser of its own (dapps use the Safari extension), so no favorites; and it keeps the auto-lock
+// switch: the phones lock whenever you leave the app, the Mac only when it sleeps or its screen locks.
+const mac = (globalThis as any).plainwalletNative.platform === 'macos'
+
 background.main()
-extras.autolockSetting = false
+extras.autolockSetting = mac
 // The app just brought this page up: an approval, or you opened the wallet.
 addEventListener('plainwallet-render', () => {
   asked = false
@@ -17,7 +21,7 @@ addEventListener('plainwallet-render', () => {
 
 // Sites starred in the app's browser, on top of the home screen, with the icons the app got from them. Labeled with
 // the host, which a site can't choose the way it chooses its title.
-extras.home = () => {
+if (!mac) extras.home = () => {
   const nav = h('nav', { className: 'favorites', ariaLabel: 'Favorite sites' })
   void browser.storage.local.get('favorites').then(({ favorites = [] }: { favorites?: { url: string; title: string; icon?: string }[] }) =>
     nav.replaceChildren(...(favorites.length ? favorites.map(({ url, title, icon }) => {

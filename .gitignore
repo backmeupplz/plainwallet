@@ -10,3 +10,7 @@ __pycache__/
 release-out/
 outcome.json
 outcomes/
+macos/web
+macos/safari
+macos/build
+xcuserdata/

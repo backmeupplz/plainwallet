@@ -2,7 +2,7 @@
 
 Plain Wallet has no servers, accounts, analytics or telemetry. Its developer receives no data from it.
 
-**Stored on your device only.** Your seed phrases and private keys, encrypted with your password, plus your account addresses, nicknames, networks, tokens and connected sites. Uninstalling the extension or resetting the wallet deletes them.
+**Stored on your device only.** Your seed phrases and private keys, encrypted with your password, plus your account addresses, nicknames, networks, tokens and connected sites. Uninstalling the extension or resetting the wallet deletes them. The Mac app is the exception: deleting it leaves its data in `~/Library/Containers/com.borodutch.plainwallet`, so reset the wallet first.
 
 **Sent over the network, only to do what you ask:**
 
