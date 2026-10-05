@@ -219,46 +219,71 @@ async function appendWallet(secret: Secret, password?: string) {
   await setKey(key)
 }
 
-/** Deletes one account's secret from the vault, along with its nickname and site connections. `address` must match
- * what the user picked, so a list that changed underneath the dialog can't delete a different account. */
-export const removeAccount = (index: number, address: string) => navigator.locks.request('vault', async () => {
-  const key = await unlockedKey()
-  const vault = await storedVault()
-  const all = await decryptVault(key, vault)
-  const secret = Number.isSafeInteger(index) && index >= 0 ? all[index] : undefined
-  if (!secret || toAccount(secret).address !== address) throw new Error('Vault does not match the selected account')
-  if (all.length < 2) throw new Error('This is your only account. To delete it, lock the wallet and reset it.')
-  const next = await encryptVault(key, JSON.parse(vault), all.filter((_, i) => i !== index))
-  await save((s) => {
-    if (s.addresses[index] !== address) throw new Error('Vault does not match the selected account')
-    const { [address]: _, ...nicknames } = s.nicknames
-    const connections = Object.fromEntries(Object.entries(s.connections)
-      .map(([origin, accounts]) => [origin, accounts.filter((a) => a !== address)] as const).filter(([, accounts]) => accounts.length))
-    return {
-      vault: next, nicknames, connections,
-      addresses: s.addresses.filter((_, i) => i !== index),
-      active: s.active === index ? 0 : s.active > index ? s.active - 1 : s.active,
+/** Public source groups only: no seed words, keys or secret fingerprints leave the vault. */
+export async function accountGroups() {
+  const all = await secrets()
+  const groups: { type: 'seed' | 'key'; accounts: { index: number; address: `0x${string}`; addressIndex?: number }[] }[] = []
+  const seeds = new Map<string, number>()
+  all.forEach((secret, index) => {
+    const mnemonic = mnemonicOf(secret)
+    const account = { index, address: toAccount(secret).address,
+      ...(mnemonic ? { addressIndex: typeof secret === 'string' ? 0 : secret.addressIndex } : {}) }
+    const group = mnemonic ? seeds.get(mnemonic) : undefined
+    if (group !== undefined) groups[group]!.accounts.push(account)
+    else {
+      if (mnemonic) seeds.set(mnemonic, groups.length)
+      groups.push({ type: mnemonic ? 'seed' : 'key', accounts: [account] })
     }
-  }, key)
-})
+  })
+  return groups
+}
 
 /** Only public labels leave this function; seed words stay in the vault. */
 export async function seedSources() {
-  const all = await secrets()
-  const seen = new Set<string>()
-  return all.flatMap((secret, index) => {
-    const mnemonic = mnemonicOf(secret)
-    if (!mnemonic || seen.has(mnemonic)) return []
-    seen.add(mnemonic)
-    return [{ index, address: toAccount(secret).address }]
+  return (await accountGroups()).filter((g) => g.type === 'seed').map((g) => {
+    const { index, address } = g.accounts[0]!
+    return { index, address }
   })
 }
 
-export const addDerivedAccount = (source: number) => navigator.locks.request('vault', async () => {
+/** Deletes exactly the accounts the user confirmed, never a changed group or shifted index. */
+export const removeAccount = (index: number, address: string) => removeAccounts([{ index, address }], false)
+export const removeSeedGroup = (accounts: { index: number; address: string }[]) => removeAccounts(accounts, true)
+
+const removeAccounts = (accounts: { index: number; address: string }[], group: boolean) => navigator.locks.request('vault', async () => {
+  const key = await unlockedKey()
+  const vault = await storedVault()
+  const all = await decryptVault(key, vault)
+  const mismatch = () => { throw new Error('Vault does not match the selected accounts; reopen Manage accounts') }
+  const indexes = new Set(accounts.map((a) => a.index))
+  if (!accounts.length || indexes.size !== accounts.length) mismatch()
+  for (const { index, address } of accounts) {
+    const secret = Number.isSafeInteger(index) && index >= 0 ? all[index] : undefined
+    if (!secret || toAccount(secret).address !== address) mismatch()
+  }
+  if (group) {
+    const mnemonic = mnemonicOf(all[accounts[0]!.index]!)
+    if (!mnemonic || all.some((s, i) => (mnemonicOf(s) === mnemonic) !== indexes.has(i))) mismatch()
+  }
+  if (all.length === indexes.size) throw new Error('This would remove your only account or all accounts. To delete them, lock the wallet and reset it.')
+  const next = await encryptVault(key, JSON.parse(vault), all.filter((_, i) => !indexes.has(i)))
+  await save((s) => {
+    if (accounts.some(({ index, address }) => s.addresses[index] !== address)) mismatch()
+    const removed = new Set(accounts.map((a) => a.address))
+    const addresses = s.addresses.filter((a) => !removed.has(a))
+    const nicknames = Object.fromEntries(Object.entries(s.nicknames).filter(([a]) => !removed.has(a)))
+    const connections = Object.fromEntries(Object.entries(s.connections)
+      .map(([origin, list]) => [origin, list.filter((a) => !removed.has(a))] as const).filter(([, list]) => list.length))
+    return { vault: next, nicknames, connections, addresses, active: Math.max(0, addresses.indexOf(s.addresses[s.active]!)) }
+  }, key)
+})
+
+export const addDerivedAccount = (source: number, address?: string) => navigator.locks.request('vault', async () => {
   const all = await secrets()
   const selected = all[source]
   const mnemonic = selected && mnemonicOf(selected)
   if (!mnemonic) throw new Error('Select a stored seed phrase')
+  if (address !== undefined && toAccount(selected!).address !== address) throw new Error('Seed source changed; reopen Manage accounts')
   let addressIndex = Math.max(...all.filter((s) => mnemonicOf(s) === mnemonic).map((s) => typeof s === 'string' ? 0 : s.addressIndex)) + 1
   const { addresses } = await load()
   // An address may already have been imported separately as a private key.

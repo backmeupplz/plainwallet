@@ -4,7 +4,7 @@ import { describeCall, parseAddress, parseAmount, spenderOf } from '@/lib/descri
 import { analyze, type Subject, type Verdict } from '@/lib/jev'
 import { lookup, type Level, type Lookup, type Party } from '@/lib/lookup'
 import { megapotSettings } from '@/lib/megapot'
-import { addDerivedAccount, addWallet, autolock, exportAccount, isUnlocked, load, lock, removeAccount, repair, save, seedSources, setAutolock, signer, TAMPERED, touch, unlock, type Network, type State, type Token } from '@/lib/store'
+import { accountGroups, addDerivedAccount, addWallet, autolock, exportAccount, isUnlocked, load, lock, removeAccount, removeSeedGroup, repair, save, setAutolock, signer, TAMPERED, touch, unlock, type Network, type State, type Token } from '@/lib/store'
 import { checkSecret, newMnemonic, parseSecret } from '@/lib/wallet'
 import type { Pending } from '../background'
 import { feeValue } from './fee'
@@ -445,34 +445,76 @@ const option = (value: string | number, text: string, selected = false) => h('op
 const accountOptions = (s: State) => s.addresses.map((a, i) => option(i, `${s.nicknames[a] || `Account ${i + 1}`} — ${shortAddress(a)}`, i === s.active))
 
 async function accountDialog(s: State) {
-  const sources = await seedSources()
-  const { content, run } = modal('Add account')
-  const choose = () => content.replaceChildren(
-    h('button', { disabled: !sources.length, onclick: derive }, 'Generate account from seed'),
-    ...(!sources.length ? [h('p', {}, 'Add a seed phrase first to generate more accounts from it.')] : []),
-    h('button', { onclick: () => importSecret(false) }, 'Add private key'),
-    h('button', { onclick: () => importSecret(true) }, 'Add seed phrase'))
+  const { content, run, dialog } = modal('Manage accounts')
+  const groups = await accountGroups()
+  // Loading/decrypting may finish after another view locked the wallet.
+  if (!dialog.open || !(await isUnlocked())) { dialog.close(); return }
+  const label = (a: { index: number; address: string }) => s.nicknames[a.address] || `Account ${a.index + 1}`
+  let generated = ''
+  const choose = () => {
+    generated = ''
+    let seedNumber = 0, keyNumber = 0
+    content.replaceChildren(
+      h('p', {}, 'Accounts are grouped by their saved seed phrase or imported private key. Secrets are not shown here.'),
+      ...groups.map((group) => {
+        const source = group.accounts[0]!
+        const title = group.type === 'seed' ? `Seed phrase ${++seedNumber}` : `Imported private key ${++keyNumber}`
+        return h('section', { className: 'slip' }, h('h3', {}, title),
+          ...group.accounts.map((a) => h('div', { className: 'dialog-content' },
+            h('strong', {}, label(a)), h('p', { className: 'mono' }, a.address),
+            ...(a.addressIndex !== undefined ? [h('p', { className: 'mono' }, `m/44'/60'/0'/0/${a.addressIndex}`)] : []),
+            h('button', { className: 'quiet', onclick: () => remove([a], false, group.type === 'seed') }, 'Remove account'))),
+          ...(group.type === 'seed' ? [
+            h('button', { onclick: run(() => addDerivedAccount(source.index, source.address)) }, 'Generate account from this seed'),
+            h('button', { className: 'danger', onclick: () => remove(group.accounts, true, true) }, 'Remove seed phrase group'),
+          ] : []))
+      }),
+      h('button', { className: 'primary', onclick: generate }, 'Generate new seed phrase'),
+      h('button', { onclick: () => importSecret(false) }, 'Import private key'),
+      h('button', { onclick: () => importSecret(true) }, 'Import seed phrase'))
+  }
   const back = () => h('button', { className: 'quiet', onclick: choose }, 'Back')
-  const derive = () => {
-    const source = h('select', {}, ...sources.map((entry, i) => option(entry.index,
-      `Seed ${i + 1} — ${nameOf(s, entry.address)}`)))
-    content.replaceChildren(back(),
-      h('p', {}, 'Create the next unused account from your saved seed phrase.'),
-      ...(sources.length > 1 ? [h('label', {}, 'Seed phrase', source)] : []),
-      h('button', { className: 'primary', onclick: run(() => addDerivedAccount(Number(source.value))) }, 'Generate account'))
+  const generate = () => {
+    generated = newMnemonic()
+    const backedUp = h('input', { type: 'checkbox' })
+    const create = h('button', { className: 'primary', disabled: true, onclick: run(async () => {
+      if (!backedUp.checked || !generated) throw new Error('Back up the new seed phrase first')
+      await addWallet(generated)
+      generated = ''
+    }) }, 'Create wallet')
+    backedUp.onchange = () => (create.disabled = !backedUp.checked)
+    content.replaceChildren(back(), h('h3', {}, 'Your new seed phrase'),
+      h('p', {}, 'This creates an independent wallet, not another account from an existing seed. Write these 12 words down on paper, in order, and keep them private. Nothing is saved until you confirm.'),
+      h('ol', {}, ...generated.split(' ').map((word) => h('li', {}, word))),
+      h('label', { className: 'acknowledgment' }, backedUp, 'I saved this new seed phrase somewhere safe.'), create)
+  }
+  const remove = (accounts: { index: number; address: string }[], wholeSeed: boolean, fromSeed: boolean) => {
+    const backedUp = h('input', { type: 'checkbox' })
+    const confirm = h('button', { className: 'danger', disabled: true, onclick: run(() => {
+      if (!backedUp.checked) throw new Error('Confirm your backup first')
+      return wholeSeed ? removeSeedGroup(accounts) : removeAccount(accounts[0]!.index, accounts[0]!.address)
+    }) }, wholeSeed ? 'Remove seed phrase and all listed accounts' : 'Remove this account')
+    backedUp.onchange = () => (confirm.disabled = !backedUp.checked)
+    content.replaceChildren(back(), h('h3', {}, wholeSeed ? 'Remove seed phrase group?' : 'Remove account?'),
+      ...accounts.flatMap((a) => [h('strong', {}, label(a)), h('p', { className: 'mono' }, a.address)]),
+      h('p', { className: 'stamp' }, 'This removes local wallet access, nicknames and site connections from this device. It does not delete or move on-chain funds. Without a backup, you may permanently lose access.'),
+      ...(fromSeed ? [h('p', {}, wholeSeed ? 'The seed phrase and every listed account will be removed. Independently imported private keys are not part of this group.' : 'Other accounts from this seed stay available. The seed is removed only when its last account is removed; you can restore this account with your backup and the derivation path shown in Manage accounts.')] : []),
+      h('p', {}, 'To remove every account, lock the wallet and use Forgot password? → Reset wallet.'),
+      h('label', { className: 'acknowledgment' }, backedUp, 'I have the seed phrase or private key for these accounts backed up elsewhere.'), confirm)
   }
   const importSecret = (mnemonic: boolean) => {
     const { input, note } = secretBox()
+    input.placeholder = mnemonic ? 'Seed phrase' : 'Private key'
     content.replaceChildren(back(), h('label', {}, mnemonic ? 'Seed phrase' : 'Private key', input), note,
       h('button', { className: 'primary', onclick: run(() => {
         const secret = parseSecret(input.value)
         if (secret.startsWith('0x') === mnemonic) throw new Error(mnemonic ? 'Enter a seed phrase, not a private key' : 'Enter a private key, not a seed phrase')
         return addWallet(secret)
-      }) }, mnemonic ? 'Add seed phrase' : 'Add private key'))
+      }) }, mnemonic ? 'Import seed phrase' : 'Import private key'))
   }
+  dialog.addEventListener('close', () => { generated = ''; content.replaceChildren() })
   choose()
 }
-
 function nicknameDialog(s: State) {
   const address = s.addresses[s.active]!
   const { content, run } = modal('Account nickname')
@@ -642,20 +684,6 @@ function tokenDialog(network: Network, tokens: Token[]) {
     }) }, 'Add token'))
 }
 
-function removeDialog(s: State) {
-  const { content, run } = modal('Remove account')
-  const selected = h('select', {}, ...accountOptions(s))
-  const backedUp = h('input', { type: 'checkbox' })
-  const remove = h('button', { className: 'danger', disabled: true, onclick: run(() =>
-    removeAccount(Number(selected.value), s.addresses[Number(selected.value)]!)) }, 'Remove account')
-  backedUp.onchange = () => (remove.disabled = !backedUp.checked)
-  selected.onchange = () => { backedUp.checked = false; remove.disabled = true }
-  content.append(h('label', {}, 'Account', selected),
-    h('p', { className: 'stamp' }, 'This deletes the account’s key from Plain Wallet on this device, with its nickname and site connections. Its funds stay on-chain, reachable only with its seed phrase or private key.'),
-    h('label', { className: 'acknowledgment' }, backedUp, 'I have this account’s seed phrase or private key backed up elsewhere.'),
-    remove)
-}
-
 async function settingsDialog(s: State) {
   const m = megapotSettings((await browser.storage.local.get('megapot')).megapot)
   const { content, run, dialog } = modal('Settings')
@@ -676,7 +704,7 @@ async function settingsDialog(s: State) {
   empty()
   const jev = field('API key', { type: 'password', value: jevKey, autocomplete: 'off', spellcheck: false })
   content.append(h('button', { onclick: () => { dialog.close(); exportDialog(s) } }, 'Export seeds / private keys'),
-    h('button', { onclick: () => { dialog.close(); removeDialog(s) } }, 'Remove account'),
+    h('button', { onclick: run(async () => { dialog.close(); await accountDialog(s) }) }, 'Manage accounts'),
     ...(extras.autolockSetting ? [h('label', { className: 'acknowledgment' }, locks, 'Lock after 15 minutes without use'),
       h('p', {}, 'When off, the wallet stays unlocked until you lock it or restart the browser.')] : []),
     h('h2', {}, 'Connected sites'), sites,
@@ -718,7 +746,7 @@ function megapotSection(m: ReturnType<typeof megapotSettings>, run: ReturnType<t
 
 function mainScreen(s: State) {
   const address = s.addresses[s.active]!
-  const accounts = h('select', { id: 'account', title: address }, ...accountOptions(s), option('add', 'Add account…'))
+  const accounts = h('select', { id: 'account', title: address }, ...accountOptions(s), option('add', 'Manage accounts…'))
   accounts.onchange = () => {
     if (accounts.value === 'add') { accounts.value = String(s.active); void act(() => accountDialog(s))() }
     else void act(() => save({ active: Number(accounts.value) }))()

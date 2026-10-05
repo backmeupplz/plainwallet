@@ -7,7 +7,7 @@ A very minimal EVM wallet extension for Chrome and Firefox, and an Android app. 
 ## What it does
 
 - Popup, sidebar or full tab.
-- Generate or import wallets (seed phrase / private key), derive more accounts from a seed, nicknames, remove accounts, export secrets behind your password (shown, never copied to the clipboard).
+- Manage accounts, grouped by seed phrase or imported private key without revealing secrets. Generate an independent seed with a backup confirmation, derive more accounts from saved seeds, or import a seed / private key. Remove individual accounts or whole seed groups after confirming a backup (local access only, not on-chain funds); removing every account uses the existing lock → reset flow. Nicknames and password-gated secret export (shown, never copied to the clipboard).
 - Password-encrypted vault (scrypt, 128 MiB → AES-256-GCM; PBKDF2 vaults from 0.1.x are upgraded on unlock); auto-locks after 15 minutes. Forgot the password? Reset wipes everything.
 - Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche and Gnosis built in; add networks from chainlist.org or by hand, and edit any network.
 - Balances of the gas token and common tokens on each built-in network; add any ERC-20 by address or remove one (symbol and decimals come from the chain). Refreshed on open, on network/account switch and when your transaction is mined.
