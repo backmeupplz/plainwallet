@@ -15,7 +15,7 @@
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   font: 14px/1.45 system-ui, sans-serif;
 }
-body { margin: 0; padding: 16px; min-width: 348px; box-sizing: border-box; background: var(--paper); color: var(--ink); }
+body { margin: 0; padding: 16px 16px max(16px, env(safe-area-inset-bottom)); min-width: 348px; box-sizing: border-box; background: var(--paper); color: var(--ink); }
 #app { display: flex; flex-direction: column; gap: 12px; max-width: 400px; margin: 0 auto; }
 body.sidebar { min-width: 0; }
 header { display: flex; align-items: center; gap: 6px; }

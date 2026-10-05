@@ -10,3 +10,7 @@ __pycache__/
 release-out/
 outcome.json
 outcomes/
+ios/web
+ios/build
+xcuserdata/
+ios/PlainWallet/Debug.swift
