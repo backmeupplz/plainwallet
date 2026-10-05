@@ -1,6 +1,6 @@
 # <img src="assets/icon.svg" width="28" align="top" alt=""> Plain Wallet
 
-A very minimal EVM wallet extension for Chrome and Firefox, and Android and iOS apps. ~1900 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
+A very minimal EVM wallet extension for Chrome, Firefox and Safari, and Android, iOS and Mac apps. ~1900 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
 
 > Not audited. Don't keep funds in it that you can't afford to lose.
 
@@ -49,11 +49,30 @@ Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacke
 
 ### Firefox / LibreWolf
 
+Plain Wallet is waiting for review on Firefox Add-ons. Until it's listed there, build it yourself:
+
 ```sh
 npx wxt zip -b firefox --mv3   # → .output/plainwallet-<version>-firefox.zip
 ```
 
 The build is unsigned, so either load it temporarily from `about:debugging` (removed, with its storage, on restart), or in a browser that allows it (LibreWolf, Firefox Developer Edition/Nightly) set `xpinstall.signatures.required` to `false`, rename the zip to `.xpi` and open it in the browser. That pref turns off signature checks for every extension.
+
+### Safari and the Mac app
+
+Get [Plain Wallet on the Mac App Store](https://apps.apple.com/app/id6817506091) (in review; the link works once Apple approves it). Then open Safari → Settings → Extensions, turn on **Plain Wallet** and allow it on websites. The app's own window is the same wallet.
+
+One Mac app (macOS 14+) holds both: the extension for Safari, and the wallet in a window of its own: the Android app's wallet page without a browser, since dapps go through Safari. Both are the same wallet, kept in a file in the app's app group that the app and the extension's native handler read and write for them (`lib/shared-storage.ts`, `macos/Shared/Storage.swift`); each unlocks on its own. Building needs Xcode, and signing with the team in the app group's name (`ACWP4F58HZ`): without it macOS keeps both out of that file and the wallet shows an error.
+
+```sh
+npm ci && npm run build:macos      # the wallet page → macos/web, the Safari extension → macos/safari
+open macos/PlainWallet.xcodeproj   # run the PlainWallet scheme
+```
+
+Then turn it on in Safari → Settings → Extensions and allow it on websites. A build not signed by the App Store or a Developer ID only shows up there after Develop → Developer Settings → Allow unsigned extensions, which Safari turns off again when it quits. In the Safari extension, Plain Wallet has no side panel; everything else is the extension's. In the app:
+
+- The wallet page is served from the app's bundle under a `plainwallet://` scheme that only its web view knows. Links open in your default browser; the page never navigates away.
+- As with the Android app, the RPC, Blockscout, Sourcify and Jev must allow cross-origin requests.
+- The vault and settings live in that shared file, `~/Library/Group Containers/ACWP4F58HZ.com.borodutch.plainwallet/storage.json`; the unlock key only in the page's memory. A change made in the app reaches dapps in Safari (a new account or network) only when they next ask. It locks after 15 minutes without use (unless turned off in Settings), when the Mac sleeps or its screen locks, and when you close the window, which quits the app.
 
 ### Android
 
@@ -79,6 +98,8 @@ The wallet always sits under a blue band across the top of the screen; a website
 - Optional fingerprint unlock (Settings, with your password): Android keeps the vault key encrypted under a Keystore key that needs a strong biometric each time and is invalidated when fingerprints are added or removed. Anyone whose fingerprint is enrolled on the phone can unlock the wallet; export still asks for the password.
 
 ### iOS
+
+Get [Plain Wallet on the App Store](https://apps.apple.com/app/id6817506091) (in review; the link works once Apple approves it).
 
 The Android app on iPhone (iOS 18+): the same wallet page and provider in a small Swift wrapper, `ios/PlainWallet/PlainWallet.swift`, with optional Face ID or Touch ID unlock. No Megapot: the App Store doesn't take apps that sell lottery tickets. Building needs a Mac with Xcode; the web half builds anywhere and goes in `ios/web`:
 
@@ -120,8 +141,9 @@ lib/megapot.ts                         Megapot ticket every N transactions: addr
 lib/store.ts                           chrome.storage state, signed with the vault key
 entrypoints/android-inpage.ts          Android: the provider, relaying to the app instead of bridge.content.ts
 entrypoints/android-shim.ts            Android: the extension API the background and popup use, over the app
-entrypoints/android/                   Android: the wallet page, background and popup in one, favorites on its home screen
+entrypoints/android/                   Android and Mac: the wallet page, background and popup in one, favorites on Android's home screen
 android/                               Android: MainActivity.java, the address bar and the two WebViews, relaying between them
 ios/                                   iOS: PlainWallet.swift, the same as MainActivity.java on WebKit, for entrypoints/android*
+macos/                                 Mac: PlainWallet.swift, the wallet page in a window (no browser), and the Safari extension's container
 assets/icon.svg                        the one icon source; `public/icon/*.png` are rendered from it with rsvg-convert
 ```
