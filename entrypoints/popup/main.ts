@@ -62,9 +62,10 @@ const act = (fn: () => unknown) => async () => {
   }
   await render()
 }
-/** Filled in by the Android app (entrypoints/android): its favorite sites above the balances, fingerprint unlock, and
- * no auto-lock switch (the app locks itself when you leave it). */
-export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [], autolockSetting: true }
+/** Filled in by the apps (entrypoints/android): Android's favorite sites above the balances, fingerprint unlock, and
+ * no auto-lock switch (the app locks itself when you leave it); the Mac app's own note under that switch. */
+export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [], autolockSetting: true,
+  autolockOff: 'When off, the wallet stays unlocked until you lock it or restart the browser.' }
 const icons = {
   lock: 'M7 11V7a5 5 0 0 1 10 0v4 M5 11h14v10H5Z M12 15v2',
   settings: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z M9 3l-1 3-3 1-2 3 2 2-1 3 2 3 3-1 2 3h3l1-3 3-1 2-3-2-2 1-3-2-3-3 1-2-3Z',
@@ -678,7 +679,7 @@ async function settingsDialog(s: State) {
   content.append(h('button', { onclick: () => { dialog.close(); exportDialog(s) } }, 'Export seeds / private keys'),
     h('button', { onclick: () => { dialog.close(); removeDialog(s) } }, 'Remove account'),
     ...(extras.autolockSetting ? [h('label', { className: 'acknowledgment' }, locks, 'Lock after 15 minutes without use'),
-      h('p', {}, 'When off, the wallet stays unlocked until you lock it or restart the browser.')] : []),
+      h('p', {}, extras.autolockOff)] : []),
     h('h2', {}, 'Connected sites'), sites,
     h('details', { className: 'fold' },
       h('summary', {}, 'Jev transaction check: ', h('span', {}, jevKey ? 'on' : 'off')),

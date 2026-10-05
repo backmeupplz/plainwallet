@@ -13,6 +13,7 @@ const mac = (globalThis as any).plainwalletNative.platform === 'macos'
 
 background.main()
 extras.autolockSetting = mac
+extras.autolockOff = 'When off, the wallet stays unlocked until you lock it, quit the app, or your Mac sleeps or locks its screen.'
 // The app just brought this page up: an approval, or you opened the wallet.
 addEventListener('plainwallet-render', () => {
   asked = false
