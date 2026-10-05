@@ -4,11 +4,17 @@ import { describeCall, parseAddress, parseAmount, spenderOf } from '@/lib/descri
 import { analyze, type Subject, type Verdict } from '@/lib/jev'
 import { lookup, type Level, type Lookup, type Party } from '@/lib/lookup'
 import { megapotSettings } from '@/lib/megapot'
-import { addDerivedAccount, addWallet, exportAccount, isUnlocked, load, lock, removeAccount, repair, save, seedSources, signer, TAMPERED, touch, unlock, type Network, type State, type Token } from '@/lib/store'
+import { addDerivedAccount, addWallet, autolock, exportAccount, isUnlocked, load, lock, removeAccount, repair, save, seedSources, setAutolock, signer, TAMPERED, touch, unlock, type Network, type State, type Token } from '@/lib/store'
 import { checkSecret, newMnemonic, parseSecret } from '@/lib/wallet'
 import type { Pending } from '../background'
+import { feeValue } from './fee'
+import { invalidateUnlockView, unlockForm } from './unlock'
 
 const app = document.getElementById('app')!
+let renderId = 0
+let viewClosed = false
+addEventListener('pagehide', () => { viewClosed = true; renderId++ })
+addEventListener('pageshow', () => { viewClosed = false })
 let error = ''
 let seed = '' // freshly generated phrase, shown once and only saved after the user confirms
 let pendingPassword: string | undefined // vault password entered alongside it (first wallet only)
@@ -56,9 +62,10 @@ const act = (fn: () => unknown) => async () => {
   }
   await render()
 }
-/** Filled in by the mobile apps (entrypoints/android): their favorite sites above the balances, fingerprint unlock;
- * no Megapot on iOS, where the App Store doesn't allow lotteries. */
-export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [], megapot: true }
+/** Filled in by the mobile apps (entrypoints/android): their favorite sites above the balances, fingerprint unlock, and
+ * no auto-lock switch (the apps lock themselves when you leave them); no Megapot on iOS, where the App Store doesn't
+ * allow lotteries. */
+export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [], autolockSetting: true, megapot: true }
 const icons = {
   lock: 'M7 11V7a5 5 0 0 1 10 0v4 M5 11h14v10H5Z M12 15v2',
   settings: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z M9 3l-1 3-3 1-2 3 2 2-1 3 2 3 3-1 2 3h3l1-3 3-1 2-3-2-2 1-3-2-3-3 1-2-3Z',
@@ -193,16 +200,9 @@ const seedScreen = () => [
 
 /** `waiting`: the site whose request opened this window, so it's clear why the password is needed. */
 function unlockScreen(waiting?: Pending) {
-  const pw = field('Password', { type: 'password', autofocus: true })
-  const go = act(() => unlock(pw.input.value))
-  pw.input.onkeydown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      void go()
-    }
-  }
+  const { section, form } = unlockForm(unlock, async () => { error = ''; await render(() => form.isConnected) })
   return [header(), ...(waiting ? [h('p', {}, `${waiting.origin} is waiting for your approval. Unlock to review it.`)] : []),
-    pw.el, h('button', { className: 'primary', onclick: go }, 'Unlock'), ...extras.unlock(),
+    section, ...extras.unlock(),
     h('button', { className: 'quiet', onclick: resetDialog }, 'Forgot password?')]
 }
 
@@ -226,7 +226,7 @@ function resetDialog() {
     confirmation.el, remove)
 }
 
-type Row = [label: string, value: string]
+type Row = [label: string, value: string | Node]
 const rowList = (rows: Row[]) => h('dl', {}, ...rows.flatMap(([label, value]) => [h('dt', {}, label), h('dd', {}, value)]))
 // Nested data as dotted rows. The prefix keeps dapp-chosen field names from posing as the wallet's own rows.
 const flatten = (value: unknown, path: string): Row[] =>
@@ -373,12 +373,12 @@ function describe(p: Pending): { title: string; rows?: Row[]; text?: string } {
       case 'plainwallet_megapot': // the wallet's own, see Settings
         return {
           title: d.step === 'approve' ? 'Approve USDC for Megapot tickets?' : 'Buy a Megapot ticket?',
-          rows: [['To', d.to], ['Max fee', `${d.fee} ${p.network.symbol}`], ['Data', d.data]],
+          rows: [['To', d.to], ['Estimated max fee', feeValue(p.network, d.fee)], ['Data', d.data]],
         }
       case 'eth_sendTransaction':
         return {
           title: d.to ? 'Send transaction' : 'Deploy contract',
-          rows: [['To', d.to ?? '(new contract)'], ['Value', `${d.value} ${p.network.symbol}`], ['Max fee', `${d.fee} ${p.network.symbol}`], ['Data', d.data]],
+          rows: [['To', d.to ?? '(new contract)'], ['Value', `${d.value} ${p.network.symbol}`], ['Estimated max fee', feeValue(p.network, d.fee)], ['Data', d.data]],
         }
     }
   } catch {}
@@ -606,7 +606,7 @@ function sendDialog(s: State, network: Network, tokens: Token[]) {
         ['Network', networkLabel(network)], ['From', from], ['To', recipient],
         ['Amount', `${formatUnits(value, decimals)} ${token?.symbol ?? network.symbol}`],
         ...(token ? [['Token contract', token.address] as Row] : []),
-        ['Max fee', `${formatEther(fee)} ${network.symbol}`],
+        ['Estimated max fee', feeValue(network, fee)],
       ])),
       ...secondOpinion('transaction', {
         network: network.name, to: request.to!, value: `${formatEther(request.value ?? 0n)} ${network.symbol}`,
@@ -660,6 +660,8 @@ function removeDialog(s: State) {
 async function settingsDialog(s: State) {
   const m = megapotSettings((await browser.storage.local.get('megapot')).megapot)
   const { content, run, dialog } = modal('Settings')
+  const locks = h('input', { type: 'checkbox', checked: await autolock() })
+  locks.onchange = run(() => setAutolock(locks.checked), false)
   const sites = h('div', { className: 'dialog-content' })
   const empty = () => { if (!sites.childElementCount) sites.append(h('p', {}, 'No connected sites.')) }
   for (const [site, accounts] of Object.entries(s.connections)) {
@@ -676,6 +678,8 @@ async function settingsDialog(s: State) {
   const jev = field('API key', { type: 'password', value: jevKey, autocomplete: 'off', spellcheck: false })
   content.append(h('button', { onclick: () => { dialog.close(); exportDialog(s) } }, 'Export seeds / private keys'),
     h('button', { onclick: () => { dialog.close(); removeDialog(s) } }, 'Remove account'),
+    ...(extras.autolockSetting ? [h('label', { className: 'acknowledgment' }, locks, 'Lock after 15 minutes without use'),
+      h('p', {}, 'When off, the wallet stays unlocked until you lock it or restart the browser.')] : []),
     h('h2', {}, 'Connected sites'), sites,
     h('details', { className: 'fold' },
       h('summary', {}, 'Jev transaction check: ', h('span', {}, jevKey ? 'on' : 'off')),
@@ -778,22 +782,28 @@ const tamperedScreen = () => [
   h('p', {}, 'This restores your accounts from the vault and resets networks, tokens, nicknames and connected sites.'),
 ]
 
-export async function render() {
+export async function render(stillCurrent = () => true) {
+  const mine = ++renderId
+  if (viewClosed || !stillCurrent()) return
   currentWindowId ??= (await browser.windows.getCurrent()).id
   const s = await load().catch((e: Error) => e)
   const pending: Pending[] = await browser.runtime.sendMessage({ type: 'pending' })
+  const unlocked = await isUnlocked()
+  if (mine !== renderId || viewClosed || !stillCurrent()) return
   let screen: (Node | string)[]
   if (s instanceof Error) {
     if (s.message !== TAMPERED) throw s
     screen = tamperedScreen()
   } else if (seed) screen = seedScreen()
   else if (!s.vault) screen = [header(), ...walletForm(true)]
-  else if (!(await isUnlocked())) screen = unlockScreen(pending[0])
+  else if (!unlocked) screen = unlockScreen(pending[0])
   else {
     touch() // using the wallet pushes the auto-lock back
     jevKey = ((await browser.storage.local.get('jevKey')).jevKey as string | undefined) ?? ''
     screen = pending.length ? approvalScreen(pending[0]!, pending.length - 1) : mainScreen(s)
   }
+  if (mine !== renderId || viewClosed || !stillCurrent()) return
+  if (s instanceof Error || seed || !s.vault || unlocked) invalidateUnlockView()
   app.replaceChildren(...(error ? [h('div', { className: 'error', role: 'alert' }, error)] : []), ...screen)
 }
 
@@ -802,6 +812,7 @@ render()
 browser.storage.onChanged.addListener((changes, area) => {
   if (area !== 'session' || !('key' in changes || 'mined' in changes)) return
   if ('mined' in changes) cached = undefined
+  if ('key' in changes) invalidateUnlockView()
   if (changes.key && !changes.key.newValue) {
     clearSetup()
     document.querySelectorAll('dialog').forEach((dialog) => dialog.close())

@@ -28,13 +28,17 @@ A very minimal EVM wallet extension for Chrome and Firefox, and Android and iOS 
 
 ## What it doesn't
 
-Prices, NFTs, built-in history, swaps, hardware wallets, ENS, gas editing (nonce and fees come from the RPC).
+Portfolio/token prices, NFTs, built-in history, swaps, hardware wallets, ENS, gas editing (nonce and fees come from the RPC).
+
+Network-fee reviews show the native estimated max fee and approximate USD from validated Chainlink feeds on the same network’s RPC. Positive USD fees below $0.001 show <$0.001. Unsupported networks (including Gnosis/xDAI), invalid/stale feeds and outages show USD unavailable without blocking signing. No price-tracking service or extra wallet-address disclosure; see [feed mappings, freshness and limitations](docs/fee-prices.md).
 
 ## Install
 
 ### Chrome (and Brave, Edge, other Chromium browsers)
 
-Build it from source:
+Install [Plain Wallet from the Chrome Web Store](https://chromewebstore.google.com/detail/plain-wallet/pmnbalegifiefmohkolfpclnmkooifcp), then pin it from the puzzle-piece menu so it stays in the toolbar. It updates automatically.
+
+Or build it from source:
 
 ```sh
 npm install
@@ -88,6 +92,10 @@ It differs from the Android app where iOS does:
 - Sites get a website data store of their own, so WebKit gives them their own web content process and storage, apart from the unlocked wallet's, which is served from the app's bundle under its own `plainwallet://` scheme that only the wallet's web view knows. A request's origin comes from WebKit (`WKScriptMessage.frameInfo.securityOrigin`), never from the page; each answer goes back to the page that asked, and only while the browser still shows that origin.
 - iOS can't keep the wallet out of screenshots. It shows a cover instead of the wallet in the app switcher and while the screen is recorded or mirrored (release builds). Third-party keyboards are turned off in the app, so seed phrases and passwords only ever go through Apple's. Plain-http sites don't load.
 - Optional Face ID or Touch ID unlock (Settings, with your password): the vault key sits in the Keychain on this device only, behind the Face ID enrolled when you turned it on (`biometryCurrentSet`), so changing Face ID or removing the passcode turns it off. Anyone whose face or finger is enrolled can unlock the wallet; export still asks for the password.
+
+## Store releases
+
+Published stable GitHub releases can submit updates to Play, Chrome Web Store and AMO after owner setup. See [store release setup, publication choices and recovery](docs/STORE_RELEASE.md). Credentials and store approval are not included; review submission is not public rollout.
 
 ## Develop
 

@@ -11,6 +11,7 @@ const app = (globalThis as any).plainwalletApp as { send(msg: object): void; lis
 if ((globalThis as any).plainwalletNative.platform === 'ios') extras.megapot = false
 
 background.main()
+extras.autolockSetting = false
 // The app just brought this page up: an approval, or you opened the wallet.
 addEventListener('plainwallet-render', () => {
   asked = false
