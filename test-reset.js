@@ -34,7 +34,7 @@ registerHooks({
     return next(specifier, context)
   },
 })
-const { addWallet, addDerivedAccount, autolock, exportAccount, removeAccount, seedSources, load, lock, repair, save, secrets, setAutolock, isUnlocked, unlock } = await import('./lib/store.ts')
+const { accountGroups, removeSeedGroup, addWallet, addDerivedAccount, autolock, exportAccount, removeAccount, seedSources, load, lock, repair, save, secrets, setAutolock, isUnlocked, unlock } = await import('./lib/store.ts')
 const { deriveKey, encryptVault, newMeta, toAccount } = await import('./lib/wallet.ts')
 const { default: start } = await import('./entrypoints/background.ts')
 start()
@@ -128,6 +128,59 @@ assert.deepEqual(removed.nicknames, { [a0]: 'Main' })
 assert.deepEqual(removed.connections, { 'https://b.test': [a0] })
 await save({ connections: {}, nicknames: {} })
 console.log('remove account ok')
+
+// Group metadata never exposes secrets; imported keys remain separate even when derived from a saved seed.
+let groups = await accountGroups()
+assert.deepEqual(groups.map((g) => [g.type, g.accounts.length]), [['seed', 4], ['seed', 2], ['key', 1]])
+for (const g of groups) {
+  assert.deepEqual(Object.keys(g).sort(), ['accounts', 'type'])
+  for (const a of g.accounts) assert.deepEqual(Object.keys(a).sort(), g.type === 'seed' ? ['address', 'addressIndex', 'index'] : ['address', 'index'])
+}
+assert.ok(!JSON.stringify(groups).includes(mnemonic))
+assert.ok(!JSON.stringify(groups).includes(secondSeed))
+const snapshot = structuredClone(browser.storage.local.data)
+await assert.rejects(removeSeedGroup([]), /does not match/)
+await assert.rejects(removeSeedGroup(groups[0].accounts.slice(1)), /does not match/)
+await assert.rejects(removeSeedGroup([...groups[0].accounts, ...groups[1].accounts]), /does not match/)
+await assert.rejects(removeSeedGroup(groups[2].accounts), /does not match/)
+await assert.rejects(removeSeedGroup([groups[0].accounts[0], groups[0].accounts[0]]), /does not match/)
+await assert.rejects(addDerivedAccount(groups[1].accounts[0].index, baseAddress), /source changed/)
+assert.deepEqual(browser.storage.local.data, snapshot)
+// A new child added in another view cannot silently join a deletion the user already confirmed.
+await addDerivedAccount(groups[1].accounts[0].index, groups[1].accounts[0].address)
+await assert.rejects(removeSeedGroup(groups[1].accounts), /does not match/)
+groups = await accountGroups()
+const removedGroup = groups[1]
+const survivor = groups[0].accounts[1].address
+await save({ active: removedGroup.accounts[1].index, nicknames: { [survivor]: 'Keep', [removedGroup.accounts[0].address]: 'Remove' },
+  connections: { 'https://keep.test': [survivor, ...removedGroup.accounts.map((a) => a.address)], 'https://gone.test': removedGroup.accounts.map((a) => a.address) } })
+await removeSeedGroup(removedGroup.accounts)
+assert.equal((await load()).active, 0)
+assert.deepEqual((await load()).nicknames, { [survivor]: 'Keep' })
+assert.deepEqual((await load()).connections, { 'https://keep.test': [survivor] })
+assert.ok(!(await secrets()).some((s) => typeof s === 'string' ? s === secondSeed : s.mnemonic === secondSeed))
+assert.deepEqual((await secrets()).map((s) => toAccount(s).address), (await load()).addresses)
+// Removing a seed's original account leaves its derived siblings grouped and derivable.
+const originalSource = (await accountGroups())[0].accounts[0]
+await removeAccount(originalSource.index, originalSource.address)
+await assert.rejects(addDerivedAccount(originalSource.index, originalSource.address), /source changed/)
+groups = await accountGroups()
+assert.equal(groups[0].accounts.length, 3)
+assert.equal(groups[0].accounts[0].addressIndex, 2)
+await addDerivedAccount(groups[0].accounts[0].index, groups[0].accounts[0].address)
+assert.equal((await secrets()).at(-1).addressIndex, 5)
+// Adding an independent seed after setup uses the same encrypted vault/password and a separate group.
+await addWallet(secondSeed)
+groups = await accountGroups()
+assert.deepEqual(groups.map((g) => [g.type, g.accounts.length]), [['seed', 4], ['key', 1], ['seed', 1]])
+await lock()
+await assert.rejects(accountGroups(), /locked/)
+await assert.rejects(removeSeedGroup(groups[0].accounts), /locked/)
+await assert.rejects(removeAccount(groups[1].accounts[0].index, groups[1].accounts[0].address), /locked/)
+await unlock('old-password-123')
+assert.deepEqual(await accountGroups(), groups)
+await save({ connections: {}, nicknames: {} })
+console.log('grouped account management ok')
 
 // State written behind the wallet's back (Firefox content scripts can reach storage.local) is refused once unlocked,
 // by the popup and by sites alike, and can be rebuilt from the vault.
@@ -233,6 +286,9 @@ assert.equal(upgraded.chainId, 10)
 assert.equal(browser.storage.local.data.sites, undefined)
 await lock()
 await unlock('legacy-password-1')
+assert.deepEqual(await secrets(), [mnemonic])
+const lastGroup = (await accountGroups())[0]
+await assert.rejects(removeSeedGroup(lastGroup.accounts), /only account/)
 assert.deepEqual(await secrets(), [mnemonic])
 // Dropping the kdf field can't pass a new vault off as an old one: without the password's PBKDF2 key it won't open.
 await lock()

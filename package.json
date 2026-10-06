@@ -9,7 +9,7 @@
     "dev": "wxt",
     "build": "wxt build",
     "zip": "wxt zip",
-    "test": "node test.js && node test-reset.js && node test-android.js && node test-macos.js && node test-fees.js && node test-unlock.js",
+    "test": "node test.js && node test-reset.js && node test-android.js && node test-macos.js && node test-native-state.js && node test-native-storage.js && node test-fees.js && node test-unlock.js && node test-accounts.js",
     "build:android": "wxt build -b android",
     "build:macos": "wxt build -b android && wxt build -b safari --mv3 && rm -rf macos/web macos/safari && cp -R .output/android-mv3 macos/web && cp -R .output/safari-mv3 macos/safari"
   },

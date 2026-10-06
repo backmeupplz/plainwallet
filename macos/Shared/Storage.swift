@@ -8,12 +8,25 @@ import Foundation
 enum Storage {
     static let group = "ACWP4F58HZ.com.borodutch.plainwallet"
 
-    /** One request: `{get: [keys] | null}`, `{set: {key: text | null}}` or `{clear: true}`. Answers `{values}` or `{error}`. */
+    /** get/set/clear use JSON text values. compareAndSet checks vault + mac and writes under this same file lock. */
     static func handle(_ request: Any?) -> [String: Any] {
         do {
             guard let request = request as? [String: Any] else { throw Failure("bad request") }
             return try locked { file in
                 var all = try read(file)
+                if let transaction = request["compareAndSet"] as? [String: Any] {
+                    guard let expected = transaction["expected"] as? [String: Any],
+                          Set(expected.keys) == Set(["vault", "mac"]),
+                          let changes = transaction["set"] as? [String: String] else { throw Failure("bad transaction") }
+                    for (key, value) in expected {
+                        guard value is NSNull || value is String else { throw Failure("bad expectation") }
+                        let text = value as? String
+                        if all[key] != text { return ["committed": false] }
+                    }
+                    for (key, value) in changes { all[key] = value }
+                    try write(all, to: file)
+                    return ["committed": true]
+                }
                 if let changes = request["set"] as? [String: Any] {
                     for (key, value) in changes {
                         if value is NSNull { all[key] = nil } else if let text = value as? String { all[key] = text } else { throw Failure("bad value for \(key)") }
