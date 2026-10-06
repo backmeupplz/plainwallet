@@ -9,6 +9,12 @@ const file = new Map()
 let failing = false
 const storage = async (req) => {
   if (failing) return { error: 'Wallet storage: no app group' }
+  if (req.compareAndSet) {
+    const { expected, set } = req.compareAndSet
+    if (Object.entries(expected).some(([k, v]) => (file.get(k) ?? null) !== v)) return { committed: false }
+    for (const [k, v] of Object.entries(set)) file.set(k, v)
+    return { committed: true }
+  }
   if (req.set) { for (const [k, v] of Object.entries(req.set)) v === null ? file.delete(k) : file.set(k, v); return {} }
   if (req.clear) { file.clear(); return {} }
   return { values: Object.fromEntries([...file].filter(([k]) => req.get === null || req.get.includes(k))) }

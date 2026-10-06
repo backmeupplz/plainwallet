@@ -1,7 +1,7 @@
 // The Mac app and its Safari extension share one wallet: storage.local for both is a file in the app's app group
 // (macos/Shared/Storage.swift), read and written through the app (the wallet page's bridge) or the extension's native
-// handler. Every read goes there, so neither side ever saves over the other's changes with a stale copy.
-type Reply = { values?: Record<string, string>; error?: string } | undefined
+// handler. Signed state uses compare-and-set under the native file lock; Web Locks cannot span these two origins.
+type Reply = { values?: Record<string, string>; committed?: boolean; error?: string } | undefined
 
 /** A storage.local on `send`, which reaches Storage.swift. Values travel as JSON text; `null` deletes. */
 export function nativeLocal(send: (msg: object) => Promise<Reply>, wrote = async (_items: Record<string, unknown> | null) => {}) {
@@ -15,6 +15,14 @@ export function nativeLocal(send: (msg: object) => Promise<Reply>, wrote = async
     await wrote(items)
   }
   return {
+    // A distinct request and explicit acknowledgement fail closed against an older native handler.
+    compareAndSet: async (expected: Record<string, unknown>, items: Record<string, unknown>) => {
+      const encode = (values: Record<string, unknown>) => Object.fromEntries(Object.entries(values).map(([k, v]) => [k, v === undefined ? null : JSON.stringify(v)]))
+      const reply = await send({ compareAndSet: { expected: encode(expected), set: encode(items) } })
+      if (!reply || reply.error) throw new Error(reply?.error ?? 'The Plain Wallet app did not answer')
+      if (reply.committed !== true) throw new Error('Wallet changed in another window; reopen it and try again')
+      await wrote(items)
+    },
     get: async (keys?: string | string[] | null) =>
       Object.fromEntries(Object.entries(await call({ get: keys == null ? null : [keys].flat() })).map(([k, v]) => [k, JSON.parse(v)])),
     set: write,

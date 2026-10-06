@@ -85,30 +85,43 @@ const signed = (s: State) => Object.fromEntries(SIGNED.map((name) => [name, s[na
 export const TAMPERED = 'Wallet settings were changed outside Plain Wallet'
 
 /** While locked nothing here is verified: whatever relies on it has to run after an unlock, i.e. after this check. */
-export async function load(): Promise<State> {
-  const s: State = { ...defaults, ...(await browser.storage.local.get()) }
+export const load = async (): Promise<State> => checked(await browser.storage.local.get())
+
+async function checked(raw: Partial<State>): Promise<State> {
+  const s: State = { ...defaults, ...raw }
   const key = await sessionKey()
   if (key && s.mac !== (await mac(key, signed(s)))) throw new Error(TAMPERED)
   return s
 }
 
 /** Re-signs the whole state, so it needs the vault key; serialized, so concurrent writers don't drop each other's changes. */
-export const save = (patch: Partial<State> | ((s: State) => Partial<State>), key?: string) =>
+export const save = (patch: Partial<State> | ((s: State) => Partial<State>), key?: string, expectedVault?: string) =>
   navigator.locks.request('state', async () => {
     const k = key ?? (await unlockedKey())
-    const s = await load()
-    await write(k, { ...s, ...(typeof patch === 'function' ? patch(s) : patch) })
+    const before = await browser.storage.local.get()
+    const s = await checked(before)
+    if (expectedVault !== undefined && s.vault !== expectedVault) throw new Error('Wallet changed in another window; reopen it and try again')
+    await write(k, { ...s, ...(typeof patch === 'function' ? patch(s) : patch) }, before)
   })
 
 // Every signed field is written out, defaults included: a later version changing a default must not break the MAC.
-const write = async (key: string, s: State) => browser.storage.local.set({ ...signed(s), vault: s.vault, mac: await mac(key, signed(s)) })
+const write = async (key: string, s: State, before: Partial<Pick<State, 'vault' | 'mac'>>) => {
+  const items = { ...signed(s), vault: s.vault, mac: await mac(key, signed(s)) }
+  const local = browser.storage.local as typeof browser.storage.local & {
+    compareAndSet?: (expected: Record<string, unknown>, items: Record<string, unknown>) => Promise<void>
+  }
+  // Native reads and writes cross processes. Check the vault AND signed state in the same file-lock transaction.
+  if (local.compareAndSet) await local.compareAndSet({ vault: before.vault, mac: before.mac }, items)
+  else await local.set(items) // browser origins share the state/vault Web Locks
+}
 
 /** After a failed integrity check: accounts come back from the vault, everything else starts over. */
 export const repair = () =>
   navigator.locks.request('state', async () => {
     const key = await unlockedKey()
-    const vault = await storedVault()
-    await write(key, { ...defaults, vault, addresses: (await decryptVault(key, vault)).map((s) => toAccount(s).address) })
+    const before = await browser.storage.local.get()
+    const vault = (before.vault as string | undefined) ?? ''
+    await write(key, { ...defaults, vault, addresses: (await decryptVault(key, vault)).map((s) => toAccount(s).address) }, before)
   })
 
 // The vault authenticates itself (AES-GCM), so reading it needs no MAC check.
@@ -163,7 +176,7 @@ export const unlock = (password: string) =>
       // Nothing is overwritten unless the new vault opens with the password again, from what was actually stored.
       const check = await decryptVault(await deriveKey(password, JSON.parse(upgraded)), upgraded)
       if (JSON.stringify(check) !== JSON.stringify(all)) throw new Error('Vault upgrade check failed; nothing was changed')
-      await save({ vault: upgraded, addresses: all.map((s) => toAccount(s).address), connections: {} }, key)
+      await save({ vault: upgraded, addresses: all.map((s) => toAccount(s).address), connections: {} }, key, vault)
       await browser.storage.local.remove('sites')
     }
     await setKey(key)
@@ -208,15 +221,16 @@ export async function exportAccount(index: number, password: string) {
 /** Adds a wallet and makes it active. `password` is only needed (and used) to create the vault. */
 export const addWallet = (secret: string, password?: string) => navigator.locks.request('vault', () => appendWallet(secret, password))
 
-async function appendWallet(secret: Secret, password?: string) {
+async function appendWallet(secret: Secret, password?: string, expectedVault?: string) {
   const { vault, addresses } = await load()
+  if (expectedVault !== undefined && vault !== expectedVault) throw new Error('Seed source changed; reopen Manage accounts')
   const address = toAccount(secret).address
   if (addresses.includes(address)) throw new Error('Wallet already added')
   if (!vault && !password) throw new Error('Password required') // never derive a vault key from an empty password
   const meta: VaultMeta = vault ? JSON.parse(vault) : newMeta()
   const key = vault ? await unlockedKey() : await deriveKey(password!, meta)
   const all = [...(vault ? await decryptVault(key, vault) : []), secret]
-  await save({ vault: await encryptVault(key, meta, all), addresses: [...addresses, address], active: addresses.length }, key)
+  await save({ vault: await encryptVault(key, meta, all), addresses: [...addresses, address], active: addresses.length }, key, vault)
   await setKey(key)
 }
 
@@ -276,11 +290,12 @@ const removeAccounts = (accounts: { index: number; address: string }[], group: b
     const connections = Object.fromEntries(Object.entries(s.connections)
       .map(([origin, list]) => [origin, list.filter((a) => !removed.has(a))] as const).filter(([, list]) => list.length))
     return { vault: next, nicknames, connections, addresses, active: Math.max(0, addresses.indexOf(s.addresses[s.active]!)) }
-  }, key)
+  }, key, vault)
 })
 
 export const addDerivedAccount = (source: number, address?: string) => navigator.locks.request('vault', async () => {
-  const all = await secrets()
+  const vault = await storedVault()
+  const all = await decryptVault(await unlockedKey(), vault)
   const selected = all[source]
   const mnemonic = selected && mnemonicOf(selected)
   if (!mnemonic) throw new Error('Select a stored seed phrase')
@@ -289,5 +304,5 @@ export const addDerivedAccount = (source: number, address?: string) => navigator
   const { addresses } = await load()
   // An address may already have been imported separately as a private key.
   while (addresses.includes(toAccount({ mnemonic, addressIndex }).address)) addressIndex++
-  await appendWallet({ mnemonic, addressIndex })
+  await appendWallet({ mnemonic, addressIndex }, undefined, vault)
 })
