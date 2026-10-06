@@ -7,6 +7,7 @@ import { browser } from 'wxt/browser'
 import { toHex } from 'viem'
 import { mnemonicToAccount } from 'viem/accounts'
 import { decryptVault, deriveKey, encryptVault, mac, mnemonicOf, newMeta, toAccount, type Secret, type VaultMeta } from './wallet'
+import '@/lib/shared-storage' // Safari: storage.local is the Mac app's
 
 export type Network = { id: number; name: string; rpc: string; symbol: string }
 export type Token = { address: `0x${string}`; symbol: string; decimals: number }

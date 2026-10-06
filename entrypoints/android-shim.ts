@@ -1,4 +1,5 @@
 import { version } from '@/package.json'
+import { nativeLocal } from '@/lib/shared-storage'
 
 // Android app only (android/). The slice of the extension API that background.ts and the popup use, for the app's
 // wallet page (entrypoints/android/), which runs both. Loaded as a classic script before them, so `wxt/browser` finds
@@ -49,7 +50,9 @@ export default defineUnlistedScript({
     // key goes when the app's process does, like with a browser restart.
     const session = new Map<string, string>()
     const storage = {
-      local: area('local', { get: (k) => localStorage.getItem(k), set: (k, v) => localStorage.setItem(k, v), delete: (k) => localStorage.removeItem(k), keys: () => Object.keys(localStorage) }),
+      // The Mac app keeps it in a file it shares with the Safari extension (lib/shared-storage.ts); no local
+      // storage.onChanged there, which only tells a browser's tabs about changes, and the Mac app has none.
+      local: native.storage ? nativeLocal(native.storage) : area('local', { get: (k) => localStorage.getItem(k), set: (k, v) => localStorage.setItem(k, v), delete: (k) => localStorage.removeItem(k), keys: () => Object.keys(localStorage) }),
       session: area('session', { get: (k) => session.get(k), set: (k, v) => session.set(k, v), delete: (k) => session.delete(k), keys: () => [...session.keys()] }),
       onChanged: changed,
     }

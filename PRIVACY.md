@@ -2,14 +2,14 @@
 
 Plain Wallet has no servers, accounts, analytics or telemetry. Its developer receives no data from it.
 
-**Stored on your device only.** Your seed phrases and private keys, encrypted with your password, plus your account addresses, nicknames, networks, tokens and connected sites. Uninstalling the extension or resetting the wallet deletes them.
+**Stored on your device only.** Your seed phrases and private keys, encrypted with your password, plus your account addresses, nicknames, networks, tokens and connected sites. Uninstalling the extension or resetting the wallet deletes them. The Mac app and its Safari extension are the exception: deleting the app leaves their shared data in `~/Library/Group Containers/ACWP4F58HZ.com.borodutch.plainwallet`, so reset the wallet first.
 
 **Sent over the network, only to do what you ask:**
 
 - To the RPC endpoint of the selected network (a public endpoint by default, or one you or a site you approved configured): your address, to read balances, and the transactions you sign, to broadcast them. That provider also sees your IP address.
 - To websites you connect: the address of the account you connected, and the signatures and transaction hashes you approve.
 - To DeBank, only when you click the history button: your address, in the page it opens.
-- Android app only: what you type in the address bar, if it isn't a web address, to DuckDuckGo as a search. The sites you open see what any browser would show them. Favorite sites stay on your device.
+- Android and iOS apps only: what you type in the address bar, if it isn't a web address, to DuckDuckGo as a search. The sites you open see what any browser would show them. Favorite sites stay on your device.
 - To the same RPC, each transaction you review, to simulate it before you approve.
 - Only if you turn on Megapot tickets in Settings: to the Base network's RPC, reads of the ticket price and your USDC allowance, and the purchases you approve. The wallet counts your transactions on your device only.
 - Only if you enter a Jev API key in Settings, for each transaction or signature you review:
