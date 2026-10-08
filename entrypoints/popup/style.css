@@ -48,6 +48,7 @@ dialog::backdrop { background: #0008; }
 .acknowledgment input { width: auto; flex: none; margin-top: 3px; }
 @media (prefers-reduced-motion: no-preference) { button { transition: border-color 0.12s, filter 0.12s, opacity 0.2s; } }
 
+[hidden] { display: none !important; }
 .row { display: flex; gap: 8px; align-items: center; }
 .row > select { flex: 1; min-width: 0; width: 0; }
 .selector-field { display: flex; flex-direction: column; gap: 4px; }

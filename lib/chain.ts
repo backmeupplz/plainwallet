@@ -26,6 +26,8 @@ export const client = (network: Network, account?: `0x${string}`) => createWalle
 
 /** Fully prepared before the user sees it, and exactly this gets signed: nothing can change after the click. */
 export async function prepare(network: Network, from: `0x${string}`, tx: { to?: `0x${string}`; data?: `0x${string}`; value?: bigint; gas?: bigint }) {
+  // Otherwise viem's "HTTP request failed … Failed to fetch".
+  if (!navigator.onLine) throw new Error(`This device is offline: preparing a transaction needs ${network.name}’s RPC`)
   const c = client(network, from)
   // viem only asks the RPC which chain it serves when the RPC implements eth_fillTransaction (whose answer it then
   // uses): ask every time, and sign offline, so the signature is only ever valid on the chain the user sees.
@@ -37,14 +39,22 @@ export async function prepare(network: Network, from: `0x${string}`, tx: { to?: 
   return { request, fee: request.gas * (request.maxFeePerGas ?? request.gasPrice ?? 0n) + l1 }
 }
 
-export async function send(network: Network, account: LocalAccount, request: Awaited<ReturnType<typeof prepare>>['request']) {
-  const c = client(network)
-  // Only the nonce is refreshed after the click (it isn't shown and can't redirect funds): requests queued
-  // together were all prepared at the same nonce.
-  const nonce = await getTransactionCount(c, { address: account.address, blockTag: 'pending' })
-  const { account: _, ...unsigned } = { ...request, nonce }
-  return c.sendRawTransaction({ serializedTransaction: await account.signTransaction(unsigned as TransactionSerializable) })
+type Prepared = Awaited<ReturnType<typeof prepare>>['request']
+/** What gets signed. `fresh`: only the nonce is refreshed after the click (it isn't shown and can't redirect funds):
+ * requests queued together were all prepared at the same nonce. */
+export async function unsigned(network: Network, from: `0x${string}`, request: Prepared, fresh = true) {
+  const nonce = fresh ? await getTransactionCount(client(network), { address: from, blockTag: 'pending' }) : request.nonce
+  const { account: _, from: __, ...tx } = { ...request, nonce }
+  return tx as TransactionSerializable
 }
+
+export async function send(network: Network, account: LocalAccount, request: Prepared) {
+  return broadcast(network, await account.signTransaction(await unsigned(network, account.address, request)))
+}
+
+/** A signed transaction names its chain itself: an RPC serving another one refuses it. */
+export const broadcast = (network: Network, signed: `0x${string}`) =>
+  client(network).sendRawTransaction({ serializedTransaction: signed as any })
 
 /** Resolves with the receipt once `hash` is in a block. Open wallet views then refetch balances, instead of polling. */
 export async function mined(network: Network, hash: `0x${string}`) {
@@ -75,7 +85,7 @@ export async function tokenInfo(network: Network, input: string): Promise<Token>
   const [symbol, decimals] = await Promise.all([
     readContract(c, { address, abi: erc20Abi, functionName: 'symbol' }),
     readContract(c, { address, abi: erc20Abi, functionName: 'decimals' }),
-  ]).catch(() => { throw new Error(`Couldn't read an ERC-20 token at this address on ${network.name}`) })
+  ]).catch(() => { throw new Error(navigator.onLine ? `Couldn't read an ERC-20 token at this address on ${network.name}` : 'This device is offline') })
   return { address, symbol: clean(symbol, 12) || '?', decimals }
 }
 

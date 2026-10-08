@@ -6,7 +6,7 @@ import { arbitrum, avalanche, base, bsc, gnosis, mainnet, optimism, polygon } fr
 import { browser } from 'wxt/browser'
 import { toHex } from 'viem'
 import { mnemonicToAccount } from 'viem/accounts'
-import { decryptVault, deriveKey, encryptVault, mac, mnemonicOf, newMeta, toAccount, type Secret, type VaultMeta } from './wallet'
+import { addressOf, decryptVault, deriveKey, encryptVault, mac, mnemonicOf, newMeta, toAccount, watched, type Secret, type VaultMeta } from './wallet'
 import '@/lib/shared-storage' // Safari: storage.local is the Mac app's
 
 export type Network = { id: number; name: string; rpc: string; symbol: string }
@@ -121,7 +121,7 @@ export const repair = () =>
     const key = await unlockedKey()
     const before = await browser.storage.local.get()
     const vault = (before.vault as string | undefined) ?? ''
-    await write(key, { ...defaults, vault, addresses: (await decryptVault(key, vault)).map((s) => toAccount(s).address) }, before)
+    await write(key, { ...defaults, vault, addresses: (await decryptVault(key, vault)).map(addressOf) }, before)
   })
 
 // The vault authenticates itself (AES-GCM), so reading it needs no MAC check.
@@ -176,7 +176,7 @@ export const unlock = (password: string) =>
       // Nothing is overwritten unless the new vault opens with the password again, from what was actually stored.
       const check = await decryptVault(await deriveKey(password, JSON.parse(upgraded)), upgraded)
       if (JSON.stringify(check) !== JSON.stringify(all)) throw new Error('Vault upgrade check failed; nothing was changed')
-      await save({ vault: upgraded, addresses: all.map((s) => toAccount(s).address), connections: {} }, key, vault)
+      await save({ vault: upgraded, addresses: all.map(addressOf), connections: {} }, key, vault)
       await browser.storage.local.remove('sites')
     }
     await setKey(key)
@@ -199,6 +199,19 @@ export async function signer(index: number, address: string) {
   return account
 }
 
+/** Watch-only accounts: their keys are on another device. Only addresses leave the vault here. */
+export const watchedAddresses = async () => (await secrets()).flatMap((s) => watched(s) ?? [])
+
+// Transactions exported from a watch-only account, as the request text the other device signs: kept until their
+// signed copy is broadcast or you drop them, so closing the wallet in between loses nothing. Outside the MAC: a
+// tampered entry can't get anything broadcast, which takes the other device's signature over exactly that entry, and
+// that device shows what it signs on its own.
+export const exported = async () => ((await browser.storage.local.get('offline')).offline as string[] | undefined) ?? []
+export const keepExported = (request: string, keep: boolean) => navigator.locks.request('offline', async () => {
+  const rest = (await exported()).filter((r) => r !== request)
+  await browser.storage.local.set({ offline: keep ? [...rest, request] : rest })
+})
+
 /** Export always authenticates the supplied password, never the cached unlock key. */
 export async function exportAccount(index: number, password: string) {
   const session = await unlockedKey()
@@ -209,8 +222,9 @@ export async function exportAccount(index: number, password: string) {
   if (await sessionKey() !== session || (await storedVault()) !== vault) throw new Error('Wallet changed or locked; try again')
   const secret = Number.isSafeInteger(index) && index >= 0 ? all[index] : undefined
   if (!secret) throw new Error('Select a stored account')
+  if (watched(secret)) throw new Error('This account is watch-only: no seed phrase or key is stored for it here')
   const mnemonic = mnemonicOf(secret)
-  const addressIndex = typeof secret === 'string' ? 0 : secret.addressIndex
+  const addressIndex = typeof secret === 'object' && 'addressIndex' in secret ? secret.addressIndex : 0
   return {
     mnemonic,
     privateKey: mnemonic ? toHex(mnemonicToAccount(mnemonic, { addressIndex }).getHdKey().privateKey!) : secret as string,
@@ -219,13 +233,13 @@ export async function exportAccount(index: number, password: string) {
 }
 
 /** Adds a wallet and makes it active. `password` is only needed (and used) to create the vault. */
-export const addWallet = (secret: string, password?: string) => navigator.locks.request('vault', () => appendWallet(secret, password))
+export const addWallet = (secret: Secret, password?: string) => navigator.locks.request('vault', () => appendWallet(secret, password))
 
 async function appendWallet(secret: Secret, password?: string, expectedVault?: string) {
   const { vault, addresses } = await load()
   if (expectedVault !== undefined && vault !== expectedVault) throw new Error('Seed source changed; reopen Manage accounts')
-  const address = toAccount(secret).address
-  if (addresses.includes(address)) throw new Error('Wallet already added')
+  const address = addressOf(secret)
+  if (addresses.includes(address)) throw new Error(watched(secret) ? 'This address is already in the wallet' : 'Wallet already added')
   if (!vault && !password) throw new Error('Password required') // never derive a vault key from an empty password
   const meta: VaultMeta = vault ? JSON.parse(vault) : newMeta()
   const key = vault ? await unlockedKey() : await deriveKey(password!, meta)
@@ -237,17 +251,17 @@ async function appendWallet(secret: Secret, password?: string, expectedVault?: s
 /** Public source groups only: no seed words, keys or secret fingerprints leave the vault. */
 export async function accountGroups() {
   const all = await secrets()
-  const groups: { type: 'seed' | 'key'; accounts: { index: number; address: `0x${string}`; addressIndex?: number }[] }[] = []
+  const groups: { type: 'seed' | 'key' | 'watch'; accounts: { index: number; address: `0x${string}`; addressIndex?: number }[] }[] = []
   const seeds = new Map<string, number>()
   all.forEach((secret, index) => {
     const mnemonic = mnemonicOf(secret)
-    const account = { index, address: toAccount(secret).address,
-      ...(mnemonic ? { addressIndex: typeof secret === 'string' ? 0 : secret.addressIndex } : {}) }
+    const account = { index, address: addressOf(secret),
+      ...(mnemonic ? { addressIndex: typeof secret === 'object' && 'addressIndex' in secret ? secret.addressIndex : 0 } : {}) }
     const group = mnemonic ? seeds.get(mnemonic) : undefined
     if (group !== undefined) groups[group]!.accounts.push(account)
     else {
       if (mnemonic) seeds.set(mnemonic, groups.length)
-      groups.push({ type: mnemonic ? 'seed' : 'key', accounts: [account] })
+      groups.push({ type: mnemonic ? 'seed' : watched(secret) ? 'watch' : 'key', accounts: [account] })
     }
   })
   return groups
@@ -274,7 +288,7 @@ const removeAccounts = (accounts: { index: number; address: string }[], group: b
   if (!accounts.length || indexes.size !== accounts.length) mismatch()
   for (const { index, address } of accounts) {
     const secret = Number.isSafeInteger(index) && index >= 0 ? all[index] : undefined
-    if (!secret || toAccount(secret).address !== address) mismatch()
+    if (!secret || addressOf(secret) !== address) mismatch()
   }
   if (group) {
     const mnemonic = mnemonicOf(all[accounts[0]!.index]!)
@@ -299,8 +313,8 @@ export const addDerivedAccount = (source: number, address?: string) => navigator
   const selected = all[source]
   const mnemonic = selected && mnemonicOf(selected)
   if (!mnemonic) throw new Error('Select a stored seed phrase')
-  if (address !== undefined && toAccount(selected!).address !== address) throw new Error('Seed source changed; reopen Manage accounts')
-  let addressIndex = Math.max(...all.filter((s) => mnemonicOf(s) === mnemonic).map((s) => typeof s === 'string' ? 0 : s.addressIndex)) + 1
+  if (address !== undefined && addressOf(selected!) !== address) throw new Error('Seed source changed; reopen Manage accounts')
+  let addressIndex = Math.max(...all.filter((s) => mnemonicOf(s) === mnemonic).map((s) => typeof s === 'object' && 'addressIndex' in s ? s.addressIndex : 0)) + 1
   const { addresses } = await load()
   // An address may already have been imported separately as a private key.
   while (addresses.includes(toAccount({ mnemonic, addressIndex }).address)) addressIndex++
