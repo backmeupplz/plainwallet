@@ -35,12 +35,18 @@ export function checkSecret(input: string): { ok: boolean; message: string; bad?
   return { ok: true, message: `Valid ${words.length}-word seed phrase` }
 }
 
-// Keep legacy strings readable; derived accounts carry their index inside the encrypted vault.
-export type Secret = string | { mnemonic: string; addressIndex: number }
-export const mnemonicOf = (secret: Secret) => typeof secret === 'string' ? (secret.startsWith('0x') ? undefined : secret) : secret.mnemonic
-export const toAccount = (secret: Secret) =>
-  typeof secret !== 'string' ? mnemonicToAccount(secret.mnemonic, { addressIndex: secret.addressIndex })
-    : secret.startsWith('0x') ? privateKeyToAccount(secret as `0x${string}`) : mnemonicToAccount(secret)
+// Keep legacy strings readable; derived accounts carry their index inside the encrypted vault. A watch-only account
+// is only an address: its key is on another device, which signs what this one exports (lib/offline.ts).
+export type Secret = string | { mnemonic: string; addressIndex: number } | { watch: `0x${string}` }
+export const watched = (secret: Secret) => typeof secret === 'object' && 'watch' in secret ? secret.watch : undefined
+export const mnemonicOf = (secret: Secret) =>
+  typeof secret === 'string' ? (secret.startsWith('0x') ? undefined : secret) : 'mnemonic' in secret ? secret.mnemonic : undefined
+export function toAccount(secret: Secret) {
+  if (typeof secret === 'string') return secret.startsWith('0x') ? privateKeyToAccount(secret as `0x${string}`) : mnemonicToAccount(secret)
+  if ('watch' in secret) throw new Error('This account is watch-only: its key is on another device')
+  return mnemonicToAccount(secret.mnemonic, { addressIndex: secret.addressIndex })
+}
+export const addressOf = (secret: Secret) => watched(secret) ?? toAccount(secret).address
 
 // Vault: scrypt (memory-hard, so a copied vault is expensive to brute-force on GPUs) -> AES-256-GCM, random salt per
 // vault, fresh IV per encryption. 0.1.x vaults used PBKDF2-SHA256 (no `kdf` field); unlocking one upgrades it.

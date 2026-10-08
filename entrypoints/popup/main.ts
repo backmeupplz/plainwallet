@@ -1,10 +1,11 @@
-import { encodeFunctionData, erc20Abi, formatEther, formatUnits, isAddress, parseEther, zeroAddress } from 'viem'
-import { balances, mined, prepare, send, simulate, tokenInfo, type Simulation } from '@/lib/chain'
-import { describeCall, parseAddress, parseAmount, spenderOf } from '@/lib/describe'
+import { encodeFunctionData, erc20Abi, formatEther, formatUnits, getAddress, isAddress, parseEther, parseTransaction, serializeTransaction, zeroAddress } from 'viem'
+import { balances, broadcast, mined, prepare, send, simulate, tokenInfo, unsigned, type Simulation } from '@/lib/chain'
+import { describeCall, foreignSignIn, parseAddress, parseAmount, signedView, spenderOf } from '@/lib/describe'
 import { analyze, type Subject, type Verdict } from '@/lib/jev'
 import { lookup, type Level, type Lookup, type Party } from '@/lib/lookup'
 import { megapotSettings } from '@/lib/megapot'
-import { accountGroups, addDerivedAccount, addWallet, autolock, exportAccount, isUnlocked, load, lock, removeAccount, removeSeedGroup, repair, save, setAutolock, signer, TAMPERED, touch, unlock, type Network, type State, type Token } from '@/lib/store'
+import { checkResponse, parseRequest, requestText } from '@/lib/offline'
+import { accountGroups, addDerivedAccount, addWallet, autolock, exportAccount, exported, isUnlocked, keepExported, load, lock, removeAccount, removeSeedGroup, repair, save, setAutolock, signer, TAMPERED, touch, unlock, watchedAddresses, type Network, type State, type Token } from '@/lib/store'
 import { checkSecret, newMnemonic, parseSecret } from '@/lib/wallet'
 import type { Pending } from '../background'
 import { feeValue } from './fee'
@@ -18,7 +19,7 @@ addEventListener('pageshow', () => { viewClosed = false })
 let error = ''
 let seed = '' // freshly generated phrase, shown once and only saved after the user confirms
 let pendingPassword: string | undefined // vault password entered alongside it (first wallet only)
-let walletMode: 'generate' | 'import' | undefined
+let walletMode: 'generate' | 'import' | 'watch' | undefined
 const clearSetup = () => { seed = ''; pendingPassword = undefined; walletMode = undefined }
 const view = new URLSearchParams(location.search).get('view')
 document.body.classList.toggle('sidebar', view === 'sidebar')
@@ -38,6 +39,9 @@ const openDebank = (address: string) => openTab(`https://debank.com/profile/${ad
 let cached: { key: string; values: Promise<(bigint | undefined)[]> } | undefined
 // Unsigned, so outside the MAC: at worst a tampered key costs a Jev opinion, never a signature. Empty = no Jev at all.
 let jevKey = ''
+// Watch-only addresses (the vault's say, read on each unlocked redraw) and the transactions exported from them.
+let watching = new Set<string>()
+let waiting: string[] = []
 // What the wallet finds out before asking Jev: a simulation (always) and, with a key, public lookups.
 type Checks = { simulation?: Promise<Simulation>; lookup?: Promise<Lookup> }
 const analyses = new Map<string, Checks & { verdict?: Promise<Verdict> }>() // per approval id: redraws don't ask (and bill) again
@@ -64,9 +68,10 @@ const act = (fn: () => unknown) => async () => {
 }
 /** Filled in by the apps (entrypoints/android): the phones' favorite sites above the balances, fingerprint unlock, and
  * no auto-lock switch (they lock themselves when you leave them); the Mac app's own note under that switch; no Megapot
- * on iOS, where the App Store doesn't allow lotteries. */
+ * on iOS, where the App Store doesn't allow lotteries.
+ * `files`: watch-only requests and signatures go by file too, not only by copy and paste; the apps only copy. */
 export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [], autolockSetting: true, megapot: true,
-  autolockOff: 'When off, the wallet stays unlocked until you lock it or restart the browser.' }
+  autolockOff: 'When off, the wallet stays unlocked until you lock it or restart the browser.', files: !import.meta.env?.SAFARI }
 const icons = {
   lock: 'M7 11V7a5 5 0 0 1 10 0v4 M5 11h14v10H5Z M12 15v2',
   settings: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z M9 3l-1 3-3 1-2 3 2 2-1 3 2 3 3-1 2 3h3l1-3 3-1 2-3-2-2 1-3-2-3-3 1-2-3Z',
@@ -102,6 +107,21 @@ const copy = (text: string) => (e: Event) => {
   navigator.clipboard.writeText(text)
   button.textContent = 'Copied'
   setTimeout(() => (button.textContent = label), 1200)
+}
+const saveFile = (text: string, name: string) => {
+  const a = h('a', { href: URL.createObjectURL(new Blob([text], { type: 'text/plain' })), download: name })
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(a.href), 60_000)
+}
+/** Fills `box` from a file you pick. */
+function loadButton(box: HTMLTextAreaElement) {
+  const input = h('input', { type: 'file', accept: '.json,.txt,text/plain,application/json', hidden: true })
+  input.onchange = async () => {
+    const file = input.files?.[0]
+    input.value = ''
+    if (file) box.value = file.size > 1_000_000 ? '' : (await file.text()).trim()
+  }
+  return h('button', { onclick: () => input.click() }, 'Load from file', input)
 }
 // Consent buttons (Approve, Send) only come on once taps have stopped for 800 ms: a window that pops up under the
 // cursor, the second half of a double-click, or a site getting you to tap again and again where the button is about to
@@ -151,9 +171,11 @@ function walletForm(first: boolean) {
     h('p', {}, first ? 'How would you like to get started?' : 'How would you like to add a wallet?'),
     h('button', { className: 'primary', onclick: act(() => (walletMode = 'generate')) }, 'Generate new wallet'),
     h('button', { onclick: act(() => (walletMode = 'import')) }, 'Enter seed phrase or private key'),
+    h('button', { onclick: act(() => (walletMode = 'watch')) }, 'Watch an address, sign on another device'),
   ]
-  const importing = walletMode === 'import'
+  const importing = walletMode === 'import', watchOnly = walletMode === 'watch'
   const secret = secretBox(() => update())
+  const address = field('Address', { placeholder: '0x…', spellcheck: false, autocomplete: 'off' })
   const pw = field('Password (min 12 characters)', { type: 'password' })
   const pw2 = field('Repeat password', { type: 'password' })
   // Checked as you type; the button waits until everything is right.
@@ -177,19 +199,22 @@ function walletForm(first: boolean) {
     pendingPassword = password()
     seed = newMnemonic()
   })
-  const submit = h('button', { className: 'primary', onclick: importing ? act(async () => {
-    await addWallet(parseSecret(secret.input.value), password())
+  const submit = h('button', { className: 'primary', onclick: importing || watchOnly ? act(async () => {
+    await addWallet(watchOnly ? { watch: parseAddress(address.input.value) } : parseSecret(secret.input.value), password())
     clearSetup()
-  }) : generate }, importing ? 'Import wallet' : 'Generate seed phrase')
+  }) : generate }, importing ? 'Import wallet' : watchOnly ? 'Watch address' : 'Generate seed phrase')
   update()
   return [
     h('button', { className: 'quiet', onclick: act(clearSetup) }, 'Back'),
-    h('h2', {}, importing ? 'Import your wallet' : 'Create a new wallet'),
-    ...(importing ? [h('label', {}, 'Seed phrase or private key', secret.input), secret.note] : [h('p', {}, 'We’ll generate a new seed phrase for you to back up.')]),
+    h('h2', {}, importing ? 'Import your wallet' : watchOnly ? 'Watch an address' : 'Create a new wallet'),
+    ...(importing ? [h('label', {}, 'Seed phrase or private key', secret.input), secret.note]
+      : watchOnly ? [h('p', {}, watchNote), address.el]
+      : [h('p', {}, 'We’ll generate a new seed phrase for you to back up.')]),
     ...(first ? [h('p', {}, 'Choose a password to protect your wallets on this device.'), pw.el, pw2.el, pwNote] : []),
     submit,
   ]
 }
+const watchNote = 'Its key stays on another device, say an offline computer with Plain Wallet. Here you see its balances, use sites and prepare transactions; you take each one to that device to sign, and bring the signature back.'
 const seedScreen = () => [
   h('h1', {}, 'Your seed phrase'),
   // No copy button: the system clipboard (and clipboard history/sync) is no place for a seed.
@@ -388,11 +413,31 @@ function describe(p: Pending): { title: string; rows?: Row[]; text?: string } {
 
 function approvalScreen(p: Pending, more: number) {
   const { title, rows = [], text } = describe(p)
-  const settle = (ok: boolean) => act(() => browser.runtime.sendMessage({ type: 'settle', id: p.id, ok }))
-  const ok = armed(h('button', { className: 'primary', onclick: settle(true) }, 'Approve'))
+  const offline = watching.has(p.account) ? p.offline : undefined
+  const tx = p.method === 'eth_sendTransaction'
+  const settle = (ok: boolean) => act(async () => {
+    if (!ok && offline && tx) await keepExported(offline, false) // rejected: not waiting for it on the home screen either
+    await browser.runtime.sendMessage({ type: 'settle', id: p.id, ok })
+  })
   const own = p.method === 'plainwallet_megapot'
   const all: Row[] = [own ? ['Asked by', 'Plain Wallet: a Megapot ticket every few transactions (Settings)'] : ['From site', p.origin],
     ['Network', networkLabel(p.network)], ['Account', p.account], ...rows]
+  let ok: HTMLButtonElement, elsewhere: Node[] = []
+  if (!offline) ok = armed(h('button', { className: 'primary', onclick: settle(true) }, 'Approve'))
+  else {
+    // Checked here so a wrong paste can be fixed in place; the background checks it again.
+    const back = responseIn(), failure = h('p', { className: 'bad', role: 'alert' })
+    ok = armed(h('button', { className: 'primary', onclick: async () => {
+      try {
+        const result = await checkResponse(parseRequest(offline), back.box.value)
+        await browser.runtime.sendMessage({ type: 'settle', id: p.id, ok: true, result })
+        await render()
+      } catch (e) { failure.textContent = (e as Error).message }
+    } }, tx ? 'Broadcast' : 'Submit signature'))
+    elsewhere = [h('p', {}, offlineNote), ...requestOut(offline, tx ? () => keepExported(offline, true) : undefined), ...back.nodes, failure,
+      h('p', {}, tx ? 'Once you’ve copied it, you can also close this window: the transaction waits under “Waiting for a signature” on the wallet’s home screen, though the site won’t hear back.'
+        : 'Keep this window open: the site is waiting for the signature.')]
+  }
   return [
     h('h1', {}, title),
     h('div', { className: 'slip' },
@@ -401,9 +446,124 @@ function approvalScreen(p: Pending, more: number) {
       rowList(all),
       ...(text ? [h('pre', {}, text)] : [])),
     ...sitePanel(p),
+    ...elsewhere,
     h('div', { className: 'row' }, h('button', { onclick: settle(false) }, 'Reject'), ok),
     ...(more ? [h('p', {}, `${more} more ${more === 1 ? 'request' : 'requests'} waiting`)] : []),
   ]
+}
+
+// Watch-only accounts: what goes out to the device with the key, and what comes back from it.
+const offlineNote = 'This account is watch-only. Sign this request in Plain Wallet on the device that holds its key (Settings → Sign a request), then bring back what it gives you.'
+/** The request, to copy (or save, outside the apps). `kept`: once it's out, before a toolbar popup closing on a save can lose it. */
+function requestOut(text: string, kept: () => unknown = () => {}) {
+  const box = h('textarea', { value: text, readOnly: true, rows: 4, spellcheck: false })
+  return [h('label', {}, 'Request to sign', box),
+    h('div', { className: 'row' },
+      h('button', { onclick: (e: Event) => { copy(text)(e); void kept() } }, 'Copy request'),
+      ...(extras.files ? [h('button', { onclick: async () => { await kept(); saveFile(text, 'plainwallet-request.json') } }, 'Save to file')] : []))]
+}
+function responseIn() {
+  const box = h('textarea', { rows: 3, placeholder: '0x…', spellcheck: false, autocomplete: 'off', autocapitalize: 'off' })
+  box.setAttribute('autocorrect', 'off')
+  return { box, nodes: [h('label', {}, 'Signed by the other device', box), ...(extras.files ? [loadButton(box)] : [])] }
+}
+/** A transaction as signed, read from its own bytes: nothing fetched, so the offline device shows it the same way. */
+function txRows(s: State, tx: ReturnType<typeof parseTransaction>) {
+  const known = s.networks.find((n) => n.id === tx.chainId)
+  const network = known ?? { id: tx.chainId!, name: 'Not in this wallet', rpc: '', symbol: 'native units' }
+  const token = s.tokens[network.id]?.find((t) => t.address.toLowerCase() === tx.to?.toLowerCase())
+  const fee = (tx.gas ?? 0n) * (tx.maxFeePerGas ?? tx.gasPrice ?? 0n)
+  return { summary: describeCall(tx.data, token), rows: [
+    ['Network', networkLabel(network)], ['To', tx.to ? getAddress(tx.to) : '(new contract)'], ['Value', `${formatEther(tx.value ?? 0n)} ${network.symbol}`],
+    // OP-stack chains add a fee for posting to Ethereum on top, which isn't in the transaction
+    ['Max gas fee', known ? feeValue(known, fee) : `${formatEther(fee)} ${network.symbol}`], ['Nonce', String(tx.nonce ?? 0)], ['Data', tx.data ?? '0x'],
+  ] as Row[] }
+}
+/** After a broadcast: the hash, then whether it made it. Waited for outside run(): the dialog stays closable. */
+function submitted(content: HTMLElement, network: Network, from: string, hash: `0x${string}`) {
+  const status = h('strong', { className: 'pending' }, 'Submitted, waiting for it to be included…')
+  content.replaceChildren(status, h('p', { className: 'mono' }, hash), h('button', { onclick: copy(hash) }, 'Copy hash'),
+    h('button', { className: 'primary', onclick: () => openDebank(from) }, 'View on DeBank'))
+  void mined(network, hash).then(
+    (receipt) => receipt.status === 'success'
+      ? Object.assign(status, { className: '', textContent: 'Confirmed. The transaction succeeded.' })
+      : Object.assign(status, { className: 'stamp', textContent: 'Failed. The transaction was included but reverted; only the fee was spent.' }),
+    () => Object.assign(status, { className: '', textContent: 'Not included after 10 minutes. Check it on DeBank.' }))
+}
+/** A transaction exported from a watch-only account: out to the device with the key, back in, broadcast. */
+function exportedTx(s: State, content: HTMLElement, run: ReturnType<typeof modal>['run'], text: string) {
+  const request = parseRequest(text) as { from: `0x${string}`; transaction: `0x${string}` }
+  const tx = parseTransaction(request.transaction)
+  const { rows, summary } = txRows(s, tx)
+  const back = responseIn()
+  content.replaceChildren(
+    h('div', { className: 'slip' }, ...(summary ? [h('strong', {}, summary)] : []), rowList([['From', request.from], ...rows])),
+    h('p', {}, offlineNote), ...requestOut(text), ...back.nodes,
+    h('p', {}, 'The wallet keeps it under “Waiting for a signature” on its home screen until you broadcast or discard it.'),
+    h('div', { className: 'row' }, h('button', { onclick: run(() => keepExported(text, false)) }, 'Discard'),
+      armed(h('button', { className: 'primary', onclick: run(async () => {
+        const network = s.networks.find((n) => n.id === tx.chainId)
+        if (!network) throw new Error(`Add chain ${tx.chainId} under networks to broadcast this`)
+        const hash = await broadcast(network, await checkResponse(request, back.box.value))
+        await keepExported(text, false)
+        submitted(content, network, request.from, hash)
+      }, false) }, 'Broadcast'))))
+}
+function waitingDialog(s: State) {
+  const { content, run } = modal('Waiting for a signature')
+  content.append(h('p', {}, 'Transactions exported from watch-only accounts. Bring one back signed to broadcast it.'),
+    ...waiting.flatMap((text) => {
+      try {
+        const { from, transaction } = parseRequest(text) as { from: string; transaction: `0x${string}` }
+        const { rows, summary } = txRows(s, parseTransaction(transaction))
+        return [h('div', { className: 'slip' }, ...(summary ? [h('strong', {}, summary)] : []), rowList([['From', from], ...rows]),
+          h('button', { className: 'primary', onclick: () => exportedTx(s, content, run, text) }, 'Continue'))]
+      } catch { return [] } // only something else writing to storage gets one here: nothing to show
+    }))
+}
+/** The other end: this device holds the key, and signs what a watch-only one exported. Nothing is fetched. */
+function signDialog(s: State) {
+  const { content, run } = modal('Sign a request')
+  const box = h('textarea', { rows: 5, placeholder: '{"plainwallet":"sign",…}', spellcheck: false, autocomplete: 'off', autocapitalize: 'off' })
+  box.setAttribute('autocorrect', 'off')
+  const review = run(async () => {
+    const r = parseRequest(box.value)
+    const index = s.addresses.indexOf(r.from)
+    if (index < 0 || watching.has(r.from)) throw new Error(`This wallet doesn’t hold the key for ${r.from}`)
+    const site: Row[] = r.origin ? [['Site', `${r.origin} (as the other device saw it)`]] : []
+    let shown: Node[], sign: (a: Awaited<ReturnType<typeof signer>>) => Promise<`0x${string}`>
+    if ('transaction' in r) {
+      const tx = parseTransaction(r.transaction)
+      const { rows, summary } = txRows(s, tx)
+      shown = [h('h3', {}, tx.to ? 'Sign transaction' : 'Sign contract deployment'), ...(summary ? [h('strong', {}, summary)] : []), rowList([...site, ['Account', r.from], ...rows])]
+      sign = (a) => a.signTransaction(tx)
+    } else if ('message' in r) {
+      const { title, text } = describe({ method: 'personal_sign', detail: r.message } as Pending)
+      // The same EIP-4361 check the other device made, should it have skipped it.
+      const foreign = r.origin && foreignSignIn(text!, r.origin)
+      if (foreign) throw new Error(`Refused: this sign-in message is for ${foreign}, not ${r.origin}`)
+      shown = [h('h3', {}, title), rowList([...site, ['Account', r.from]]), h('pre', {}, text!)]
+      sign = (a) => a.signMessage({ message: r.message })
+    } else {
+      const { view, summary } = signedView(r.typedData)
+      const { title, rows = [] } = describe({ method: 'eth_signTypedData_v4', detail: view } as Pending)
+      shown = [h('h3', {}, title), ...(summary ? [h('strong', { className: 'stamp' }, summary)] : []), rowList([...site, ['Account', r.from], ...rows])]
+      sign = (a) => a.signTypedData(r.typedData)
+    }
+    content.replaceChildren(h('div', { className: 'slip' }, ...shown),
+      h('div', { className: 'row' }, h('button', { onclick: () => content.replaceChildren(...form) }, 'Back'),
+        armed(h('button', { className: 'primary', onclick: run(async () => {
+          // The check the other device will make, before you carry it back.
+          const signed = await checkResponse(r, await sign(await signer(index, r.from)))
+          content.replaceChildren(h('p', {}, 'Signed. Take this back to the watch-only device and paste it there.'),
+            h('label', {}, 'Signed', h('textarea', { value: signed, readOnly: true, rows: 4, spellcheck: false })),
+            h('div', { className: 'row' }, h('button', { onclick: copy(signed) }, 'Copy'),
+              ...(extras.files ? [h('button', { onclick: () => saveFile(signed, 'plainwallet-signed.txt') }, 'Save to file')] : [])))
+        }, false) }, 'Sign'))))
+  }, false)
+  const form = [h('p', {}, 'For a watch-only account on another device: paste the request it gave you, check it here, and sign it with the key this wallet holds. Nothing is sent anywhere.'),
+    h('label', {}, 'Request', box), ...(extras.files ? [loadButton(box)] : []), h('button', { className: 'primary', onclick: review }, 'Review')]
+  content.append(...form)
 }
 
 /** Native dialogs keep unfinished input intact when an action fails. Actions check the vault key themselves
@@ -444,7 +604,7 @@ const shortAddress = (address: string) => `${address.slice(0, 8)}…${address.sl
 const nameOf = (s: State, address: string) => s.nicknames[address] || shortAddress(address)
 const networkLabel = (n: Network) => `${n.name} (${n.id})`
 const option = (value: string | number, text: string, selected = false) => h('option', { value, selected }, text)
-const accountOptions = (s: State) => s.addresses.map((a, i) => option(i, `${s.nicknames[a] || `Account ${i + 1}`} — ${shortAddress(a)}`, i === s.active))
+const accountOptions = (s: State) => s.addresses.map((a, i) => option(i, `${s.nicknames[a] || `Account ${i + 1}`} — ${shortAddress(a)}${watching.has(a) ? ' (watch-only)' : ''}`, i === s.active))
 
 async function accountDialog(s: State) {
   const { content, run, dialog } = modal('Manage accounts')
@@ -455,17 +615,17 @@ async function accountDialog(s: State) {
   let generated = ''
   const choose = () => {
     generated = ''
-    let seedNumber = 0, keyNumber = 0
+    let seedNumber = 0, keyNumber = 0, watchNumber = 0
     content.replaceChildren(
       h('p', {}, 'Accounts are grouped by their saved seed phrase or imported private key. Secrets are not shown here.'),
       ...groups.map((group) => {
         const source = group.accounts[0]!
-        const title = group.type === 'seed' ? `Seed phrase ${++seedNumber}` : `Imported private key ${++keyNumber}`
+        const title = group.type === 'seed' ? `Seed phrase ${++seedNumber}` : group.type === 'watch' ? `Watch-only address ${++watchNumber}` : `Imported private key ${++keyNumber}`
         return h('section', { className: 'slip' }, h('h3', {}, title),
           ...group.accounts.map((a) => h('div', { className: 'dialog-content' },
             h('strong', {}, label(a)), h('p', { className: 'mono' }, a.address),
             ...(a.addressIndex !== undefined ? [h('p', { className: 'mono' }, `m/44'/60'/0'/0/${a.addressIndex}`)] : []),
-            h('button', { className: 'quiet', onclick: () => remove([a], false, group.type === 'seed') }, 'Remove account'))),
+            h('button', { className: 'quiet', onclick: () => remove([a], false, group.type === 'seed', group.type === 'watch') }, 'Remove account'))),
           ...(group.type === 'seed' ? [
             h('button', { onclick: run(() => addDerivedAccount(source.index, source.address)) }, 'Generate account from this seed'),
             h('button', { className: 'danger', onclick: () => remove(group.accounts, true, true) }, 'Remove seed phrase group'),
@@ -473,7 +633,8 @@ async function accountDialog(s: State) {
       }),
       h('button', { className: 'primary', onclick: generate }, 'Generate new seed phrase'),
       h('button', { onclick: () => importSecret(false) }, 'Import private key'),
-      h('button', { onclick: () => importSecret(true) }, 'Import seed phrase'))
+      h('button', { onclick: () => importSecret(true) }, 'Import seed phrase'),
+      h('button', { onclick: watchAddress }, 'Watch an address'))
   }
   const back = () => h('button', { className: 'quiet', onclick: choose }, 'Back')
   const generate = () => {
@@ -490,7 +651,11 @@ async function accountDialog(s: State) {
       h('ol', {}, ...generated.split(' ').map((word) => h('li', {}, word))),
       h('label', { className: 'acknowledgment' }, backedUp, 'I saved this new seed phrase somewhere safe.'), create)
   }
-  const remove = (accounts: { index: number; address: string }[], wholeSeed: boolean, fromSeed: boolean) => {
+  const remove = (accounts: { index: number; address: string }[], wholeSeed: boolean, fromSeed: boolean, watch = false) => {
+    if (watch) return content.replaceChildren(back(), h('h3', {}, 'Remove watch-only address?'),
+      h('strong', {}, label(accounts[0]!)), h('p', { className: 'mono' }, accounts[0]!.address),
+      h('p', {}, 'This removes the address, its nickname and site connections from this wallet. Its key, on the other device, is not affected.'),
+      h('button', { className: 'danger', onclick: run(() => removeAccount(accounts[0]!.index, accounts[0]!.address)) }, 'Remove this address'))
     const backedUp = h('input', { type: 'checkbox' })
     const confirm = h('button', { className: 'danger', disabled: true, onclick: run(() => {
       if (!backedUp.checked) throw new Error('Confirm your backup first')
@@ -513,6 +678,11 @@ async function accountDialog(s: State) {
         if (secret.startsWith('0x') === mnemonic) throw new Error(mnemonic ? 'Enter a seed phrase, not a private key' : 'Enter a private key, not a seed phrase')
         return addWallet(secret)
       }) }, mnemonic ? 'Import seed phrase' : 'Import private key'))
+  }
+  const watchAddress = () => {
+    const address = h('input', { placeholder: '0x…', spellcheck: false, autocomplete: 'off' })
+    content.replaceChildren(back(), h('p', {}, watchNote), h('label', {}, 'Address', address),
+      h('button', { className: 'primary', onclick: run(() => addWallet({ watch: parseAddress(address.value) })) }, 'Watch address'))
   }
   dialog.addEventListener('close', () => { generated = ''; content.replaceChildren() })
   choose()
@@ -582,7 +752,7 @@ function networkDialog(s: State, adding = false) {
 
 function exportDialog(s: State) {
   const { content, run, dialog } = modal('Export seeds / private keys')
-  const selected = h('select', {}, ...accountOptions(s))
+  const selected = h('select', {}, ...accountOptions(s).filter((o) => !watching.has(s.addresses[Number(o.value)]!)))
   const pw = field('Enter your password again', { type: 'password', autocomplete: 'off' })
   const reveal = run(async () => {
     const index = Number(selected.value)
@@ -631,19 +801,18 @@ function sendDialog(s: State, network: Network, tokens: Token[]) {
     const { request, fee } = await prepare(network, from, token
       ? { to: token.address, data: encodeFunctionData({ abi: erc20Abi, functionName: 'transfer', args: [recipient, value] }) }
       : { to: recipient, value })
+    const watch = watching.has(from)
     const confirm = armed(h('button', { className: 'primary', onclick: run(async () => {
+      if (watch) {
+        // Kept right away: a toolbar popup closes as soon as you switch to anything else.
+        const text = requestText({ from, transaction: serializeTransaction(await unsigned(network, from, request)) })
+        await keepExported(text, true)
+        return exportedTx(s, content, run, text)
+      }
       const hash = await send(network, await signer(index, from), request)
       void browser.runtime.sendMessage({ type: 'sent', account: from }) // counts toward a Megapot ticket, if that's on
-      // Waited for outside run(): the dialog stays closable while the transaction is pending.
-      const status = h('strong', { className: 'pending' }, 'Submitted, waiting for it to be included…')
-      content.replaceChildren(status, h('p', { className: 'mono' }, hash), h('button', { onclick: copy(hash) }, 'Copy hash'),
-        h('button', { className: 'primary', onclick: () => openDebank(from) }, 'View on DeBank'))
-      void mined(network, hash).then(
-        (receipt) => receipt.status === 'success'
-          ? Object.assign(status, { className: '', textContent: 'Confirmed. The transaction succeeded.' })
-          : Object.assign(status, { className: 'stamp', textContent: 'Failed. The transaction was included but reverted; only the fee was spent.' }),
-        () => Object.assign(status, { className: '', textContent: 'Not included after 10 minutes. Check it on DeBank.' }))
-    }, false) }, 'Send'))
+      submitted(content, network, from, hash)
+    }, false) }, watch ? 'Export to sign' : 'Send'))
     content.replaceChildren(
       h('div', { className: 'slip' }, rowList([
         ['Network', networkLabel(network)], ['From', from], ['To', recipient],
@@ -706,6 +875,7 @@ async function settingsDialog(s: State) {
   empty()
   const jev = field('API key', { type: 'password', value: jevKey, autocomplete: 'off', spellcheck: false })
   content.append(h('button', { onclick: () => { dialog.close(); exportDialog(s) } }, 'Export seeds / private keys'),
+    h('button', { onclick: () => { dialog.close(); signDialog(s) } }, 'Sign a request from a watch-only device'),
     h('button', { onclick: run(async () => { dialog.close(); await accountDialog(s) }) }, 'Manage accounts'),
     ...(extras.autolockSetting ? [h('label', { className: 'acknowledgment' }, locks, 'Lock after 15 minutes without use'),
       h('p', {}, extras.autolockOff)] : []),
@@ -776,10 +946,20 @@ function mainScreen(s: State) {
   const amounts = decimals.map(() => h('dd', { className: 'skeleton' }))
   const list = h('dl', { className: 'balances', ariaBusy: 'true' }, ...[network.symbol, ...tokens.map((t) => t.symbol)].flatMap((symbol, i) => [h('dt', {}, symbol), amounts[i]!]))
   const key = [network.id, network.rpc, address, ...tokens.map((t) => t.address)].join()
-  if (cached?.key !== key) cached = { key, values: balances(network, address, tokens) }
+  // Offline, nothing to wait for: the RPC's retries would only keep the placeholders up.
+  if (cached?.key !== key) cached = { key, values: navigator.onLine ? balances(network, address, tokens) : Promise.resolve(decimals.map(() => undefined)) }
   const { values } = cached
+  // An offline device (the one holding a watch-only account's key, say) still signs.
+  const unreachable = h('div', { className: 'dialog-content', hidden: true })
+  const showUnreachable = () => {
+    unreachable.hidden = false
+    unreachable.replaceChildren(h('p', { className: 'warn' }, `${navigator.onLine ? `Can’t reach ${network.name}’s RPC.` : 'This device is offline.'} Balances and sending need it; signing a request from a watch-only device doesn’t.`),
+      h('button', { onclick: () => signDialog(s) }, 'Sign a request'))
+  }
+  if (!navigator.onLine) showUnreachable()
   // Stale fills after a re-render land in detached nodes, which is harmless.
   void values.then((v) => {
+    if (v[0] == null) showUnreachable()
     if (v[0] == null && cached?.values === values) cached = undefined // RPC unreachable: try again on the next redraw
     list.ariaBusy = 'false'
     v.forEach((value, i) => {
@@ -797,7 +977,9 @@ function mainScreen(s: State) {
     h('div', { className: 'selector-field' }, h('label', { htmlFor: 'account' }, 'Account'),
       h('div', { className: 'row' }, accounts, iconButton('Edit account nickname', icons.edit, () => nicknameDialog(s)),
         iconButton('Transaction history on DeBank', icons.history, () => openDebank(address)), copyAddress)),
-    list,
+    ...(watching.has(address) ? [h('p', {}, 'Watch-only: you sign for this account on the device that holds its key.')] : []),
+    list, unreachable,
+    ...(waiting.length ? [h('button', { onclick: () => waitingDialog(s) }, `Waiting for a signature (${waiting.length})`)] : []),
     h('div', { className: 'row' }, h('button', { onclick: () => tokenDialog(network, tokens) }, 'Tokens'),
       h('button', { className: 'primary', onclick: () => sendDialog(s, network, tokens) }, 'Send')),
   ]
@@ -829,6 +1011,7 @@ export async function render(stillCurrent = () => true) {
   else {
     touch() // using the wallet pushes the auto-lock back
     jevKey = ((await browser.storage.local.get('jevKey')).jevKey as string | undefined) ?? ''
+    ;[watching, waiting] = [new Set(await watchedAddresses()), await exported()]
     screen = pending.length ? approvalScreen(pending[0]!, pending.length - 1) : mainScreen(s)
   }
   if (mine !== renderId || viewClosed || !stillCurrent()) return
@@ -837,6 +1020,8 @@ export async function render(stillCurrent = () => true) {
 }
 
 render()
+addEventListener('online', () => void render())
+addEventListener('offline', () => void render())
 // Persistent views must return to the unlock screen when another view or the alarm locks the vault.
 browser.storage.onChanged.addListener((changes, area) => {
   if (area !== 'session' || !('key' in changes || 'mined' in changes)) return

@@ -1,18 +1,20 @@
-import { erc20Abi, formatEther, formatUnits, hexToString, toHex } from 'viem'
+import { erc20Abi, formatEther, formatUnits, hexToString, serializeTransaction, toHex } from 'viem'
 import { readContract } from 'viem/actions'
-import { client, mined, noRedirect, prepare, send, tokenInfo } from '@/lib/chain'
+import { broadcast, client, mined, noRedirect, prepare, send, tokenInfo, unsigned } from '@/lib/chain'
 import { clean, describeCall, foreignSignIn, publicRpc, signedView } from '@/lib/describe'
 import { allowanceOf, approveTickets, BASE, buyTicket, JACKPOT, megapotAbi, megapotSettings, tick, TICKETS_PER_APPROVAL, USDC } from '@/lib/megapot'
-import { load, lock, reset, save, signer, type Network } from '@/lib/store'
+import { checkResponse, requestText, type OfflineRequest } from '@/lib/offline'
+import { keepExported, load, lock, reset, save, signer, watchedAddresses, type Network } from '@/lib/store'
 
 // EIP-1193 / EIP-1474 error shape
 const err = (code: number, message: string) => ({ code, message })
 const big = (v?: string) => (v == null ? undefined : BigInt(v))
 const size = (v: unknown) => { try { return JSON.stringify(v ?? null).length } catch { return Infinity } }
 
-// `title`: the page's own title, only ever context for Jev.
-export type Pending = { id: string; origin: string; title?: string; method: string; network: Network; account: string; summary?: string; danger?: boolean; detail: any }
-const pending = new Map<string, Pending & { resolve: () => void; reject: (e: unknown) => void }>()
+// `title`: the page's own title, only ever context for Jev. `offline`: the request to take to the device with the key,
+// should the account turn out to be watch-only (which takes the unlocked vault to tell).
+export type Pending = { id: string; origin: string; title?: string; method: string; network: Network; account: string; summary?: string; danger?: boolean; detail: any; offline?: string }
+const pending = new Map<string, Pending & { resolve: (result: unknown) => void; reject: (e: unknown) => void }>()
 let win: Promise<{ id?: number } | undefined> | undefined
 let generation = 0 // a reset also invalidates requests still preparing their approval
 let resetting = false
@@ -22,9 +24,10 @@ const site = (origin: string) => new URL(origin).hostname.split('.').slice(-2).j
 const cooldown = new Map<string, number>() // site -> until when its requests are refused, after you rejected one
 const reads = new Map<string, { since: number; count: number }>() // origin -> RPC calls forwarded in the current window
 
-/** Queues a request for the user and resolves once they approve it in the popup (rejects with 4001 otherwise). */
+/** Queues a request for the user and resolves once they approve it in the popup (rejects with 4001 otherwise): for a
+ * watch-only account, with what its other device signed. */
 function approve(p: Omit<Pending, 'id'>) {
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<unknown>((resolve, reject) => {
     // A site can't flood the queue, spam approval windows (from subdomains either), or re-ask the moment you said no.
     if ((cooldown.get(site(p.origin)) ?? 0) > Date.now()) return reject(err(4001, 'You rejected this site moments ago; try again shortly'))
     if ([...pending.values()].filter((x) => site(x.origin) === site(p.origin)).length >= 5) return reject(err(-32005, 'Too many pending requests'))
@@ -37,10 +40,10 @@ function approve(p: Omit<Pending, 'id'>) {
   })
 }
 
-function settle(id: string, ok: boolean) {
+function settle(id: string, ok: boolean, result?: unknown) {
   const p = pending.get(id)
   pending.delete(id)
-  if (ok) p?.resolve()
+  if (ok) p?.resolve(result)
   else if (p) {
     cooldown.set(site(p.origin), Date.now() + 10_000)
     p.reject(err(4001, 'User rejected the request'))
@@ -110,15 +113,16 @@ async function handle(origin: string, method: unknown, rawParams: unknown, title
   // Per account: a site sees only the accounts you connected it to. Locking doesn't disconnect anything (a dapp would
   // drop its session): whatever needs a signature opens the wallet, which asks for the password before the approval.
   const connected = !!address && !!s.connections[origin]?.includes(address)
-  const ask = async (detail: unknown, summary?: string, danger?: boolean) => {
+  const ask = async (detail: unknown, summary?: string, danger?: boolean, offline?: OfflineRequest) => {
     if (resetting || started !== generation) throw err(4001, 'Wallet was reset')
-    await approve({ origin, title, method, network, account: address!, summary, danger, detail })
+    const result = await approve({ origin, title, method, network, account: address!, summary, danger, detail, ...(offline && { offline: requestText(offline) }) })
     // A request that arrived while locked showed unverified state; approving unlocked the wallet, so load() now
     // checks it (and throws if it was tampered with). It must still say what the approval showed.
     const now = await load()
     const same = now.addresses[s.active] === address && now.networks.some((n) => n.id === network.id && n.rpc === network.rpc)
     if (!same || (method !== 'eth_requestAccounts' && !now.connections[origin]?.includes(address!)))
       throw err(4001, 'Wallet changed while this was waiting; try again')
+    return result
   }
 
   switch (method) {
@@ -170,6 +174,10 @@ async function handle(origin: string, method: unknown, rawParams: unknown, title
       const from = method === 'personal_sign' ? params[1] : method === 'eth_sendTransaction' ? params[0]?.from : params[0]
       if (typeof from !== 'string' || from.toLowerCase() !== address?.toLowerCase()) throw err(4100, 'Unknown account')
       const sign = () => signer(s.active, address!)
+      // A watch-only account's approval comes back with what its other device signed: checked here too, not just in
+      // the popup, against the request the approval showed.
+      const elsewhere = async (request: OfflineRequest, result: unknown) =>
+        (await watchedAddresses()).includes(address!) ? checkResponse(request, String(result ?? '')) : undefined
 
       if (method === 'personal_sign') {
         const data = String(params[0])
@@ -177,16 +185,18 @@ async function handle(origin: string, method: unknown, rawParams: unknown, title
         // EIP-4361: a sign-in message has to be for the site asking, or a phishing site could log in as you elsewhere.
         const foreign = foreignSignIn(typeof message === 'string' ? message : hexToString(message.raw), origin)
         if (foreign) throw err(-32602, `Refused: this sign-in message is for ${foreign}, not ${origin}`)
-        await ask(message)
-        return (await sign()).signMessage({ message })
+        const request = { from: address!, origin, message }
+        const result = await ask(message, undefined, undefined, request)
+        return (await elsewhere(request, result)) ?? (await sign()).signMessage({ message })
       }
       if (method === 'eth_signTypedData_v4') {
         const td = typeof params[1] === 'string' ? JSON.parse(params[1]) : params[1]
         if (td?.domain?.chainId != null && Number(td.domain.chainId) !== s.chainId)
           throw err(-32602, 'Typed data chainId does not match the active network')
         const { view, summary } = signedView(td)
-        await ask(view, summary, !!summary)
-        return (await sign()).signTypedData(td)
+        const request = { from: address!, origin, typedData: td }
+        const result = await ask(view, summary, !!summary, request)
+        return (await elsewhere(request, result)) ?? (await sign()).signTypedData(td)
       }
       const tx = params[0] ?? {}
       // Prepared BEFORE asking: the approval shows the real gas cost (a dapp or a lying RPC could otherwise burn the
@@ -197,10 +207,14 @@ async function handle(origin: string, method: unknown, rawParams: unknown, title
       // wallet's own token list where it has the token, otherwise from the RPC.
       const listed = s.tokens[network.id]?.find((t) => t.address.toLowerCase() === request.to?.toLowerCase())
       const summary = describeCall(request.data, listed ?? (request.to ? await tokenInfo(network, request.to).catch(() => undefined) : undefined))
-      await ask({ to: request.to ?? null, value: formatEther(request.value ?? 0n), fee: formatEther(fee), data: request.data ?? '0x' }, summary, !!summary && /UNLIMITED|ALL your/.test(summary))
-      const hash = await send(network, await sign(), request)
+      // ponytail: a watch-only account exports the nonce prepared now, so two queued requests share one; the second fails to broadcast, and the dapp can ask again
+      const offline = { from: address!, origin, transaction: serializeTransaction(await unsigned(network, address!, request, false)) }
+      const result = await ask({ to: request.to ?? null, value: formatEther(request.value ?? 0n), fee: formatEther(fee), data: request.data ?? '0x' }, summary, !!summary && /UNLIMITED|ALL your/.test(summary), offline)
+      const signed = await elsewhere(offline, result)
+      const hash = signed ? await broadcast(network, signed) : await send(network, await sign(), request)
       mined(network, hash).catch(() => {})
-      sent(address!)
+      if (signed) void keepExported(requestText(offline), false) // no longer waiting on the wallet's home screen
+      else sent(address!) // Megapot tickets need a signature here: not for watch-only accounts
       return hash
     }
   }
@@ -258,7 +272,7 @@ export default defineBackground(() => {
     // Our own pages (popup / approval window). Web pages can't reach this: no externally_connectable.
     if (sender.url?.startsWith(browser.runtime.getURL('/'))) {
       if (msg.type === 'pending') respond([...pending.values()].map(({ resolve, reject, ...p }) => p))
-      else if (msg.type === 'settle') respond(settle(msg.id, msg.ok))
+      else if (msg.type === 'settle') respond(settle(msg.id, msg.ok, msg.result))
       else if (msg.type === 'sent') respond(sent(msg.account)) // from the popup's own Send
       else if (msg.type === 'reset') {
         if (resetting) { respond({ error: 'Wallet is already being reset' }); return }
