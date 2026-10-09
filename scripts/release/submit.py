@@ -215,13 +215,19 @@ def firefox(meta, env, journal, api=request, pause=time.sleep):
     if version:
         require(version.get("source") and version.get("channel") == "listed", "Existing AMO version lacks listed source submission")
     else:
+        pending = []
         for page in range(1, 11):
             versions = call(addon + "versions/?filter=all_without_unlisted&page_size=50&page=" + str(page))
-            require(not any(v.get("file", {}).get("status") == "unreviewed" for v in versions["results"]), "Another AMO version awaits review; do not supersede it")
+            pending += [v for v in versions["results"] if v.get("file", {}).get("status") == "unreviewed"]
             if not versions.get("next"):
                 break
         else:
             raise ValueError("Too many AMO versions to safely reconcile")
+        # Owner decision (2026-10-09): like Chrome, a new release replaces an older version still awaiting review
+        # (developer-disabled, re-enableable in the console). Never a newer or unparseable one.
+        require(all(older(v.get("version"), meta["version"]) for v in pending), "Another AMO version awaits review; only an older one is superseded")
+        for v in pending:
+            journal.once("disable-" + str(v["id"]), lambda v=v: call(addon + "versions/" + str(v["id"]) + "/", method="PATCH", body={"is_disabled": True}), lambda r: {"disabled": v["version"]})
         data, kind = multipart({"channel": "listed"}, {"upload": "release-out/firefox.zip"})
         upload = journal.once("upload", lambda: call(base + "upload/", method="POST", body=data, content_type=kind), lambda r: {"uuid": r["uuid"]})
         for _ in range(30):

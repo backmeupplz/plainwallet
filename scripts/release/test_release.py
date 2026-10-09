@@ -396,6 +396,34 @@ class ReleaseTests(unittest.TestCase):
             return version if "/versions/" in url else {"guid": ENV["AMO_ADDON_ID"]}
         self.assertEqual(firefox(META, ENV, MemoryJournal(), existing)["state"], "unreviewed")
 
+    def test_firefox_disables_only_an_older_pending_review(self):
+        def listing(pending_version):
+            def api(url, token, **kw):
+                if "?filter=all_without_unlisted" in url:
+                    return {"results": [{"id": 5, "version": pending_version, "file": {"status": "unreviewed"}}], "next": None}
+                if url.endswith("/versions/0.2.3/"):
+                    return None
+                if kw.get("method") == "PATCH":
+                    writes.append((url, kw["body"]))
+                    return {}
+                if url.endswith("/upload/"):
+                    return {"uuid": "u"}
+                if url.endswith("/upload/u/"):
+                    return {"processed": True, "valid": False}
+                return {"guid": ENV["AMO_ADDON_ID"]}
+            return api
+        journal, writes = MemoryJournal(), []
+        with self.assertRaisesRegex(ValueError, "validation failed"):
+            firefox(META, ENV, journal, listing("0.2.1"))
+        self.assertEqual(writes, [("https://addons.mozilla.org/api/v5/addons/addon/plainwallet%40backmeupplz/versions/5/", {"is_disabled": True})])
+        self.assertEqual(journal.read(journal.name("disable-5", "receipt")), {"disabled": "0.2.1"})
+        for version in ("0.2.3", "0.10.0", "x"):
+            with self.subTest(version=version):
+                writes = []
+                with self.assertRaisesRegex(ValueError, "only an older one"):
+                    firefox(META, ENV, MemoryJournal(), listing(version))
+                self.assertEqual(writes, [])
+
     def test_firefox_invalid_upload_stops_before_version_create(self):
         def api(url, token, **kw):
             if "?filter=all_without_unlisted" in url:
