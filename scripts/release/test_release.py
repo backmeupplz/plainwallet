@@ -284,15 +284,11 @@ class ReleaseTests(unittest.TestCase):
     def test_report_distinguishes_automatic_intent_from_live_evidence(self):
         import report
         Path("event.json").write_text(json.dumps({"release": {"id": 1, "tag_name": "v0.2.3", "html_url": "https://github.com/fixture/release"}}))
-        env = {"GITHUB_EVENT_NAME": "release", "GITHUB_EVENT_PATH": "event.json", "GITHUB_REPOSITORY": "backmeupplz/plainwallet", "GITHUB_RUN_ID": "1", "GITHUB_STEP_SUMMARY": "summary.md", "GH_TOKEN": "fixture"}
+        env = {"GITHUB_EVENT_NAME": "release", "GITHUB_EVENT_PATH": "event.json", "GITHUB_REPOSITORY": "backmeupplz/plainwallet", "GITHUB_RUN_ID": "1", "GITHUB_STEP_SUMMARY": "summary.md"}
         rows = [{"store": "chrome", "state": "PENDING_REVIEW", "publication": "automatic-after-approval"}, {"store": "play", "state": "failed", "error": "Legacy Play commit"}, {"store": "firefox", "state": "public", "publication": "public"}]
-        calls = []
-        def api(url, token, **kw):
-            calls.append(kw)
-            return [] if kw.get("method", "GET") == "GET" else {}
-        with patch.dict(os.environ, env, clear=True), patch("report.outcomes", return_value=rows), patch("report.request", side_effect=api):
+        with patch.dict(os.environ, env, clear=True), patch("report.outcomes", return_value=rows), patch("builtins.print"):
             report.main()
-        body = calls[-1]["body"]["body"]
+        body = Path("summary.md").read_text()
         for expected in ("Submitted is not approved/live", "Play targets production", "owner-confirmed, not API-verified", "STAGED or legacy/uncertain", '"state": "failed"', '"state": "public"'):
             self.assertIn(expected, body)
 
