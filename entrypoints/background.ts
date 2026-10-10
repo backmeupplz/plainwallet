@@ -1,8 +1,6 @@
-import { erc20Abi, formatEther, formatUnits, hexToString, serializeTransaction, toHex } from 'viem'
-import { readContract } from 'viem/actions'
-import { broadcast, client, mined, noRedirect, prepare, send, tokenInfo, unsigned } from '@/lib/chain'
+import { formatEther, hexToString, serializeTransaction, toHex } from 'viem'
+import { broadcast, mined, noRedirect, prepare, send, tokenInfo, unsigned } from '@/lib/chain'
 import { clean, describeCall, foreignSignIn, publicRpc, signedView } from '@/lib/describe'
-import { allowanceOf, approveTickets, BASE, buyTicket, JACKPOT, megapotAbi, megapotSettings, tick, TICKETS_PER_APPROVAL, USDC } from '@/lib/megapot'
 import { checkResponse, requestText, type OfflineRequest } from '@/lib/offline'
 import { keepExported, load, lock, reset, save, signer, watchedAddresses, type Network } from '@/lib/store'
 
@@ -48,58 +46,13 @@ function settle(id: string, ok: boolean, result?: unknown) {
     cooldown.set(site(p.origin), Date.now() + 10_000)
     p.reject(err(4001, 'User rejected the request'))
   }
-  // Forget the window as it closes: a request arriving meanwhile (a Megapot ticket right after a transaction) opens a new
+  // Forget the window as it closes: a request arriving meanwhile (a site's next request right after the last one) opens a new
   // one instead of landing in, and being rejected with, the closing one.
   if (!pending.size && win) {
     const closing = win
     win = undefined
     closing.then((w) => void (w?.id && browser.windows.remove(w.id)))
   }
-}
-
-// Plain Wallet's own requests (Megapot tickets) come from its own origin, never a site's.
-const WALLET = new URL(browser.runtime.getURL('/')).origin
-let counted = Promise.resolve()
-/** Counts a transaction the wallet sent (not its own Megapot ones); every Nth, asks to buy a ticket for `account`. */
-const sent = (account: string) => void (counted = counted.then(async () => {
-  const { next, buy } = tick(megapotSettings((await browser.storage.local.get('megapot')).megapot))
-  await browser.storage.local.set({ megapot: next })
-  if (buy) void megapot(account).then(
-    () => setMegapotError(undefined),
-    (e) => { if (e?.code !== 4001) void setMegapotError(e?.shortMessage ?? e?.message ?? String(e)) }) // 4001: you rejected it
-}).catch(console.error))
-// Shown in Settings: nothing else is watching when a purchase fails (no USDC or gas on Base, a drawing being settled).
-const setMegapotError = async (error?: string) => {
-  const { megapot: m } = await browser.storage.local.get('megapot')
-  await browser.storage.local.set({ megapot: { ...megapotSettings(m), error: error && clean(error, 160) } })
-}
-
-/** One ticket on Base: if the allowance ran out, an approval for the next ten first, each in its own approval window. */
-async function megapot(account: string) {
-  const s = await load()
-  const index = s.addresses.indexOf(account as `0x${string}`)
-  const network = s.networks.find((n) => n.id === BASE)
-  if (index < 0) return
-  if (!network) throw new Error('Add Base (8453) under networks to buy tickets')
-  const from = account as `0x${string}`
-  const c = client(network)
-  const [price, allowance, balance] = await Promise.all([
-    readContract(c, { address: JACKPOT, abi: megapotAbi, functionName: 'ticketPrice' }),
-    readContract(c, allowanceOf(from)),
-    readContract(c, { address: USDC, abi: erc20Abi, functionName: 'balanceOf', args: [from] }),
-  ])
-  const usdc = (v: bigint) => `${formatUnits(v, 6)} USDC`
-  // Not worth a window you could only reject.
-  if (balance < price) throw new Error(`the account had less than ${usdc(price)} on Base`)
-  const walletTx = async (tx: { to: `0x${string}`; data: `0x${string}` }, step: 'approve' | 'buy', summary: string) => {
-    const { request, fee } = await prepare(network, from, tx)
-    await approve({ origin: WALLET, method: 'plainwallet_megapot', network, account, summary,
-      detail: { step, to: tx.to, value: '0', fee: formatEther(fee), data: tx.data } })
-    const receipt = await mined(network, await send(network, await signer(index, from), request))
-    if (receipt.status !== 'success') throw new Error('The Megapot transaction reverted')
-  }
-  if (allowance < price) await walletTx(approveTickets(price), 'approve', `Lets Megapot's ticket buyer spend ${usdc(price * TICKETS_PER_APPROVAL)} of yours: the next ${TICKETS_PER_APPROVAL} tickets`)
-  await walletTx(buyTicket(from), 'buy', `Buys 1 Megapot ticket for ${usdc(price)}, random numbers, sent to this account`)
 }
 
 async function handle(origin: string, method: unknown, rawParams: unknown, title?: string): Promise<unknown> {
@@ -214,7 +167,6 @@ async function handle(origin: string, method: unknown, rawParams: unknown, title
       const hash = signed ? await broadcast(network, signed) : await send(network, await sign(), request)
       mined(network, hash).catch(() => {})
       if (signed) void keepExported(requestText(offline), false) // no longer waiting on the wallet's home screen
-      else sent(address!) // Megapot tickets need a signature here: not for watch-only accounts
       return hash
     }
   }
@@ -273,7 +225,6 @@ export default defineBackground(() => {
     if (sender.url?.startsWith(browser.runtime.getURL('/'))) {
       if (msg.type === 'pending') respond([...pending.values()].map(({ resolve, reject, ...p }) => p))
       else if (msg.type === 'settle') respond(settle(msg.id, msg.ok, msg.result))
-      else if (msg.type === 'sent') respond(sent(msg.account)) // from the popup's own Send
       else if (msg.type === 'reset') {
         if (resetting) { respond({ error: 'Wallet is already being reset' }); return }
         resetting = true

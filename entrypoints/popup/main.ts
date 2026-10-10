@@ -3,7 +3,6 @@ import { balances, broadcast, mined, prepare, send, simulate, tokenInfo, unsigne
 import { describeCall, foreignSignIn, parseAddress, parseAmount, signedView, spenderOf } from '@/lib/describe'
 import { analyze, type Subject, type Verdict } from '@/lib/jev'
 import { lookup, type Level, type Lookup, type Party } from '@/lib/lookup'
-import { megapotSettings } from '@/lib/megapot'
 import { checkResponse, parseRequest, requestText } from '@/lib/offline'
 import { accountGroups, addDerivedAccount, addWallet, autolock, exportAccount, exported, isUnlocked, keepExported, load, lock, removeAccount, removeSeedGroup, repair, save, setAutolock, signer, TAMPERED, touch, unlock, watchedAddresses, type Network, type State, type Token } from '@/lib/store'
 import { checkSecret, newMnemonic, parseSecret } from '@/lib/wallet'
@@ -67,10 +66,9 @@ const act = (fn: () => unknown) => async () => {
   await render()
 }
 /** Filled in by the apps (entrypoints/android): the phones' favorite sites above the balances, fingerprint unlock, and
- * no auto-lock switch (they lock themselves when you leave them); the Mac app's own note under that switch; no Megapot
- * on iOS, where the App Store doesn't allow lotteries.
+ * no auto-lock switch (they lock themselves when you leave them); the Mac app's own note under that switch.
  * `files`: watch-only requests and signatures go by file too, not only by copy and paste; the apps only copy. */
-export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [], autolockSetting: true, megapot: true,
+export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [], autolockSetting: true,
   autolockOff: 'When off, the wallet stays unlocked until you lock it or restart the browser.', files: !import.meta.env?.SAFARI }
 const icons = {
   lock: 'M7 11V7a5 5 0 0 1 10 0v4 M5 11h14v10H5Z M12 15v2',
@@ -346,9 +344,6 @@ function secondOpinion(subject: Subject, fields: Record<string, string>, checks:
 /** The second opinion for whatever a site asks to sign. */
 function sitePanel(p: Pending) {
   const d = p.detail
-  if (p.method === 'plainwallet_megapot') return secondOpinion('transaction', {
-    network: p.network.name, to: d.to, value: `0 ${p.network.symbol}`, call: p.summary!,
-  }, () => txChecks(p.network, p.account as `0x${string}`, { to: d.to, data: d.data }), p.id)
   const fields = { site: new URL(p.origin).hostname, ...(p.title && { page_title: p.title }), network: p.network.name }
   switch (p.method) {
     case 'eth_sendTransaction':
@@ -396,11 +391,6 @@ function describe(p: Pending): { title: string; rows?: Row[]; text?: string } {
         }
       case 'eth_signTypedData_v4': // already reduced to what is hashed
         return { title: `Sign typed data: ${d.primaryType}`, rows: [...flatten(d.domain, 'domain'), ...flatten(d.message, 'message')] }
-      case 'plainwallet_megapot': // the wallet's own, see Settings
-        return {
-          title: d.step === 'approve' ? 'Approve USDC for Megapot tickets?' : 'Buy a Megapot ticket?',
-          rows: [['To', d.to], ['Estimated max fee', feeValue(p.network, d.fee)], ['Data', d.data]],
-        }
       case 'eth_sendTransaction':
         return {
           title: d.to ? 'Send transaction' : 'Deploy contract',
@@ -419,8 +409,7 @@ function approvalScreen(p: Pending, more: number) {
     if (!ok && offline && tx) await keepExported(offline, false) // rejected: not waiting for it on the home screen either
     await browser.runtime.sendMessage({ type: 'settle', id: p.id, ok })
   })
-  const own = p.method === 'plainwallet_megapot'
-  const all: Row[] = [own ? ['Asked by', 'Plain Wallet: a Megapot ticket every few transactions (Settings)'] : ['From site', p.origin],
+  const all: Row[] = [['From site', p.origin],
     ['Network', networkLabel(p.network)], ['Account', p.account], ...rows]
   let ok: HTMLButtonElement, elsewhere: Node[] = []
   if (!offline) ok = armed(h('button', { className: 'primary', onclick: settle(true) }, 'Approve'))
@@ -810,7 +799,6 @@ function sendDialog(s: State, network: Network, tokens: Token[]) {
         return exportedTx(s, content, run, text)
       }
       const hash = await send(network, await signer(index, from), request)
-      void browser.runtime.sendMessage({ type: 'sent', account: from }) // counts toward a Megapot ticket, if that's on
       submitted(content, network, from, hash)
     }, false) }, watch ? 'Export to sign' : 'Send'))
     content.replaceChildren(
@@ -856,7 +844,6 @@ function tokenDialog(network: Network, tokens: Token[]) {
 }
 
 async function settingsDialog(s: State) {
-  const m = megapotSettings((await browser.storage.local.get('megapot')).megapot)
   const { content, run, dialog } = modal('Settings')
   const locks = h('input', { type: 'checkbox', checked: await autolock() })
   locks.onchange = run(() => setAutolock(locks.checked), false)
@@ -888,32 +875,9 @@ async function settingsDialog(s: State) {
           const key = jev.input.value.trim()
           return key ? browser.storage.local.set({ jevKey: key }) : browser.storage.local.remove('jevKey')
         }) }, 'Save API key'))),
-    ...(extras.megapot ? [megapotSection(m, run)] : []),
     ...extras.settings(),
     h('p', {}, `Plain Wallet ${browser.runtime.getManifest().version} · `,
       h('a', { href: 'https://github.com/backmeupplz/plainwallet', target: '_blank', rel: 'noreferrer' }, 'Source code on GitHub')))
-}
-
-/** Collapsed until opened: a Megapot ticket every N transactions, off by default. */
-function megapotSection(m: ReturnType<typeof megapotSettings>, run: ReturnType<typeof modal>['run']) {
-  const on = h('input', { type: 'checkbox', checked: m.on })
-  const every = field('Every how many transactions', { type: 'number', min: 1, step: 1, value: m.every, inputMode: 'numeric' })
-  const left = m.every - m.count
-  return h('details', { className: 'fold' },
-    h('summary', {}, 'Megapot: ', h('span', {}, m.on ? (m.every === 1 ? 'ticket/tx' : `ticket/${m.every} txs`) : 'off')),
-    h('div', { className: 'dialog-content' },
-      h('p', {}, 'Every N transactions you send, the wallet asks you to buy one ',
-        h('a', { href: 'https://megapot.io', target: '_blank', rel: 'noreferrer' }, 'Megapot'),
-        ' lottery ticket: 1 USDC on Base, random numbers, for the account that sent it. You approve each purchase like any transaction; when the allowance runs out, an approval for the next 10 tickets comes first. If that account has less than 1 USDC on Base, the ticket is skipped without asking. Needs a little ETH on Base for fees.'),
-      h('label', { className: 'acknowledgment' }, on, 'Buy Megapot tickets'), every.el,
-      ...(m.on ? [h('p', {}, `Next ticket after ${left} more transaction${left === 1 ? '' : 's'}.`)] : []),
-      ...(m.error ? [h('p', { className: 'warn' }, `The last ticket wasn’t bought: ${m.error}`)] : []),
-      h('button', { onclick: run(async () => {
-        const n = Number(every.input.value)
-        if (!Number.isSafeInteger(n) || n < 1) throw new Error('Enter a whole number of transactions, 1 or more')
-        const now = megapotSettings((await browser.storage.local.get('megapot')).megapot)
-        await browser.storage.local.set({ megapot: { on: on.checked, every: n, count: Math.min(now.count, n - 1) } })
-      }) }, 'Save Megapot settings')))
 }
 
 function mainScreen(s: State) {

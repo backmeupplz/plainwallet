@@ -10,8 +10,6 @@ const app = (globalThis as any).plainwalletApp as { send(msg: object): void; lis
 // The Mac app has no browser of its own (dapps use the Safari extension), so no favorites; and it keeps the auto-lock
 // switch: the phones lock whenever you leave the app, the Mac only when it sleeps or its screen locks.
 const mac = (globalThis as any).plainwalletNative.platform === 'macos'
-// The App Store doesn't take apps that sell lottery tickets.
-if ((globalThis as any).plainwalletNative.platform === 'ios') extras.megapot = false
 
 background.main()
 extras.autolockSetting = mac

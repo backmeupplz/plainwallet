@@ -211,7 +211,7 @@ globalThis.setTimeout = realSetTimeout
 
 // All review surfaces use the same conversion; transaction preparation/signing remains untouched.
 const popup = await readFile(new URL('./entrypoints/popup/main.ts',import.meta.url),'utf8')
-assert.equal(popup.split("['Estimated max fee', feeValue(").length - 1,3)
+assert.equal(popup.split("['Estimated max fee', feeValue(").length - 1,2)
 assert.ok(!popup.includes("['Max fee'"))
 assert.ok((await readFile(new URL('./entrypoints/android/main.ts',import.meta.url),'utf8')).includes('popup/main'))
 console.log('fee formatter, oracle validation, RPC privacy, network cache and UI races ok')

@@ -1,6 +1,6 @@
 # <img src="assets/icon.svg" width="28" align="top" alt=""> Plain Wallet
 
-A very minimal EVM wallet extension for Chrome, Firefox and Safari, and Android, iOS and Mac apps. ~1900 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
+A very minimal EVM wallet extension for Chrome, Firefox and Safari, and Android, iOS and Mac apps. ~2850 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
 
 > Not audited. Don't keep funds in it that you can't afford to lose.
 
@@ -25,7 +25,6 @@ A very minimal EVM wallet extension for Chrome, Firefox and Safari, and Android,
 - Balances, token lookups and sends go to the network's RPC. DeBank sees your address only when you open it.
 - A watch-only account holds no key: what it exports is the exact transaction (the standard unsigned encoding, with the nonce and fees fixed), message or typed data, and the device with the key shows it decoded from those bytes alone, with nothing fetched, before you sign. Only legacy, EIP-2930 and EIP-1559 transactions with a chain id are signed. What comes back is accepted only if it is exactly that transaction, or a signature of exactly that message, by that account: the popup checks it, and for dapps the background checks it again before broadcasting it or handing it to the site.
 - Every transaction you review is simulated on the network's RPC (`eth_simulateV1`) and shows your balance changes or the revert reason, filled in as it arrives; the Approve button never waits for it. Optional: with a Jev (typesafe.ai) API key in Settings, every transaction and signature also gets two more lines: the contract and any spender looked up on Blockscout (verified or not, age, token, scam flag; the function named from the verified ABI, or else from Sourcify's signature list, where a match must decode the calldata exactly), and Jev's read on what it does and how likely it is a scam or a lookalike site, colored by risk. Each line folds out into details; none of it replaces the wallet's own rows.
-- Optional, off by default: a [Megapot](https://megapot.io) lottery ticket every N transactions you send (Settings → Megapot). Every Nth transaction brings up a purchase to approve: one 1 USDC ticket on Base with random numbers, for the account that sent it; when the allowance runs out, an approval for the next 10 tickets comes first. It's skipped without asking when that account has less than 1 USDC on Base.
 - Known gaps: calldata other than the token calls above is shown as raw hex; a watch-only account's queued transactions share a nonce if you export another before broadcasting the first, so the second then fails to broadcast; exported transactions waiting for a signature are kept outside the signed state, so on Firefox a website process could add or change entries there (anything broadcast still needs the other device's signature over exactly that entry); symbol/decimals of tokens not in your list come from the RPC (the addresses and UNLIMITED flag do not); a public hostname that resolves to a private address (DNS rebinding) still passes the dapp-RPC check; on Firefox a compromised website process can read your addresses, connected sites and Jev API key; your RPC provider sees your address and IP.
 
 ## What it doesn't
@@ -103,7 +102,7 @@ The wallet always sits under a blue band across the top of the screen; a website
 
 Get [Plain Wallet on the App Store](https://apps.apple.com/app/id6817506091) (in review; the link works once Apple approves it).
 
-The Android app on iPhone (iOS 18+): the same wallet page and provider in a small Swift wrapper, `ios/PlainWallet/PlainWallet.swift`, with optional Face ID or Touch ID unlock. No Megapot: the App Store doesn't take apps that sell lottery tickets. Building needs a Mac with Xcode; the web half builds anywhere and goes in `ios/web`:
+The Android app on iPhone (iOS 18+): the same wallet page and provider in a small Swift wrapper, `ios/PlainWallet/PlainWallet.swift`, with optional Face ID or Touch ID unlock. Building needs a Mac with Xcode; the web half builds anywhere and goes in `ios/web`:
 
 ```sh
 npm ci && npm run build:android && rm -rf ios/web && cp -R .output/android-mv3 ios/web
@@ -139,7 +138,6 @@ lib/describe.ts                        calldata / typed data → what the approv
 lib/chain.ts                           RPC: balances, token lookup, prepare + sign + send, simulate
 lib/lookup.ts                          Blockscout + Sourcify lookups (only with a Jev key)
 lib/jev.ts                             Jev (typesafe.ai) second opinion (only with a Jev key)
-lib/megapot.ts                         Megapot ticket every N transactions: addresses, calldata, counting (pure)
 lib/store.ts                           chrome.storage state, signed with the vault key
 entrypoints/android-inpage.ts          Android: the provider, relaying to the app instead of bridge.content.ts
 entrypoints/android-shim.ts            Android: the extension API the background and popup use, over the app
