@@ -320,12 +320,17 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(chrome(META, ENV, journal, api)["state"], "PENDING_REVIEW")
         self.assertEqual(writes, ["cancelSubmission", "upload", "publish"])
         self.assertEqual(journal.read(journal.name("cancel", "receipt")), {"cancelled": ["0.2.2"]})
-        for state, version in (("PENDING_REVIEW", "0.2.4"), ("PENDING_REVIEW", "0.10.0"), ("PENDING_REVIEW", "x"), ("STAGED", "0.2.2")):
+        # An older rejected one is replaced without a cancel.
+        writes.clear()
+        remote = pending("REJECTED", "0.2.2")
+        self.assertEqual(chrome(META, ENV, MemoryJournal(), api)["state"], "PENDING_REVIEW")
+        self.assertEqual(writes, ["upload", "publish"])
+        for state, version in (("PENDING_REVIEW", "0.2.4"), ("PENDING_REVIEW", "0.10.0"), ("PENDING_REVIEW", "x"), ("STAGED", "0.2.2"), ("REJECTED", "0.2.4")):
             with self.subTest(state=state, version=version):
                 def refuse(url, token, **kw):
                     self.assertEqual(kw.get("method", "GET"), "GET")
                     return pending(state, version)
-                with self.assertRaisesRegex(ValueError, "only an older pending review"):
+                with self.assertRaisesRegex(ValueError, "only an older pending, rejected or cancelled"):
                     chrome(META, ENV, MemoryJournal(), refuse)
 
     def test_play_refuses_to_replace_a_newer_release(self):

@@ -172,13 +172,14 @@ def chrome(meta, env, journal, api=request, pause=time.sleep):
                 # fetchStatus does not expose publishType; old/uncertain reviews may be held.
                 require(review and review.get("publishType") == "DEFAULT_PUBLISH" and review.get("deployPercentage") == 100, "Chrome pending review lacks automatic-publication receipt; explicit owner reconciliation required")
             return {"store": "chrome", "version": meta["version"], "item": name, "state": state, "existing": True, "publication": "public" if state == "PUBLISHED" else "automatic-after-approval"}
-    # Owner decision (2026-10-04): a new release replaces an older version still in review. Never a held, newer or
-    # unrecognized submission.
+    # Owner decision (2026-10-04, 2026-10-10): a new release replaces an older version still in review, or one that was
+    # rejected or cancelled (nothing to cancel then). Never a held, newer or unrecognized submission.
     pending = status.get("submittedItemRevisionStatus")
     if pending:
         versions = [c.get("crxVersion") for c in pending.get("distributionChannels", [])]
-        require(pending.get("state") == "PENDING_REVIEW" and versions and all(older(v, meta["version"]) for v in versions), "Another Chrome submission exists; only an older pending review is replaced")
-        journal.once("cancel", lambda: api(base + ":cancelSubmission", token, method="POST", body={}), lambda r: {"cancelled": versions})
+        require(pending.get("state") in ("PENDING_REVIEW", "REJECTED", "CANCELLED") and versions and all(older(v, meta["version"]) for v in versions), "Another Chrome submission exists; only an older pending, rejected or cancelled one is replaced")
+        if pending["state"] == "PENDING_REVIEW":
+            journal.once("cancel", lambda: api(base + ":cancelSubmission", token, method="POST", body={}), lambda r: {"cancelled": versions})
     require(review is None, "Chrome review receipt disagrees with current status; reconcile in console")
     uploaded = journal.once("upload", lambda: api("https://chromewebstore.googleapis.com/upload/v2/" + name + ":upload", token, method="POST", body=Path("release-out/chrome.zip").read_bytes(), content_type="application/zip"), lambda r: {"uploadState": r.get("uploadState"), "name": r.get("name"), "crxVersion": r.get("crxVersion")})
     require(not uploaded["crxVersion"] or uploaded["crxVersion"] == meta["version"], "Chrome upload version mismatch")
