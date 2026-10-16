@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import plistlib
 import re
 import subprocess
 import sys
@@ -91,6 +92,35 @@ def validate_android(data, meta):
     require(attrs.get((android, "versionCode")) == str(meta["versionCode"]), "AAB versionCode mismatch")
 
 
+TEAM = "ACWP4F58HZ"
+BUNDLE_ID = "com.borodutch.plainwallet"
+
+
+def apple(meta):
+    # Credential-free: archived without a signing identity, then ad-hoc signed so App Store Connect's cloud
+    # signing (submit.py, the only step holding the key) can read each binary's entitlements.
+    out = Path("release-out-apple")
+    out.mkdir(exist_ok=True)
+    versions = ["MARKETING_VERSION=" + meta["version"], "CURRENT_PROJECT_VERSION=" + str(meta["versionCode"])]
+    for platform, signing in (("ios", ["CODE_SIGNING_ALLOWED=NO"]), ("macos", ["CODE_SIGN_IDENTITY=-", "CODE_SIGN_STYLE=Manual", "DEVELOPMENT_TEAM=" + TEAM])):
+        archive = Path("build-apple") / (platform + ".xcarchive")
+        destination = "generic/platform=" + ("iOS" if platform == "ios" else "macOS")
+        subprocess.run(["xcodebuild", "archive", "-quiet", "-project", platform + "/PlainWallet.xcodeproj", "-scheme", "PlainWallet", "-configuration", "Release", "-destination", destination, "-archivePath", str(archive), *versions, *signing], check=True)
+        apps = list((archive / "Products/Applications").glob("*.app"))
+        require(len(apps) == 1, "Expected one app in the " + platform + " archive")
+        if platform == "ios":
+            # The iOS app has no entitlements file; cloud signing needs its identity in the signature.
+            entitlements = Path("build-apple/ios.entitlements")
+            entitlements.write_bytes(plistlib.dumps({"application-identifier": TEAM + "." + BUNDLE_ID, "com.apple.developer.team-identifier": TEAM}))
+            subprocess.run(["codesign", "-f", "-s", "-", "--entitlements", str(entitlements), str(apps[0])], check=True)
+        info = plistlib.loads((apps[0] / ("Info.plist" if platform == "ios" else "Contents/Info.plist")).read_bytes())
+        require(info["CFBundleIdentifier"] == BUNDLE_ID, "Apple bundle identifier changed")
+        require(info["CFBundleShortVersionString"] == meta["version"] and info["CFBundleVersion"] == str(meta["versionCode"]), "Apple archive version mismatch")
+        subprocess.run(["ditto", "-c", "-k", "--keepParent", str(archive), str(out / (platform + ".xcarchive.zip"))], check=True)
+    meta["sha256"] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in out.iterdir() if p.name != "apple.json"}
+    (out / "apple.json").write_text(json.dumps(meta, indent=2) + "\n")
+
+
 def main():
     sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     package = json.loads(Path("package.json").read_text())
@@ -101,8 +131,10 @@ def main():
         tag = subprocess.check_output(["git", "rev-list", "-n", "1", "refs/tags/v" + meta["version"]], text=True).strip()
         require(tag == sha, "Tag moved since release event")
     else:
-        require(sys.argv[1] == "ci", "Submission requires release event")
+        require(sys.argv[1] in ("ci", "apple"), "Submission requires release event")
         meta = release_version({"action": "published", "release": {"draft": False, "prerelease": False, "tag_name": "v" + package["version"], "id": 0}}, package, sha)
+    if sys.argv[1:] == ["apple"]:
+        return apple(meta)
     out = Path("release-out")
     out.mkdir(exist_ok=True)
     for browser in ("chrome", "firefox"):
@@ -118,6 +150,13 @@ def main():
         validate_android(z.read("base/manifest/AndroidManifest.xml"), meta)
         require(not any(n.upper().startswith("META-INF/") and n.upper().endswith((".RSA", ".DSA", ".EC")) for n in z.namelist()), "Build must not sign AAB")
     (out / "android.aab").write_bytes(aab.read_bytes())
+    # Same Gradle run as the AAB. Signed later (submit.py apk); F-Droid rebuilds this unsigned APK from source.
+    apk = Path("android/app/build/outputs/apk/release/app-release-unsigned.apk")
+    require(apk.is_file(), "Unsigned release APK missing")
+    with zipfile.ZipFile(apk) as z:
+        require(not any(n.upper().startswith("META-INF/") and n.upper().endswith((".RSA", ".DSA", ".EC")) for n in z.namelist()), "Build must not sign APK")
+    require(b"APK Sig Block 42" not in apk.read_bytes(), "Build must not sign APK")
+    (out / "android.apk").write_bytes(apk.read_bytes())
     meta["sha256"] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in out.iterdir() if p.name != "release.json"}
     (out / "release.json").write_text(json.dumps(meta, indent=2) + "\n")
 

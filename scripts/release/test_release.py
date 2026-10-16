@@ -160,9 +160,16 @@ class ReleaseTests(unittest.TestCase):
         workflow = (ROOT / ".github/workflows/store-release.yml").read_text()
         gate = workflow.split("      - name: Verify setup gates before authentication\n", 1)[1].split("      - id: google\n", 1)[0]
         script = "\n".join(line[10:] for line in gate.split("        run: |\n", 1)[1].splitlines())
+        submit = workflow.split("  submit:\n", 1)[1].split("  submit-apple:\n", 1)[0]
         for name in ("STORE_AUTO_PUBLISH_APPROVED", "PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED", "PLAY_MANAGED_PUBLISHING_CONFIRMED", "PLAY_TRACK", "AMO_AUTO_PUBLISH_APPROVED"):
-            self.assertEqual(workflow.count("vars." + name + " }}"), 2)
+            self.assertEqual(submit.count("vars." + name + " }}"), 2)
+        apple = workflow.split("  submit-apple:\n", 1)[1].split("  report:\n", 1)[0]
+        self.assertEqual(apple.count("vars.STORE_AUTO_PUBLISH_APPROVED }}"), 2)
+        self.assertLess(apple.index("Verify setup gates before using the key"), apple.index("secrets.ASC_KEY_P8"))
         env = {"CONFIRMED": "true", "AUTO_PUBLISH_APPROVED": "true", "WIF_PROVIDER": "fixture", "SERVICE_ACCOUNT": "fixture", "PLAY_TRACK": "production", "PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED": "true", "PLAY_MANAGED_PUBLISHING_CONFIRMED": "", "AMO_AUTO_PUBLISH_APPROVED": "true"}
+        for store in ("apk", "fdroid"):  # no Google identity needed
+            result = subprocess.run(["/bin/bash", "-eu", "-c", script], env={**env, "STORE": store, "WIF_PROVIDER": "", "SERVICE_ACCOUNT": ""}, capture_output=True)
+            self.assertEqual(result.returncode, 0)
         for store in ("chrome", "firefox", "play"):
             def run(changes):
                 return subprocess.run(["/bin/bash", "-eu", "-c", script], env={**env, "STORE": store, **changes}, capture_output=True).returncode

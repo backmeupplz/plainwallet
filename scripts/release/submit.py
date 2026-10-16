@@ -4,11 +4,13 @@ Every remote mutation has an append-only write-ahead marker and receipt on the
 existing GitHub release. An uncertain write fails closed; it is never retried.
 """
 import base64
+from contextlib import contextmanager
 import hashlib
 import hmac
 import json
 import os
 from pathlib import Path
+import plistlib
 import re
 import subprocess
 import sys
@@ -19,7 +21,7 @@ from urllib.parse import quote, urlencode, urlparse
 from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 import uuid
 
-from build import require, release_version
+from build import require, release_version, BUNDLE_ID, TEAM
 
 
 class APIError(Exception):
@@ -34,7 +36,7 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 def request(url, token, method="GET", body=None, content_type="application/json", missing=False, auth_scheme="Bearer"):
-    require(urlparse(url).scheme == "https" and urlparse(url).hostname in ("api.github.com", "uploads.github.com", "chromewebstore.googleapis.com", "androidpublisher.googleapis.com", "addons.mozilla.org"), "Unexpected API host")
+    require(urlparse(url).scheme == "https" and urlparse(url).hostname in ("api.github.com", "uploads.github.com", "chromewebstore.googleapis.com", "androidpublisher.googleapis.com", "addons.mozilla.org", "api.appstoreconnect.apple.com"), "Unexpected API host")
     if isinstance(body, dict):
         body = json.dumps(body).encode()
     headers = {"Authorization": auth_scheme + " " + token, "Accept": "application/json", "User-Agent": "plainwallet-release", "Content-Type": content_type}
@@ -93,6 +95,14 @@ def preflight(store, env):
         needed(env, "AMO_JWT_ISSUER", "AMO_JWT_SECRET", "AMO_ADDON_ID")
         require(env["AMO_ADDON_ID"] == "plainwallet@backmeupplz", "Unexpected Firefox listing GUID")
         require(env.get("AMO_AUTO_PUBLISH_APPROVED") == "true", "AMO listed approval may publish immediately: explicit owner consent required")
+    elif store == "apk":
+        needed(env, "ANDROID_KEYSTORE_BASE64", "ANDROID_KEY_ALIAS", "ANDROID_STORE_PASSWORD", "ANDROID_KEY_PASSWORD", "ANDROID_UPLOAD_CERT_SHA256")
+        require(re.fullmatch(r"[0-9A-Fa-f]{64}", env["ANDROID_UPLOAD_CERT_SHA256"]), "Upload certificate SHA256 must be 64 hex characters")
+    elif store == "fdroid":
+        needed(env, "GITLAB_TOKEN", "FDROID_MR", "FDROID_APP_ID", "FDROID_FORK", "FDROID_BRANCH")
+        require(env["FDROID_MR"].isdigit() and env["FDROID_APP_ID"] == BUNDLE_ID, "Unexpected F-Droid merge request configuration")
+    elif store == "appstore":
+        needed(env, "ASC_KEY_P8", "ASC_KEY_ID", "ASC_ISSUER_ID")
     else:
         raise ValueError("Unknown store")
 
@@ -102,6 +112,9 @@ class Journal:
         self.store, self.meta, self.env = store, meta, env
         self.base = "https://api.github.com/repos/" + env["GITHUB_REPOSITORY"]
         self.release = self.base + "/releases/" + str(meta["releaseId"])
+        self.load()
+
+    def load(self):
         self.assets = {}
         for page in range(1, 11):
             items = self.api(self.release + "/assets?per_page=100&page=" + str(page))
@@ -248,8 +261,9 @@ def firefox(meta, env, journal, api=request, pause=time.sleep):
     return {"store": "firefox", "version": meta["version"], "versionId": version["id"], "state": state, "autoPublishApproved": True, "publication": "public" if state == "public" else "automatic-after-approval"}
 
 
-def signed_bundle(env):
-    # Only JDK signing tools get the upload key. No Gradle/npm/dependency scripts here.
+@contextmanager
+def upload_key(env):
+    # Only JDK/Android SDK signing tools get the upload key. No Gradle/npm/dependency scripts here.
     with tempfile.TemporaryDirectory() as directory:
         key = Path(directory) / "upload.keystore"
         key.write_bytes(base64.b64decode(env["ANDROID_KEYSTORE_BASE64"], validate=True))
@@ -262,11 +276,170 @@ def signed_bundle(env):
             return p.stdout
         cert = run(["keytool", "-exportcert", "-keystore", str(key), "-alias", env["ANDROID_KEY_ALIAS"], "-storepass:env", "STORE_PASS"])
         require(hashlib.sha256(cert).hexdigest().lower() == env["ANDROID_UPLOAD_CERT_SHA256"].lower(), "Wrong Android upload certificate; never rotate automatically")
-        output = Path(directory) / "signed.aab"
+        yield key, run, Path(directory)
+
+
+def signed_bundle(env):
+    with upload_key(env) as (key, run, directory):
+        output = directory / "signed.aab"
         run(["jarsigner", "-keystore", str(key), "-storepass:env", "STORE_PASS", "-keypass:env", "KEY_PASS", "-signedjar", str(output), "release-out/android.aab", env["ANDROID_KEY_ALIAS"]])
         result = run(["jarsigner", "-verify", str(output)])
         require(b"jar verified" in result, "Signed AAB verification failed")
         return output.read_bytes()
+
+
+def signed_apk(env):
+    # apksigner (Android SDK build-tools) for the v2/v3 signatures Android 11+ needs; same key as the AAB and earlier APKs.
+    tools = sorted(Path(os.environ["ANDROID_HOME"], "build-tools").glob("*/apksigner"))
+    require(tools, "apksigner not found in the Android SDK")
+    with upload_key(env) as (key, run, directory):
+        output = directory / "signed.apk"
+        run([str(tools[-1]), "sign", "--ks", str(key), "--ks-key-alias", env["ANDROID_KEY_ALIAS"], "--ks-pass", "env:STORE_PASS", "--key-pass", "env:KEY_PASS", "--out", str(output), "release-out/android.apk"])
+        certs = run([str(tools[-1]), "verify", "--print-certs", str(output)]).decode()
+        require("certificate SHA-256 digest: " + env["ANDROID_UPLOAD_CERT_SHA256"].lower() in certs, "Signed APK verification failed")
+        return output.read_bytes()
+
+
+def apk(meta, env, journal, sign=signed_apk):
+    # The README and F-Droid (Binaries) use the versioned name; the site links releases/latest/download/plainwallet.apk.
+    names = ("plainwallet-" + meta["version"] + "-android.apk", "plainwallet.apk")
+    done = [journal.read(journal.name("asset-" + name, "receipt")) for name in names]
+    if not all(done):
+        data = sign(env)
+        url = "https://uploads.github.com/repos/" + env["GITHUB_REPOSITORY"] + "/releases/" + str(meta["releaseId"]) + "/assets?"
+        done = [journal.once("asset-" + name, lambda name=name: journal.api(url + urlencode({"name": name}), method="POST", body=data, content_type="application/vnd.android.package-archive"), lambda r: {"name": r["name"], "size": r["size"], "sha256": hashlib.sha256(data).hexdigest()}) for name in names]
+    require([d["name"] for d in done] == list(names) and done[0]["sha256"] == done[1]["sha256"], "APK assets disagree; reconcile the release")
+    return {"store": "apk", "version": meta["version"], "assets": list(names), "sha256": done[0]["sha256"], "state": "attached", "publication": "public"}
+
+
+def fdroid(meta, env, journal, run=subprocess.run, pause=time.sleep):
+    # F-Droid verifies its build against the versioned APK (Binaries), which the apk job attaches in parallel.
+    name = "plainwallet-" + meta["version"] + "-android.apk"
+    for _ in range(40):
+        if name in journal.assets:
+            break
+        pause(30)
+        journal.load()
+    require(name in journal.assets, "Release APK missing: the apk store must attach it before F-Droid can verify the build")
+    # No journal: fdroid.py compares the merge request's metadata and pushes only a change, so a rerun is a no-op.
+    child = {k: os.environ[k] for k in ("PATH", "HOME") if k in os.environ}
+    child.update({k: env[k] for k in ("GITLAB_TOKEN", "FDROID_MR", "FDROID_APP_ID", "FDROID_FORK", "FDROID_BRANCH")})
+    p = run([sys.executable, str(Path(__file__).with_name("fdroid.py")), meta["version"], str(meta["versionCode"]), meta["sha"]], env=child, capture_output=True, text=True)
+    print(p.stdout)
+    require(p.returncode == 0, "F-Droid merge request update failed: " + (p.stderr.strip().splitlines() or ["see log"])[-1])
+    return {"store": "fdroid", "version": meta["version"], "mergeRequest": int(env["FDROID_MR"]), "state": (p.stdout.strip().splitlines() or ["updated"])[-1], "publication": "after F-Droid merges, builds and verifies it"}
+
+
+APP_STORE_APP = "6817506091"
+PLATFORMS = {"ios": "IOS", "macos": "MAC_OS"}
+# Owner decision (2026-10-16): a new release replaces an older version still waiting for or in review.
+OPEN_REVIEW = ("WAITING_FOR_REVIEW", "IN_REVIEW", "UNRESOLVED_ISSUES")
+EDITABLE = ("PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED", "INVALID_BINARY")
+PENDING = ("WAITING_FOR_REVIEW", "IN_REVIEW", "READY_FOR_REVIEW", "PENDING_DEVELOPER_RELEASE", "PENDING_APPLE_RELEASE", "PROCESSING_FOR_APP_STORE", "WAITING_FOR_EXPORT_COMPLIANCE")
+
+
+def asc_token(key, env):
+    # ES256 through the openssl CLI: the stdlib can't sign with EC keys.
+    def enc(obj):
+        return base64.urlsafe_b64encode(json.dumps(obj, separators=(",", ":")).encode()).rstrip(b"=")
+    now = int(time.time())
+    data = enc({"alg": "ES256", "kid": env["ASC_KEY_ID"], "typ": "JWT"}) + b"." + enc({"iss": env["ASC_ISSUER_ID"], "iat": now, "exp": now + 900, "aud": "appstoreconnect-v1"})
+    p = subprocess.run(["openssl", "dgst", "-sha256", "-sign", str(key)], input=data, capture_output=True)
+    require(p.returncode == 0, "Could not sign the App Store Connect token")
+    der = p.stdout  # SEQUENCE { INTEGER r, INTEGER s }
+    i = 3 if der[1] & 0x80 else 2
+    r = der[i + 2:i + 2 + der[i + 1]]
+    j = i + 2 + der[i + 1]
+    s = der[j + 2:j + 2 + der[j + 1]]
+    return (data + b"." + base64.urlsafe_b64encode(r.lstrip(b"\0").rjust(32, b"\0") + s.lstrip(b"\0").rjust(32, b"\0")).rstrip(b"=")).decode()
+
+
+def export_upload(platform, key, env):
+    # Apple's own tools only: cloud signing with the API key, and the export uploads the build itself.
+    with tempfile.TemporaryDirectory() as directory:
+        subprocess.run(["ditto", "-x", "-k", "release-out-apple/" + platform + ".xcarchive.zip", directory], check=True)
+        options = Path(directory) / "ExportOptions.plist"
+        options.write_bytes(plistlib.dumps({"method": "app-store-connect", "destination": "upload", "teamID": TEAM, "signingStyle": "automatic", "uploadSymbols": True, "manageAppVersionAndBuildNumber": False}))
+        p = subprocess.run(["xcodebuild", "-exportArchive", "-archivePath", str(Path(directory) / (platform + ".xcarchive")), "-exportOptionsPlist", str(options), "-exportPath", str(Path(directory) / "export"), "-allowProvisioningUpdates", "-authenticationKeyPath", str(key), "-authenticationKeyID", env["ASC_KEY_ID"], "-authenticationKeyIssuerID", env["ASC_ISSUER_ID"]], capture_output=True, text=True, timeout=2700)
+        print("\n".join((p.stdout + p.stderr).splitlines()[-30:]))
+        require(p.returncode == 0, "Apple export/upload failed; inspect App Store Connect builds before any rerun")
+    return {"uploaded": True}
+
+
+def app_store_notes(event):
+    # App Review rejects mentions of other platforms (2.3.10), which release notes often have.
+    text = (event.get("release", {}).get("body") or "").replace("\r", "").strip().split("\n\n")[0][:4000]
+    return text if text and not re.search(r"android|chrome|firefox|google|play store|edge|brave", text, re.I) else "Fixes and improvements."
+
+
+def appstore_platform(meta, journal, platform, api, upload, notes, pause):
+    p = PLATFORMS[platform]
+    def versions():
+        return api("apps/" + APP_STORE_APP + "/appStoreVersions?filter[platform]=" + p + "&limit=50&fields[appStoreVersions]=versionString,appStoreState")["data"]
+    def state(v):
+        return v["attributes"]["appStoreState"]
+    mine = [v for v in versions() if v["attributes"]["versionString"] == meta["version"] and state(v) not in EDITABLE]
+    if mine:
+        return {"platform": platform, "version": meta["version"], "state": state(mine[0]), "existing": True}
+    builds = api("builds?filter[app]=" + APP_STORE_APP + "&filter[preReleaseVersion.platform]=" + p + "&limit=200&fields[builds]=version,processingState")["data"]
+    upload_receipt = journal.read(journal.name("upload-" + platform, "receipt"))
+    if not upload_receipt:
+        numbers = [int(b["attributes"]["version"]) for b in builds if b["attributes"]["version"].isdigit()]
+        require(all(n < meta["versionCode"] for n in numbers), "App Store already has a build numbered " + str(meta["versionCode"]) + " or higher; reconcile, never reuse it")
+    journal.once("upload-" + platform, lambda: upload(platform), lambda r: {"build": meta["versionCode"]})
+    for _ in range(90):
+        found = api("builds?filter[app]=" + APP_STORE_APP + "&filter[version]=" + str(meta["versionCode"]) + "&filter[preReleaseVersion.version]=" + meta["version"] + "&filter[preReleaseVersion.platform]=" + p + "&fields[builds]=processingState")["data"]
+        processing = found[0]["attributes"]["processingState"] if found else "PROCESSING"
+        require(processing in ("PROCESSING", "VALID"), "App Store processing of build " + str(meta["versionCode"]) + " failed: " + processing)
+        if processing == "VALID":
+            build = found[0]["id"]
+            break
+        pause(40)
+    else:
+        raise ValueError("Build still processing; rerun the failed job later")
+    for submission in api("reviewSubmissions?filter[app]=" + APP_STORE_APP + "&filter[platform]=" + p + "&filter[state]=" + ",".join(OPEN_REVIEW))["data"]:
+        items = api("reviewSubmissions/" + submission["id"] + "/items?include=appStoreVersion&fields[appStoreVersions]=versionString")
+        names = [i["attributes"]["versionString"] for i in items.get("included", []) if i["type"] == "appStoreVersions"]
+        require(names and all(older(n, meta["version"]) for n in names), "Another App Store submission is open; only an older one is replaced")
+        journal.once("cancel-" + platform + "-" + submission["id"], lambda submission=submission: api("reviewSubmissions/" + submission["id"], method="PATCH", body={"data": {"type": "reviewSubmissions", "id": submission["id"], "attributes": {"canceled": True}}}), lambda r, names=names: {"cancelled": names})
+    for _ in range(30):
+        current = versions()
+        if not any(state(v) in ("WAITING_FOR_REVIEW", "IN_REVIEW") for v in current):
+            break
+        pause(20)
+    else:
+        raise ValueError("Cancelled App Store review still pending; rerun the failed job later")
+    editable = [v for v in current if state(v) in EDITABLE]
+    require(len(editable) <= 1 and not any(state(v) in PENDING for v in current), "App Store version state needs console reconciliation")
+    attributes = {"versionString": meta["version"], "releaseType": "AFTER_APPROVAL"}
+    if editable:
+        version = editable[0]["id"]
+        api("appStoreVersions/" + version, method="PATCH", body={"data": {"type": "appStoreVersions", "id": version, "attributes": attributes}})
+    else:
+        version = journal.once("version-" + platform, lambda: api("appStoreVersions", method="POST", body={"data": {"type": "appStoreVersions", "attributes": {"platform": p, **attributes}, "relationships": {"app": {"data": {"type": "apps", "id": APP_STORE_APP}}}}}), lambda r: {"id": r["data"]["id"]})["id"]
+    api("appStoreVersions/" + version + "/relationships/build", method="PATCH", body={"data": {"type": "builds", "id": build}})
+    if any(state(v) == "READY_FOR_SALE" for v in current):  # a first version can't have What's New
+        for localization in api("appStoreVersions/" + version + "/appStoreVersionLocalizations?fields[appStoreVersionLocalizations]=locale")["data"]:
+            api("appStoreVersionLocalizations/" + localization["id"], method="PATCH", body={"data": {"type": "appStoreVersionLocalizations", "id": localization["id"], "attributes": {"whatsNew": notes}}})
+    ready = api("reviewSubmissions?filter[app]=" + APP_STORE_APP + "&filter[platform]=" + p + "&filter[state]=READY_FOR_REVIEW")["data"]
+    submission = ready[0]["id"] if ready else journal.once("submission-" + platform, lambda: api("reviewSubmissions", method="POST", body={"data": {"type": "reviewSubmissions", "attributes": {"platform": p}, "relationships": {"app": {"data": {"type": "apps", "id": APP_STORE_APP}}}}}), lambda r: {"id": r["data"]["id"]})["id"]
+    items = api("reviewSubmissions/" + submission + "/items?include=appStoreVersion")
+    if not any(i["id"] == version for i in items.get("included", []) if i["type"] == "appStoreVersions"):
+        journal.once("item-" + platform, lambda: api("reviewSubmissionItems", method="POST", body={"data": {"type": "reviewSubmissionItems", "relationships": {"reviewSubmission": {"data": {"type": "reviewSubmissions", "id": submission}}, "appStoreVersion": {"data": {"type": "appStoreVersions", "id": version}}}}}), lambda r: {"id": r["data"]["id"]})
+    submitted = journal.once("review-" + platform, lambda: api("reviewSubmissions/" + submission, method="PATCH", body={"data": {"type": "reviewSubmissions", "id": submission, "attributes": {"submitted": True}}}), lambda r: {"id": submission, "state": r["data"]["attributes"]["state"]})
+    require(submitted["state"] in ("WAITING_FOR_REVIEW", "IN_REVIEW", "COMPLETE"), "App Store did not confirm the review submission; reconcile in App Store Connect")
+    return {"platform": platform, "version": meta["version"], "build": meta["versionCode"], "submission": submission, "state": submitted["state"]}
+
+
+def appstore(meta, env, journal, event, api=None, upload=None, pause=time.sleep):
+    with tempfile.TemporaryDirectory() as directory:
+        key = Path(directory) / "AuthKey.p8"
+        key.write_text(env["ASC_KEY_P8"])
+        key.chmod(0o600)
+        call = api or (lambda path, **kw: request("https://api.appstoreconnect.apple.com/v1/" + path, asc_token(key, env), **kw))
+        send = upload or (lambda platform: export_upload(platform, key, env))
+        results = [appstore_platform(meta, journal, platform, call, send, app_store_notes(event), pause) for platform in PLATFORMS]
+    return {"store": "appstore", "version": meta["version"], "platforms": results, "state": ", ".join(r["platform"] + ": " + r["state"] for r in results), "publication": "automatic-after-approval"}
 
 
 def play(meta, env, journal, api=request, sign=signed_bundle):
@@ -318,10 +491,17 @@ def main():
         event = json.loads(Path(env["GITHUB_EVENT_PATH"]).read_text())
         expected = release_version(event, {"version": meta["version"]}, env["GITHUB_SHA"])
         require(all(meta[k] == v for k, v in expected.items()), "Artifact does not match immutable release")
-        for name in ("chrome.zip", "firefox.zip", "firefox-source.zip", "android.aab"):
+        for name in ("chrome.zip", "firefox.zip", "firefox-source.zip", "android.aab", "android.apk"):
             require(hashlib.sha256((Path("release-out") / name).read_bytes()).hexdigest() == meta["sha256"][name], "Artifact hash mismatch")
         journal = Journal(store, meta, env)
-        outcome = {"chrome": chrome, "firefox": firefox, "play": play}[store](meta, env, journal)
+        if store == "appstore":
+            apple = json.loads(Path("release-out-apple/apple.json").read_text())
+            require(all(apple[k] == meta[k] for k in ("version", "versionCode", "sha", "releaseId")), "Apple archives do not match immutable release")
+            for name in ("ios.xcarchive.zip", "macos.xcarchive.zip"):
+                require(hashlib.sha256((Path("release-out-apple") / name).read_bytes()).hexdigest() == apple["sha256"][name], "Apple archive hash mismatch")
+            outcome = appstore(meta, env, journal, event)
+        else:
+            outcome = {"chrome": chrome, "firefox": firefox, "play": play, "apk": apk, "fdroid": fdroid}[store](meta, env, journal)
     except Exception as error:
         # Only our bounded errors are safe; never log HTTP bodies, tokens, argv or environment.
         outcome["error"] = str(error) if isinstance(error, (ValueError, APIError, RuntimeError)) else type(error).__name__ + "; inspect store console"
