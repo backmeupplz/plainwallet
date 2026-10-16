@@ -8,6 +8,8 @@ android/local.properties
 *.hprof
 __pycache__/
 release-out/
+release-out-apple/
+build-apple/
 outcome.json
 outcomes/
 macos/web

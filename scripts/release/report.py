@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 from build import require
+from stores import STORES
 
 
 def outcomes(root):
@@ -11,11 +12,11 @@ def outcomes(root):
     # Selection resets stale outcomes on a full rerun; actual results win ties.
     for p in sorted(paths, key=lambda p: (int(p.parent.name.rsplit("-", 1)[1]), p.parent.name.startswith("outcome-"))):
         value = json.loads(p.read_text())
-        require(value["store"] in ("chrome", "firefox", "play"), "Invalid outcome store")
+        require(value["store"] in STORES, "Invalid outcome store")
         value["attempt"] = int(p.parent.name.rsplit("-", 1)[1])
         value["evidence"] = "submission-job" if p.parent.name.startswith("outcome-") else "selection"
         results[value["store"]] = value
-    return [results.get(store, {"store": store, "state": "not submitted: build/setup/authentication did not complete"}) for store in ("chrome", "firefox", "play")]
+    return [results.get(store, {"store": store, "state": "not submitted: build/setup/authentication did not complete"}) for store in STORES]
 
 
 def main():

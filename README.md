@@ -79,7 +79,7 @@ Then turn it on in Safari → Settings → Extensions and allow it on websites. 
 
 The same wallet as an app: an address bar with a ☆ to favorite the site, over a browser whose pages get Plain Wallet's provider, and the wallet itself (favorites on top of its home screen, then the usual screens and approvals), with optional fingerprint unlock. Needs Android 11+ and Android System WebView 140 or newer.
 
-Get it on [Google Play](https://play.google.com/store/apps/details?id=com.borodutch.plainwallet), or download `plainwallet-<version>-android.apk` from the [latest release](https://github.com/backmeupplz/plainwallet/releases/latest) and open it on the phone (allow installing from your browser or file manager when asked). Releases are signed with the same key, so later ones install over it. Or build it, with the Android SDK installed (Android Studio, or `ANDROID_HOME` pointing at one):
+Get it on [Google Play](https://play.google.com/store/apps/details?id=com.borodutch.plainwallet), or [download the APK](https://github.com/backmeupplz/plainwallet/releases/latest/download/plainwallet.apk) (`plainwallet-<version>-android.apk` on each [release](https://github.com/backmeupplz/plainwallet/releases/latest)) and open it on the phone (allow installing from your browser or file manager when asked). Releases are signed with the same key, so later ones install over it. Or build it, with the Android SDK installed (Android Studio, or `ANDROID_HOME` pointing at one):
 
 ```sh
 npm ci
@@ -117,7 +117,7 @@ It differs from the Android app where iOS does:
 
 ## Store releases
 
-Published stable GitHub releases can submit updates to Play, Chrome Web Store and AMO after owner setup. See [store release setup, publication choices and recovery](docs/STORE_RELEASE.md). Credentials and store approval are not included; review submission is not public rollout.
+Published stable GitHub releases can submit updates to Play, the App Store (iOS and Mac), Chrome Web Store and AMO, attach the signed APK, and update the F-Droid merge request, after owner setup. See [store release setup, publication choices and recovery](docs/STORE_RELEASE.md). Credentials and store approval are not included; review submission is not public rollout.
 
 ## Develop
 

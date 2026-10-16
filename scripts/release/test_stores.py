@@ -25,42 +25,48 @@ class StoreSelectionTests(unittest.TestCase):
         root, result = self.select({})
         self.assertEqual(result.returncode, 0, result.stderr)
         output = dict(line.split("=", 1) for line in (root / "output").read_text().splitlines())
-        self.assertEqual(json.loads(output["stores"]), ["chrome", "play"])
+        self.assertEqual(json.loads(output["stores"]), ["chrome", "play", "apk"])
         self.assertEqual(output["has_stores"], "true")
+        self.assertEqual(output["appstore"], "false")
         rows = {r["store"]: r for r in outcomes(root / "selection-outcomes")}
         self.assertEqual(rows["firefox"]["state"], "paused")
         self.assertEqual(rows["firefox"]["submission"], "skipped")
         self.assertNotEqual(rows["chrome"]["state"], "paused")
         self.assertTrue(paused("firefox", {"STORE_FIREFOX_PAUSED": ""}))
+        for store in ("fdroid", "appstore"):
+            self.assertEqual(rows[store]["state"], "paused")
+            self.assertTrue(paused(store, {}))
 
     def test_explicit_reenable_retains_all_stores(self):
-        root, result = self.select({"STORE_FIREFOX_PAUSED": "false"})
+        root, result = self.select({"STORE_" + s.upper() + "_PAUSED": "false" for s in STORES})
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('stores=["chrome", "firefox", "play"]', (root / "output").read_text())
+        # The App Store runs in a macOS job of its own, outside the matrix.
+        self.assertIn('stores=["chrome", "firefox", "play", "apk", "fdroid"]', (root / "output").read_text())
+        self.assertIn("appstore=true", (root / "output").read_text())
         self.assertTrue(all("selected" in r["state"] for r in outcomes(root / "selection-outcomes")))
 
     def test_all_paused_emits_no_matrix_jobs_and_three_outcomes(self):
         root, result = self.select({"STORE_" + s.upper() + "_PAUSED": "true" for s in STORES})
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual((root / "output").read_text(), "stores=[]\nhas_stores=false\n")
-        self.assertEqual([r["state"] for r in outcomes(root / "selection-outcomes")], ["paused"] * 3)
+        self.assertEqual((root / "output").read_text(), "stores=[]\nhas_stores=false\nappstore=false\n")
+        self.assertEqual([r["state"] for r in outcomes(root / "selection-outcomes")], ["paused"] * len(STORES))
 
     def test_v025_is_chrome_only_even_after_pause_controls_are_restored(self):
         for variables in ({}, {"STORE_" + s.upper() + "_PAUSED": "false" for s in STORES}):
             root, result = self.select({**variables, "GITHUB_REF": "refs/tags/v0.2.5"})
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual((root / "output").read_text(), 'stores=["chrome"]\nhas_stores=true\n')
+            self.assertEqual((root / "output").read_text(), 'stores=["chrome"]\nhas_stores=true\nappstore=false\n')
             rows = {r["store"]: r for r in outcomes(root / "selection-outcomes")}
-            for store in ("firefox", "play"):
+            for store in STORES[1:]:
                 self.assertEqual(rows[store]["submission"], "skipped")
                 self.assertEqual(rows[store]["state"], "paused")
         root, result = self.select({"GITHUB_REF": "refs/tags/v0.2.5", "STORE_CHROME_PAUSED": "true"})
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual((root / "output").read_text(), "stores=[]\nhas_stores=false\n")
+        self.assertEqual((root / "output").read_text(), "stores=[]\nhas_stores=false\nappstore=false\n")
         # Later general releases can restore Play intentionally; Firefox remains paused by default.
         root, result = self.select({"GITHUB_REF": "refs/tags/v0.2.6", "STORE_PLAY_PAUSED": "false"})
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('stores=["chrome", "play"]', (root / "output").read_text())
+        self.assertIn('stores=["chrome", "play", "apk"]', (root / "output").read_text())
 
     def test_invalid_configuration_fails_before_output(self):
         for value in ("TRUE", "False", "yes", " false "):
@@ -81,7 +87,8 @@ class StoreSelectionTests(unittest.TestCase):
         d = folder / "outcome-firefox-1"
         d.mkdir()
         (d / "outcome.json").write_text(json.dumps({"store": "firefox", "state": "unreviewed"}))
-        self.assertEqual({r["store"]: r["state"] for r in outcomes(folder)}, {"chrome": "PENDING_REVIEW", "firefox": "paused", "play": "failed"})
+        rows = {r["store"]: r["state"] for r in outcomes(folder)}
+        self.assertEqual({s: rows[s] for s in ("chrome", "firefox", "play", "fdroid", "appstore")}, {"chrome": "PENDING_REVIEW", "firefox": "paused", "play": "failed", "fdroid": "paused", "appstore": "paused"})
 
     def test_workflow_selection_precedes_environment_and_secrets(self):
         workflow = (ROOT / ".github/workflows/store-release.yml").read_text()
@@ -96,6 +103,7 @@ class StoreSelectionTests(unittest.TestCase):
         self.assertIn("needs: [build, select-stores]", workflow)
         self.assertIn("store: ${{ fromJSON(needs.select-stores.outputs.stores) }}", workflow)
         self.assertIn("fail-fast: false", workflow)
-        self.assertIn("needs: [build, select-stores, submit]", workflow)
+        self.assertIn("needs: [build, build-apple, select-stores, submit, submit-apple]", workflow)
+        self.assertIn("if: needs.select-stores.outputs.appstore == 'true'", workflow)
         self.assertIn("pattern: selection-outcomes-*", workflow)
         self.assertIn("merge-multiple: true", workflow)

@@ -11,7 +11,7 @@ The workflow is **not proof that any store is configured, submitted, approved or
 
 ## GitHub protection, permissions and trigger
 
-Owner decision (2026-10-03): **publishing the GitHub release is the only human approval**. Create environments **store-chrome** and **store-play** in Settings → Environments before releasing; **store-firefox** was created when the owner re-enabled it (2026-10-09). Do not add required-reviewer or wait-timer gates. Keep administrator bypass disabled and restrict deployments to `v*` tags; protect those tags against deletion/updates and unreviewed creation. Require reviewed PRs and green build CI before tagging. An environment name alone is not protection: GitHub otherwise auto-creates it without rules. The release publisher must check the released SHA/workflow/scripts, artifacts and store gates before publishing.
+Owner decision (2026-10-03): **publishing the GitHub release is the only human approval**. Create environments **store-chrome** and **store-play** in Settings → Environments before releasing; **store-firefox** was created when the owner re-enabled it (2026-10-09); **store-appstore** and **store-fdroid** (2026-10-16) are set up as described in their sections below. Do not add required-reviewer or wait-timer gates. Keep administrator bypass disabled and restrict deployments to `v*` tags; protect those tags against deletion/updates and unreviewed creation. Require reviewed PRs and green build CI before tagging. An environment name alone is not protection: GitHub otherwise auto-creates it without rules. The release publisher must check the released SHA/workflow/scripts, artifacts and store gates before publishing.
 
 All environments: set variables `STORE_SETUP_CONFIRMED=true` and `STORE_AUTO_PUBLISH_APPROVED=true` only after these checks and the automatic-publication decision above. Missing credentials/gates still fail closed; merging this change does not configure or activate any store. The common gate and store-specific publication gates are checked before Google authentication and again in Python preflight. Store secrets must exist only in that store's environment (not repository/org-wide secrets exposed to other jobs). The build job has read-only contents permission, no environment and no OIDC. Submission runs on fresh runners without npm/Gradle/dependency execution; only Python stdlib and JDK signing tools. No build cache is restored in privileged jobs. Actions are pinned to full commits; review pin updates.
 
@@ -80,6 +80,24 @@ Existing listing metadata must contain name, summary, categories for compatible 
 
 The workflow uploads to listed, waits for processed+valid, verifies version/channel, then creates the version **with the source zip in the same multipart request**. Upload validation alone is not success. The resulting version must be listed with source, and neither listing nor version may be disabled. `unreviewed` is awaiting review; `public` is approved and may be live; `disabled` is failure/requires investigation. The existing AMO-specific approval guard remains required in addition to the common automatic-publication gate. No undocumented hold/auto-publish parameter is invented and the new version is never disabled as a fake review hold; only older pending versions are superseded as described above.
 
+### APK for direct download: store-play
+
+The site's "Or download the APK" button links `releases/latest/download/plainwallet.apk`. Store `apk` signs the unsigned release APK from the build job with **apksigner** (Android SDK build-tools) and the same upload key as the AAB and earlier release APKs, so later APKs install over earlier ones; the signer checks `ANDROID_UPLOAD_CERT_SHA256` before and after signing. It runs in the **store-play** environment, so the key has no second copy. It attaches `plainwallet-<version>-android.apk` (README, F-Droid `Binaries`) and `plainwallet.apk` (the stable site link), each journaled. Repository variable `STORE_APK_PAUSED` defaults to `false`; the store needs nothing beyond the existing store-play setup.
+
+### F-Droid: store-fdroid
+
+F-Droid ships the APK above as a reproducible build: it builds `android/app` from the tagged commit, compares it with `plainwallet-<version>-android.apk` (`Binaries`), and publishes ours when they match (`AllowedAPKSigningKeys` = the upload certificate). Release APKs therefore come out of Gradle unsigned and without the encrypted dependency block (`dependenciesInfo { includeInApk = false }`); F-Droid's recipe builds the web half in its prebuild step with Debian's Node and passes `-PprebuiltWeb`, since its scanner deletes npm's prebuilt build tools before Gradle runs. Two clean clones built byte-identical unsigned APKs, and Node 22 gave the same web output as the pinned 26.8.2.
+
+While the app's merge request in fdroid/fdroiddata is open, store `fdroid` rewrites its metadata (one build entry: this version, versionCode and the release commit) on the fork branch `backmeupplz/fdroiddata:com.borodutch.plainwallet` with `scripts/release/fdroid.py`, shared with the maintainer's other apps (keep it identical). It waits for the APK above, compares before pushing, so a rerun is a no-op, and does nothing once the merge request is merged: F-Droid's checkupdates follows new tags itself. Environment **store-fdroid** (v* tags only): secret `GITLAB_TOKEN`, a GitLab personal access token with only the `write_repository` scope, used for `git push` and never printed; variables `FDROID_MR` (the merge request number), `STORE_SETUP_CONFIRMED=true` and `STORE_AUTO_PUBLISH_APPROVED=true`. Repository variable `STORE_FDROID_PAUSED` defaults to `true`; set it to `false` once the merge request exists.
+
+### App Store: store-appstore
+
+One record (`6817506091`, bundle `com.borodutch.plainwallet`) carries the iOS app and the Mac app with its Safari extension. The credential-free **build-apple** job (macOS runner) builds the web halves, archives both apps without a signing identity, ad-hoc signs them so their entitlements are readable, and binds the archives to the release (`apple.json`, like `release.json`). Build numbers are the Android versionCode, so they only grow. The **submit-apple** job then uses only Apple's own tools and the Python stdlib: `xcodebuild -exportArchive` with App Store Connect cloud signing (API key `3FT23S9NSM`; no certificate or profile on the runner) uploads each build, and the API (ES256 tokens signed with the openssl CLI) waits for processing.
+
+Owner decision (2026-10-16): a new release **replaces an older version still waiting for review, in review or with unresolved issues**: its review submission is cancelled (journaled), the editable version is renamed to the release version, the new build attached and a new submission sent with **automatic release after approval**. A newer or unrecognized open submission, a version approved but held for release, or more than one editable version fails closed for reconciliation. `READY_FOR_SALE` versions are never edited; when one exists, the next version is created next to it and gets What's New from the release notes' first paragraph (a generic line if it names another platform, which App Review rejects under 2.3.10). A first version has no What's New. Reruns return the exact version's review state without writing; an upload or cancel marker without a receipt is uncertain and stops the run, as everywhere else.
+
+Environment **store-appstore** (v* tags only): secret `ASC_KEY_P8` (the API key's .p8, used for cloud signing and API tokens); variables `STORE_SETUP_CONFIRMED=true` and `STORE_AUTO_PUBLISH_APPROVED=true`. The key ID and issuer are in the workflow. Repository variable `STORE_APPSTORE_PAUSED` defaults to `true`; set it to `false` after the environment exists.
+
 ## Reproduce and verify without credentials
 
 Linux Ubuntu 24.04, Node **26.8.2**, npm supplied with that Node release, Python 3, JDK 21 and Android SDK with API 36. The Gradle wrapper, distribution hash and dependency verification metadata are checked in. Never weaken dependency verification to make CI pass.
@@ -91,8 +109,11 @@ python3 -m unittest discover -s scripts/release -p 'test_*.py'
 npm run build
 npm exec -- tsc --noEmit
 npm exec -- wxt build -b firefox --mv3
-(cd android && ./gradlew --no-daemon --dependency-verification strict bundleRelease)
+(cd android && ./gradlew --no-daemon --dependency-verification strict bundleRelease assembleRelease)
 GITHUB_EVENT_NAME=push python3 scripts/release/build.py ci
+# Apple archives (macOS with Xcode):
+npm run build:macos && rm -rf ios/web && cp -R .output/android-mv3 ios/web
+GITHUB_EVENT_NAME=push python3 scripts/release/build.py apple
 ```
 
 AMO reviewers: unpack `firefox-source.zip`; use the pinned Node version, `npm ci` then `npm exec -- wxt build -b firefox --mv3`. Compare the resulting `.output/firefox-mv3/` files to the submitted zip (manifest at zip root). No Android SDK is needed for Firefox. The source zip is `git archive` of the exact commit: includes lockfile, .npmrc, sources and these instructions; excludes node_modules, caches, build output and untracked secrets. Extension zip entries have fixed timestamps and ordering. CI builds/tests both extensions and the unsigned AAB, packages them, and verifies their versions/identity. It does not emulate an authenticated store or prove store acceptance.

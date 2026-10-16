@@ -11,7 +11,9 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
-STORES = ("chrome", "firefox", "play")
+from stores import STORES
+
+LEGACY = ("chrome", "firefox", "play")
 
 
 class ReportTests(unittest.TestCase):
@@ -69,7 +71,7 @@ class ReportTests(unittest.TestCase):
         return {row["store"]: row for row in rows}
 
     def test_success_and_public_states_without_issue_calls(self):
-        for store, state in zip(STORES, ("PENDING_REVIEW", "public", "committed-for-review; verify Publishing overview")):
+        for store, state in zip(LEGACY, ("PENDING_REVIEW", "public", "committed-for-review; verify Publishing overview")):
             self.put("outcome", store, 1, state, publication="automatic-after-approval")
         for token in (False, True):
             with self.subTest(token_present=token):
@@ -77,7 +79,7 @@ class ReportTests(unittest.TestCase):
                 self.assertEqual(rows["chrome"]["state"], "PENDING_REVIEW")
                 self.assertEqual(rows["firefox"]["state"], "public")
                 self.assertEqual(rows["play"]["state"], "committed-for-review; verify Publishing overview")
-                self.assertTrue(all(row["evidence"] == "submission-job" for row in rows.values()))
+                self.assertTrue(all(rows[store]["evidence"] == "submission-job" for store in LEGACY))
 
     def test_failure_partial_and_all_paused_without_issue_calls(self):
         self.put("outcome", "chrome", 1, "PENDING_REVIEW")
@@ -108,7 +110,7 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(rows["play"]["error"], "Authentication failed")
         self.put("outcome", "play", 3, "committed-for-review")
         rows = self.report(3, token=True)
-        self.assertEqual([rows[s]["attempt"] for s in STORES], [2, 2, 3])
+        self.assertEqual([rows[s]["attempt"] for s in LEGACY], [2, 2, 3])
         self.assertEqual(rows["chrome"]["state"], "PENDING_REVIEW")
         self.assertEqual(rows["play"]["state"], "committed-for-review")
 
