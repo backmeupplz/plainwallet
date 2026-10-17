@@ -631,6 +631,17 @@ class ReleaseTests(unittest.TestCase):
             self.assertEqual(mocked.call_count, 1)
             self.assertNotIn("secret", str(caught.exception))
 
+    def test_store_error_message_is_reported(self):
+        google = b'{"error": {"code": 400, "status": "FAILED_PRECONDITION", "message": "Item is not ready", "details": [{"x": "y"}]}}'
+        apple = b'{"errors": [{"code": "STATE_ERROR", "detail": "Build is not valid"}]}'
+        for body, reason in ((google, "HTTP 400: FAILED_PRECONDITION Item is not ready;"), (apple, "HTTP 409: STATE_ERROR Build is not valid;")):
+            error = HTTPError("https://chromewebstore.googleapis.com", int(reason[5:8]), "bad", {}, io.BytesIO(body))
+            with patch("urllib.request.OpenerDirector.open", side_effect=error):
+                with self.assertRaises(APIError) as caught:
+                    request("https://chromewebstore.googleapis.com", "fake", method="POST", body={})
+                self.assertIn(reason, str(caught.exception))
+                self.assertNotIn("details", str(caught.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -25,9 +25,27 @@ from build import require, release_version, BUNDLE_ID, TEAM
 
 
 class APIError(Exception):
-    def __init__(self, status):
+    def __init__(self, status, reason=""):
         self.status = status
-        super().__init__("HTTP " + str(status) + "; inspect store console (response omitted to protect credentials)")
+        super().__init__("HTTP " + str(status) + (": " + reason if reason else "") + "; inspect store console")
+
+
+def error_reason(e):
+    """The store's own error message from a JSON error (Google, App Store Connect, AMO), never the raw body"""
+    try:
+        data = json.loads(e.read(65536))
+    except Exception:
+        return ""
+    if not isinstance(data, dict):
+        return ""
+    error, errors = data.get("error"), data.get("errors")
+    if isinstance(error, dict):
+        reason = str(error.get("status", "")) + " " + str(error.get("message", ""))
+    elif isinstance(errors, list) and errors and isinstance(errors[0], dict):
+        reason = str(errors[0].get("code", "")) + " " + str(errors[0].get("detail", ""))
+    else:
+        reason = str(data.get("detail", ""))
+    return " ".join(reason.split())[:300]
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -46,6 +64,7 @@ def request(url, token, method="GET", body=None, content_type="application/json"
                 data = r.read()
                 return json.loads(data) if data else {}
         except HTTPError as e:
+            reason = error_reason(e)
             e.close()  # Do not leave an error body/response for GC warnings or logging.
             if missing and e.code == 404:
                 return None
@@ -54,7 +73,7 @@ def request(url, token, method="GET", body=None, content_type="application/json"
                 require(delay.isdigit() and int(delay) <= 120, "Retry-After requires later operator retry")
                 time.sleep(int(delay))
                 continue
-            raise APIError(e.code) from None
+            raise APIError(e.code, reason) from None
         except (URLError, TimeoutError):
             raise RuntimeError("Network outcome uncertain; reconcile journal and store before retry") from None
 
