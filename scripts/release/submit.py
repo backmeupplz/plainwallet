@@ -309,11 +309,12 @@ def signed_bundle(env):
 
 def signed_apk(env):
     # apksigner (Android SDK build-tools) for the v2/v3 signatures Android 11+ needs; same key as the AAB and earlier APKs.
+    # No v1 (minSdk 30) and Gradle's zip layout kept, so F-Droid can copy the signature onto its own build and verify it.
     tools = sorted(Path(os.environ["ANDROID_HOME"], "build-tools").glob("*/apksigner"))
     require(tools, "apksigner not found in the Android SDK")
     with upload_key(env) as (key, run, directory):
         output = directory / "signed.apk"
-        run([str(tools[-1]), "sign", "--ks", str(key), "--ks-key-alias", env["ANDROID_KEY_ALIAS"], "--ks-pass", "env:STORE_PASS", "--key-pass", "env:KEY_PASS", "--out", str(output), "release-out/android.apk"])
+        run([str(tools[-1]), "sign", "--ks", str(key), "--ks-key-alias", env["ANDROID_KEY_ALIAS"], "--ks-pass", "env:STORE_PASS", "--key-pass", "env:KEY_PASS", "--v1-signing-enabled", "false", "--alignment-preserved", "--out", str(output), "release-out/android.apk"])
         certs = run([str(tools[-1]), "verify", "--print-certs", str(output)]).decode()
         require("certificate SHA-256 digest: " + env["ANDROID_UPLOAD_CERT_SHA256"].lower() in certs, "Signed APK verification failed")
         return output.read_bytes()

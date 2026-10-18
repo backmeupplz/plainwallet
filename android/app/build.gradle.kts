@@ -1,7 +1,11 @@
 plugins { id("com.android.application") version "9.4.1" }
 
 val repo = rootDir.parentFile
-val version = (groovy.json.JsonSlurper().parse(repo.resolve("package.json")) as Map<*, *>)["version"] as String
+val pkg = groovy.json.JsonSlurper().parse(repo.resolve("package.json")) as Map<*, *>
+val version = pkg["version"] as String
+// Literal in package.json so F-Droid's checkupdates can read it; it must stay major * 10000 + minor * 100 + patch.
+val code = pkg["versionCode"] as Int
+check(code == version.split(".").map(String::toInt).let { (major, minor, patch) -> major * 10000 + minor * 100 + patch }) { "package.json versionCode doesn't match version" }
 // The wallet's web half: the extension's code, built for the app (entrypoints/android*).
 val web = tasks.register<Exec>("web") {
     workingDir = repo
@@ -17,7 +21,7 @@ android {
         applicationId = "com.borodutch.plainwallet"
         minSdk = 30
         targetSdk = 36
-        versionCode = version.split(".").map(String::toInt).let { (major, minor, patch) -> major * 10000 + minor * 100 + patch }
+        versionCode = code
         versionName = version
     }
     // Release builds come out unsigned: they're signed afterwards with apksigner, away from Gradle, its plugins and
