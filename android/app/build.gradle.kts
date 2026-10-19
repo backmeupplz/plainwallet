@@ -29,6 +29,15 @@ android {
     sourceSets["main"].assets.srcDir(repo.resolve(".output/android-mv3"))
     // No encrypted dependency block in APKs: F-Droid rejects it. Play still gets it from the bundle.
     dependenciesInfo { includeInApk = false }
+    // R8 shrinks and optimizes release builds, as F-Droid asks; the app has no reflection or JavaScript interfaces
+    // to keep (the WebViews talk to it through androidx.webkit's web message listeners).
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+        }
+    }
 }
 
 // For WebView's document-start scripts and web message listeners, which tell the app each page's real origin.
