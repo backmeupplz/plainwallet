@@ -24,6 +24,14 @@ android {
         versionCode = code
         versionName = version
     }
+    // R8 strips the unused library code out of the release build; androidx.webkit brings its own keep rules.
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+        }
+    }
     // Release builds come out unsigned: they're signed afterwards with apksigner, away from Gradle, its plugins and
     // the npm build (see README), so no build tool ever holds the release key or its password.
     sourceSets["main"].assets.srcDir(repo.resolve(".output/android-mv3"))
