@@ -33,8 +33,6 @@ class RerunTests(unittest.TestCase):
         import os
         import subprocess
         workflow = (Path(__file__).resolve().parents[2] / ".forgejo/workflows/store-release.yml").read_text()
-        github = (Path(__file__).resolve().parents[2] / ".github/workflows/store-release.yml").read_text()
-        self.assertIn(workflow.split("      - name: Record early submission failure without credentials" + chr(10), 1)[1].split("      - uses:", 1)[0], github)
         step = workflow.split("      - name: Record early submission failure without credentials" + chr(10), 1)[1].split("      - uses:", 1)[0]
         self.assertIn("if: always()", step)
         script = chr(10).join(line[10:] for line in step.split("        run: |" + chr(10), 1)[1].splitlines())

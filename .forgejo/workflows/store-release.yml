@@ -1,8 +1,7 @@
 name: Store release
 # Forgejo Actions. Publishing a release on git.borodutch.com builds, creates the GitHub release (releases don't
-# mirror) and submits the App Store, AMO, the signed APK and F-Droid. Play and Chrome authenticate with Google
-# Workload Identity Federation, which trusts GitHub's OIDC only, so .github/workflows/store-release.yml submits
-# them on GitHub when the github-release job below publishes the GitHub release.
+# mirror) and submits every enabled store. Play and Chrome authenticate with Google Workload Identity Federation,
+# whose provider trusts this workflow's OIDC tokens on v* release events only.
 on:
   release:
     types: [published]
@@ -94,8 +93,9 @@ jobs:
       - id: select
         name: Select enabled stores without store credentials
         env:
-          STORES_ELSEWHERE: chrome play
+          STORE_CHROME_PAUSED: ${{ vars.STORE_CHROME_PAUSED }}
           STORE_FIREFOX_PAUSED: ${{ vars.STORE_FIREFOX_PAUSED }}
+          STORE_PLAY_PAUSED: ${{ vars.STORE_PLAY_PAUSED }}
           STORE_APK_PAUSED: ${{ vars.STORE_APK_PAUSED }}
           STORE_FDROID_PAUSED: ${{ vars.STORE_FDROID_PAUSED }}
           STORE_APPSTORE_PAUSED: ${{ vars.STORE_APPSTORE_PAUSED }}
@@ -107,7 +107,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 90
   # The submission journal and the APKs live on the GitHub release, where the README, the site and F-Droid download
-  # them. Publishing it also starts the Play and Chrome submissions on GitHub.
+  # them.
   github-release:
     if: github.repository == 'backmeupplz/plainwallet' && github.event_name == 'release' && !github.event.release.prerelease && !github.event.release.draft
     needs: [build]
@@ -140,6 +140,7 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: write # APK copies on the Forgejo release; the journal is on the GitHub release (GH_MIRROR_TOKEN)
+    enable-openid-connect: true # short-lived Google credentials; the provider admits only v* release runs of this workflow
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -151,7 +152,7 @@ jobs:
           name: unsigned-release
           path: release-out
       - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
-        if: matrix.store == 'apk'
+        if: matrix.store == 'play' || matrix.store == 'apk'
         with:
           distribution: temurin
           java-version: '21'
@@ -163,19 +164,46 @@ jobs:
         env:
           CONFIRMED: ${{ vars.STORE_SETUP_CONFIRMED }}
           AUTO_PUBLISH_APPROVED: ${{ vars.STORE_AUTO_PUBLISH_APPROVED }}
+          PLAY_TRACK: ${{ vars.PLAY_TRACK }}
+          PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED: ${{ vars.PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED }}
+          PLAY_MANAGED_PUBLISHING_CONFIRMED: ${{ vars.PLAY_MANAGED_PUBLISHING_CONFIRMED }}
           AMO_AUTO_PUBLISH_APPROVED: ${{ vars.AMO_AUTO_PUBLISH_APPROVED }}
+          WIF_PROVIDER: ${{ vars.GOOGLE_WIF_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ matrix.store == 'play' && vars.PLAY_GOOGLE_SERVICE_ACCOUNT || vars.CHROME_GOOGLE_SERVICE_ACCOUNT }}
           STORE: ${{ matrix.store }}
         run: |
           test "$CONFIRMED" = true || { echo 'Configure store variables; see docs/STORE_RELEASE.md'; exit 1; }
           test "$AUTO_PUBLISH_APPROVED" = true || { echo 'Owner must confirm automatic public publication after approval'; exit 1; }
-          if [ "$STORE" = firefox ]; then
+          if [ "$STORE" = play ]; then
+            test "$PLAY_TRACK" = production && test "$PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED" = true && test "$PLAY_MANAGED_PUBLISHING_CONFIRMED" != true || { echo 'Play requires production and managed publishing disabled; remove obsolete enabled confirmation'; exit 1; }
+          elif [ "$STORE" = firefox ]; then
             test "$AMO_AUTO_PUBLISH_APPROVED" = true || { echo 'Owner must approve AMO listed automatic publication'; exit 1; }
           fi
+          if [ "$STORE" = chrome ] || [ "$STORE" = play ]; then
+            test -n "$WIF_PROVIDER" && test -n "$SERVICE_ACCOUNT"
+          fi
+      - id: google
+        if: matrix.store == 'chrome' || matrix.store == 'play'
+        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        with:
+          workload_identity_provider: ${{ vars.GOOGLE_WIF_PROVIDER }}
+          service_account: ${{ matrix.store == 'play' && vars.PLAY_GOOGLE_SERVICE_ACCOUNT || vars.CHROME_GOOGLE_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: ${{ matrix.store == 'play' && 'https://www.googleapis.com/auth/androidpublisher' || 'https://www.googleapis.com/auth/chromewebstore' }}
+          create_credentials_file: false
+          export_environment_variables: false
       - name: Sign only with JDK, request review and automatic publication
         env:
           GH_TOKEN: ${{ secrets.GH_MIRROR_TOKEN }}
+          GOOGLE_ACCESS_TOKEN: ${{ steps.google.outputs.access_token }}
           STORE_SETUP_CONFIRMED: ${{ vars.STORE_SETUP_CONFIRMED }}
           STORE_AUTO_PUBLISH_APPROVED: ${{ vars.STORE_AUTO_PUBLISH_APPROVED }}
+          PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED: ${{ vars.PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED }}
+          CHROME_PUBLISHER_ID: ${{ vars.CHROME_PUBLISHER_ID }}
+          CHROME_ITEM_ID: ${{ vars.CHROME_ITEM_ID }}
+          PLAY_TRACK: ${{ vars.PLAY_TRACK }}
+          PLAY_MANAGED_PUBLISHING_CONFIRMED: ${{ vars.PLAY_MANAGED_PUBLISHING_CONFIRMED }}
+          PLAY_APP_SIGNING_CONFIRMED: ${{ vars.PLAY_APP_SIGNING_CONFIRMED }}
           ANDROID_UPLOAD_CERT_SHA256: ${{ vars.ANDROID_UPLOAD_CERT_SHA256 }}
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}

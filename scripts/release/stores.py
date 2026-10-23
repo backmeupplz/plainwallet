@@ -24,18 +24,11 @@ def paused_outcome(store):
     return {"store": store, "state": "paused", "submission": "skipped", "reason": "Owner pause; no store access or submission attempted"}
 
 
-def elsewhere_outcome(store):
-    return {"store": store, "state": "elsewhere", "submission": "skipped", "reason": "Submitted by the other release workflow (Play and Chrome on GitHub Actions, the rest on Forgejo); see its report"}
-
-
 def main():
     # Owner authorized v0.2.5 for Chrome only. Bind this cap to the immutable tag,
     # not mutable pause variables: full reruns must never acquire Play/AMO environments.
     chrome_only = os.environ.get("GITHUB_REF") == "refs/tags/v0.2.5"
-    # Play and Chrome need Google's trust in GitHub's OIDC, so each workflow names the stores the other one submits.
-    elsewhere = os.environ.get("STORES_ELSEWHERE", "").split()
-    require(all(store in STORES for store in elsewhere), "Unknown store")
-    enabled = [store for store in STORES if store not in elsewhere and not paused(store, os.environ) and (not chrome_only or store == "chrome")]
+    enabled = [store for store in STORES if not paused(store, os.environ) and (not chrome_only or store == "chrome")]
     # The App Store needs a macOS runner and the Apple archives, so it gets a job of its own.
     matrix = [store for store in enabled if store != "appstore"]
     with open(os.environ["GITHUB_OUTPUT"], "a") as output:
@@ -45,7 +38,7 @@ def main():
     for store in STORES:
         directory = Path("selection-outcomes") / ("selection-" + store + "-" + os.environ["GITHUB_RUN_ATTEMPT"])
         directory.mkdir(parents=True, exist_ok=True)
-        outcome = elsewhere_outcome(store) if store in elsewhere else paused_outcome(store) if store not in enabled else {"store": store, "state": "not submitted: selected, but no submission outcome recorded"}
+        outcome = paused_outcome(store) if store not in enabled else {"store": store, "state": "not submitted: selected, but no submission outcome recorded"}
         (directory / "outcome.json").write_text(json.dumps(outcome) + "\n")
 
 

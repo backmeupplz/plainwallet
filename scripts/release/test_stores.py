@@ -90,50 +90,31 @@ class StoreSelectionTests(unittest.TestCase):
         rows = {r["store"]: r["state"] for r in outcomes(folder)}
         self.assertEqual({s: rows[s] for s in ("chrome", "firefox", "play", "fdroid", "appstore")}, {"chrome": "PENDING_REVIEW", "firefox": "paused", "play": "failed", "fdroid": "paused", "appstore": "paused"})
 
-    def test_each_workflow_skips_the_stores_the_other_submits(self):
-        variables = {"STORE_" + s.upper() + "_PAUSED": "false" for s in STORES}
-        for elsewhere, stores, appstore in (("chrome play", ["firefox", "apk", "fdroid"], "true"), ("firefox apk fdroid appstore", ["chrome", "play"], "false")):
-            root, result = self.select({**variables, "STORES_ELSEWHERE": elsewhere})
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual((root / "output").read_text(), "stores=" + json.dumps(stores) + "\nhas_stores=true\nappstore=" + appstore + "\n")
-            rows = {r["store"]: r for r in outcomes(root / "selection-outcomes")}
-            for store in elsewhere.split():
-                self.assertEqual((rows[store]["state"], rows[store]["submission"]), ("elsewhere", "skipped"))
-        workflows = {path: (ROOT / path).read_text() for path in (".forgejo/workflows/store-release.yml", ".github/workflows/store-release.yml")}
-        self.assertIn("STORES_ELSEWHERE: chrome play\n", workflows[".forgejo/workflows/store-release.yml"])
-        self.assertIn("STORES_ELSEWHERE: firefox apk fdroid appstore\n", workflows[".github/workflows/store-release.yml"])
-        _, result = self.select({"STORES_ELSEWHERE": "edge"})
-        self.assertNotEqual(result.returncode, 0)
-
     def test_workflow_selection_precedes_environment_and_secrets(self):
-        forgejo = (ROOT / ".forgejo/workflows/store-release.yml").read_text()
-        github = (ROOT / ".github/workflows/store-release.yml").read_text()
-        for workflow in (forgejo, github):
-            select = workflow.split("  select-stores:\n", 1)[1].split("  submit:\n" if workflow is github else "  github-release:\n", 1)[0]
-            self.assertNotIn("secrets.", select)
-            self.assertNotIn("environment:", select)
-            self.assertNotIn("id-token:", select)
-            self.assertIn("github.event_name == 'release'", select)
-            self.assertIn("!github.event.release.prerelease", select)
-            self.assertIn("!github.event.release.draft", select)
-            self.assertIn("if: needs.select-stores.outputs.has_stores == 'true'", workflow)
-            self.assertIn("store: ${{ fromJSON(needs.select-stores.outputs.stores) }}", workflow)
-            self.assertIn("fail-fast: false", workflow)
-            self.assertIn("pattern: selection-outcomes-*", workflow)
-            self.assertIn("merge-multiple: true", workflow)
-        self.assertIn("needs: [build, select-stores, github-release]", forgejo)
-        self.assertIn("needs: [build, select-stores, github-release, submit, submit-apple]", forgejo)
+        workflow = (ROOT / ".forgejo/workflows/store-release.yml").read_text()
+        select = workflow.split("  select-stores:\n", 1)[1].split("  github-release:\n", 1)[0]
+        self.assertNotIn("secrets.", select)
+        self.assertNotIn("environment:", select)
+        self.assertNotIn("id-token:", select)
+        self.assertIn("github.event_name == 'release'", select)
+        self.assertIn("!github.event.release.prerelease", select)
+        self.assertIn("!github.event.release.draft", select)
+        self.assertIn("if: needs.select-stores.outputs.has_stores == 'true'", workflow)
+        self.assertIn("needs: [build, select-stores, github-release]", workflow)
+        self.assertIn("store: ${{ fromJSON(needs.select-stores.outputs.stores) }}", workflow)
+        self.assertIn("fail-fast: false", workflow)
+        self.assertIn("needs: [build, select-stores, github-release, submit, submit-apple]", workflow)
         # The Apple archives are built in the job that submits them (no artifact from the Mac); the CI-only
         # build-apple job never runs on releases, and the archives' build step is the same in both.
-        apple = forgejo.split("  submit-apple:\n", 1)[1].split("  report:\n", 1)[0]
+        apple = workflow.split("  submit-apple:\n", 1)[1].split("  report:\n", 1)[0]
         self.assertIn("needs: [build, select-stores, github-release]", apple)
-        self.assertNotIn("apple-release", forgejo)
-        build_apple = forgejo.split("  build-apple:\n", 1)[1].split("  select-stores:\n", 1)[0]
+        self.assertNotIn("apple-release", workflow)
+        build_apple = workflow.split("  build-apple:\n", 1)[1].split("  select-stores:\n", 1)[0]
         self.assertIn("if: github.event_name != 'release' && (github.event_name != 'pull_request' || github.event.pull_request.user.login == 'backmeupplz')", build_apple)
         self.assertNotIn("secrets.", build_apple)
         step = "      - name: Credential-free iOS and Mac archives\n"
         self.assertEqual(build_apple.split(step, 1)[1], apple.split(step, 1)[1].split("      - uses:", 1)[0])
         self.assertLess(apple.index(step), apple.index("secrets."))
-        self.assertIn("if: needs.select-stores.outputs.appstore == 'true'", forgejo)
-        self.assertIn("needs: [build, select-stores]", github)
-        self.assertIn("needs: [build, select-stores, submit]", github)
+        self.assertIn("if: needs.select-stores.outputs.appstore == 'true'", workflow)
+        self.assertIn("pattern: selection-outcomes-*", workflow)
+        self.assertIn("merge-multiple: true", workflow)

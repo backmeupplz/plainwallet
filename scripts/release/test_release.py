@@ -18,9 +18,6 @@ import xml.etree.ElementTree as ET
 import submit
 
 ROOT = Path(__file__).resolve().parents[2]
-# Forgejo runs CI and every store but Play and Chrome, which stay on GitHub for Google's OIDC trust.
-FORGEJO = ROOT / ".forgejo/workflows/store-release.yml"
-GITHUB = ROOT / ".github/workflows/store-release.yml"
 
 from build import release_version, validate_manifest, validate_android, archive
 from submit import Journal, preflight, chrome, firefox, play, request, APIError, signed_bundle
@@ -100,10 +97,10 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(checksums[0].tag, "{" + ns["v"] + "}sha256")
                 self.assertEqual(checksums[0].get("value"), digest)
                 self.assertEqual(list(checksums[0]), [])  # No alternate accepted hashes.
-        for workflow in (FORGEJO.read_text(), GITHUB.read_text()):
-            self.assertIn("./gradlew --no-daemon --dependency-verification strict bundleRelease", workflow)
-            self.assertNotRegex(workflow, r"--dependency-verification[ =]+(?:off|lenient)\b")
-            self.assertNotIn("--write-verification-metadata", workflow)
+        workflow = (ROOT / ".forgejo/workflows/store-release.yml").read_text()
+        self.assertIn("./gradlew --no-daemon --dependency-verification strict bundleRelease", workflow)
+        self.assertNotRegex(workflow, r"--dependency-verification[ =]+(?:off|lenient)\b")
+        self.assertNotIn("--write-verification-metadata", workflow)
 
     def test_android_binary_manifest(self):
         def varint(n):
@@ -161,29 +158,23 @@ class ReleaseTests(unittest.TestCase):
                 preflight("play", {**env, field: value})
 
     def test_workflow_pre_auth_publication_gates_execute_fail_closed(self):
-        forgejo, github = FORGEJO.read_text(), GITHUB.read_text()
-        gates = {}
-        for name, workflow, end in (("forgejo", forgejo, "      - name: Sign only with JDK"), ("github", github, "      - id: google\n")):
-            gate = workflow.split("      - name: Verify setup gates before authentication\n", 1)[1].split(end, 1)[0]
-            gates[name] = "\n".join(line[10:] for line in gate.split("        run: |\n", 1)[1].splitlines())
-        submit = forgejo.split("  submit:\n", 1)[1].split("  submit-apple:\n", 1)[0]
-        for name in ("STORE_AUTO_PUBLISH_APPROVED", "AMO_AUTO_PUBLISH_APPROVED"):
+        workflow = (ROOT / ".forgejo/workflows/store-release.yml").read_text()
+        gate = workflow.split("      - name: Verify setup gates before authentication\n", 1)[1].split("      - id: google\n", 1)[0]
+        script = "\n".join(line[10:] for line in gate.split("        run: |\n", 1)[1].splitlines())
+        submit = workflow.split("  submit:\n", 1)[1].split("  submit-apple:\n", 1)[0]
+        for name in ("STORE_AUTO_PUBLISH_APPROVED", "PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED", "PLAY_MANAGED_PUBLISHING_CONFIRMED", "PLAY_TRACK", "AMO_AUTO_PUBLISH_APPROVED"):
             self.assertEqual(submit.count("vars." + name + " }}"), 2)
-        submit = github.split("  submit:\n", 1)[1].split("  report:\n", 1)[0]
-        for name in ("STORE_AUTO_PUBLISH_APPROVED", "PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED", "PLAY_MANAGED_PUBLISHING_CONFIRMED", "PLAY_TRACK"):
-            self.assertEqual(submit.count("vars." + name + " }}"), 2)
-        apple = forgejo.split("  submit-apple:\n", 1)[1].split("  report:\n", 1)[0]
+        # Each Google store gets its own service account, in the gate check and in authentication.
+        self.assertEqual(submit.count("${{ matrix.store == 'play' && vars.PLAY_GOOGLE_SERVICE_ACCOUNT || vars.CHROME_GOOGLE_SERVICE_ACCOUNT }}"), 2)
+        self.assertNotIn("vars.GOOGLE_SERVICE_ACCOUNT", submit)
+        apple = workflow.split("  submit-apple:\n", 1)[1].split("  report:\n", 1)[0]
         self.assertEqual(apple.count("vars.STORE_AUTO_PUBLISH_APPROVED }}"), 2)
         self.assertLess(apple.index("Verify setup gates before using the key"), apple.index("secrets.ASC_KEY_P8"))
         env = {"CONFIRMED": "true", "AUTO_PUBLISH_APPROVED": "true", "WIF_PROVIDER": "fixture", "SERVICE_ACCOUNT": "fixture", "PLAY_TRACK": "production", "PLAY_MANAGED_PUBLISHING_DISABLED_CONFIRMED": "true", "PLAY_MANAGED_PUBLISHING_CONFIRMED": "", "AMO_AUTO_PUBLISH_APPROVED": "true"}
         for store in ("apk", "fdroid"):  # no Google identity needed
-            result = subprocess.run(["/bin/bash", "-eu", "-c", gates["forgejo"]], env={**env, "STORE": store, "WIF_PROVIDER": "", "SERVICE_ACCOUNT": ""}, capture_output=True)
+            result = subprocess.run(["/bin/bash", "-eu", "-c", script], env={**env, "STORE": store, "WIF_PROVIDER": "", "SERVICE_ACCOUNT": ""}, capture_output=True)
             self.assertEqual(result.returncode, 0)
-        for store in ("chrome", "play"):
-            result = subprocess.run(["/bin/bash", "-eu", "-c", gates["github"]], env={**env, "STORE": store, "WIF_PROVIDER": ""}, capture_output=True)
-            self.assertNotEqual(result.returncode, 0)
         for store in ("chrome", "firefox", "play"):
-            script = gates["forgejo" if store == "firefox" else "github"]
             def run(changes):
                 return subprocess.run(["/bin/bash", "-eu", "-c", script], env={**env, "STORE": store, **changes}, capture_output=True).returncode
             self.assertEqual(run({}), 0)
@@ -519,11 +510,11 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn("not submitted", result["firefox"])
 
     def test_workflow_uses_verified_node_and_typechecks_generated_wxt_types(self):
+        workflow = (ROOT / ".forgejo/workflows/store-release.yml").read_text()
+        self.assertIn("node-version: '26.8.2'", workflow)
         self.assertIn("Node **26.8.2**", (ROOT / "docs/STORE_RELEASE.md").read_text())
-        for workflow in (FORGEJO.read_text(), GITHUB.read_text()):
-            self.assertIn("node-version: '26.8.2'", workflow)
-            self.assertLess(workflow.index("npm run build"), workflow.index("npm exec -- tsc --noEmit"))
-            self.assertNotIn("22.16.0", workflow)
+        self.assertLess(workflow.index("npm run build"), workflow.index("npm exec -- tsc --noEmit"))
+        self.assertNotIn("22.16.0", workflow)
 
     def test_chrome_async_upload_polls_before_single_submission(self):
         reads = iter([{}, {"lastAsyncUploadState": "IN_PROGRESS"}, {"lastAsyncUploadState": "SUCCEEDED"}])
