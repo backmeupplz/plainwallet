@@ -1,7 +1,7 @@
 """Isolated store submission. No third-party Python packages or build tool execution.
 
 Every remote mutation has an append-only write-ahead marker and receipt on the
-existing GitHub release. An uncertain write fails closed; it is never retried.
+GitHub release. An uncertain write fails closed; it is never retried.
 """
 import base64
 from contextlib import contextmanager
@@ -130,7 +130,13 @@ class Journal:
     def __init__(self, store, meta, env):
         self.store, self.meta, self.env = store, meta, env
         self.base = "https://api.github.com/repos/" + env["GITHUB_REPOSITORY"]
-        self.release = self.base + "/releases/" + str(meta["releaseId"])
+        # The journal is on the GitHub release of the tag. Releases published on Forgejo carry Forgejo's release id,
+        # so the GitHub one is looked up; on GitHub it must be the event's own release.
+        release = self.api(self.base + "/releases/tags/" + quote("v" + meta["version"], safe=""))
+        require(not release["draft"] and not release["prerelease"], "GitHub release must be published and stable")
+        require(env.get("GITHUB_SERVER_URL", "https://github.com") != "https://github.com" or release["id"] == meta["releaseId"], "GitHub release differs from the event's release")
+        self.release_id = release["id"]
+        self.release = self.base + "/releases/" + str(self.release_id)
         self.load()
 
     def load(self):
@@ -163,7 +169,7 @@ class Journal:
 
     def put(self, name, result):
         record = {"release": self.meta, "result": result}
-        url = "https://uploads.github.com/repos/" + self.env["GITHUB_REPOSITORY"] + "/releases/" + str(self.meta["releaseId"]) + "/assets?" + urlencode({"name": name})
+        url = "https://uploads.github.com/repos/" + self.env["GITHUB_REPOSITORY"] + "/releases/" + str(self.release_id) + "/assets?" + urlencode({"name": name})
         item = self.api(url, method="POST", body=record)
         self.assets[name] = item
 
@@ -326,7 +332,7 @@ def apk(meta, env, journal, sign=signed_apk):
     done = [journal.read(journal.name("asset-" + name, "receipt")) for name in names]
     if not all(done):
         data = sign(env)
-        url = "https://uploads.github.com/repos/" + env["GITHUB_REPOSITORY"] + "/releases/" + str(meta["releaseId"]) + "/assets?"
+        url = "https://uploads.github.com/repos/" + env["GITHUB_REPOSITORY"] + "/releases/" + str(journal.release_id) + "/assets?"
         done = [journal.once("asset-" + name, lambda name=name: journal.api(url + urlencode({"name": name}), method="POST", body=data, content_type="application/vnd.android.package-archive"), lambda r: {"name": r["name"], "size": r["size"], "sha256": hashlib.sha256(data).hexdigest()}) for name in names]
     require([d["name"] for d in done] == list(names) and done[0]["sha256"] == done[1]["sha256"], "APK assets disagree; reconcile the release")
     return {"store": "apk", "version": meta["version"], "assets": list(names), "sha256": done[0]["sha256"], "state": "attached", "publication": "public"}

@@ -1,0 +1,318 @@
+name: Store release
+# Forgejo Actions. Publishing a release on git.borodutch.com builds, creates the GitHub release (releases don't
+# mirror) and submits the App Store, AMO, the signed APK and F-Droid. Play and Chrome authenticate with Google
+# Workload Identity Federation, which trusts GitHub's OIDC only, so .github/workflows/store-release.yml submits
+# them on GitHub when the github-release job below publishes the GitHub release.
+on:
+  release:
+    types: [published]
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+# One release at a time, across tags: stores have one editable submission slot.
+concurrency:
+  group: store-release-${{ github.event_name == 'release' && 'production' || github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.event_name != 'release' || (!github.event.release.prerelease && !github.event.release.draft)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '26.8.2'
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          packages: platform-tools
+      - name: Credential-free tests and builds
+        run: |
+          python3 -m unittest discover -s scripts/release -p 'test_*.py'
+          npm ci
+          npm test
+          npm run build
+          npm exec -- tsc --noEmit
+          npm exec -- wxt build -b firefox --mv3
+          cd android
+          ./gradlew --no-daemon --dependency-verification strict bundleRelease assembleRelease
+      - name: Bind package, manifests and AAB to immutable release
+        run: python3 scripts/release/build.py ci
+      - uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e # v4
+        with:
+          name: unsigned-release
+          path: release-out/
+          if-no-files-found: error
+          retention-days: 30
+  # CI check of the Apple archives. On a release submit-apple builds them itself: the Mac's uplink is too slow to
+  # upload them as an artifact. Keep its build step identical to this one.
+  build-apple:
+    if: github.event_name != 'release' && (github.event_name != 'pull_request' || github.event.pull_request.user.login == 'backmeupplz')
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '26.8.2'
+      - name: Credential-free iOS and Mac archives
+        run: |
+          npm ci
+          npm run build:macos
+          rm -rf ios/web && cp -R .output/android-mv3 ios/web
+          python3 scripts/release/build.py apple
+  select-stores:
+    if: github.repository == 'backmeupplz/plainwallet' && github.event_name == 'release' && !github.event.release.prerelease && !github.event.release.draft
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      stores: ${{ steps.select.outputs.stores }}
+      has_stores: ${{ steps.select.outputs.has_stores }}
+      appstore: ${{ steps.select.outputs.appstore }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/release
+      - id: select
+        name: Select enabled stores without store credentials
+        env:
+          STORES_ELSEWHERE: chrome play
+          STORE_FIREFOX_PAUSED: ${{ vars.STORE_FIREFOX_PAUSED }}
+          STORE_APK_PAUSED: ${{ vars.STORE_APK_PAUSED }}
+          STORE_FDROID_PAUSED: ${{ vars.STORE_FDROID_PAUSED }}
+          STORE_APPSTORE_PAUSED: ${{ vars.STORE_APPSTORE_PAUSED }}
+        run: python3 scripts/release/stores.py
+      - uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e # v4
+        with:
+          name: selection-outcomes-${{ github.run_attempt }}
+          path: selection-outcomes/
+          if-no-files-found: ignore
+          retention-days: 90
+  # The submission journal and the APKs live on the GitHub release, where the README, the site and F-Droid download
+  # them. Publishing it also starts the Play and Chrome submissions on GitHub.
+  github-release:
+    if: github.repository == 'backmeupplz/plainwallet' && github.event_name == 'release' && !github.event.release.prerelease && !github.event.release.draft
+    needs: [build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Publish the same release on GitHub once the tag has mirrored
+        env:
+          GH_TOKEN: ${{ secrets.GH_MIRROR_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
+          TITLE: ${{ github.event.release.name }}
+          NOTES: ${{ github.event.release.body }}
+          SHA: ${{ github.sha }}
+        run: |
+          for _ in $(seq 30); do
+            test "$(gh api "repos/$REPO/commits/$TAG" --jq .sha 2>/dev/null)" = "$SHA" && break
+            sleep 10
+          done
+          test "$(gh api "repos/$REPO/commits/$TAG" --jq .sha)" = "$SHA" || { echo "GitHub tag $TAG is not at $SHA; check the push mirror"; exit 1; }
+          gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1 || gh release create "$TAG" --repo "$REPO" --verify-tag --title "${TITLE:-$TAG}" --notes "$NOTES"
+  submit:
+    if: needs.select-stores.outputs.has_stores == 'true'
+    needs: [build, select-stores, github-release]
+    strategy:
+      fail-fast: false
+      matrix:
+        store: ${{ fromJSON(needs.select-stores.outputs.stores) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write # APK copies on the Forgejo release; the journal is on the GitHub release (GH_MIRROR_TOKEN)
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/release
+      - uses: https://code.forgejo.org/forgejo/download-artifact@d8d0a99033603453ad2255e58720b460a0555e1e # v4
+        with:
+          name: unsigned-release
+          path: release-out
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        if: matrix.store == 'apk'
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        if: matrix.store == 'apk'
+        with:
+          packages: build-tools;36.0.0
+      - name: Verify setup gates before authentication
+        env:
+          CONFIRMED: ${{ vars.STORE_SETUP_CONFIRMED }}
+          AUTO_PUBLISH_APPROVED: ${{ vars.STORE_AUTO_PUBLISH_APPROVED }}
+          AMO_AUTO_PUBLISH_APPROVED: ${{ vars.AMO_AUTO_PUBLISH_APPROVED }}
+          STORE: ${{ matrix.store }}
+        run: |
+          test "$CONFIRMED" = true || { echo 'Configure store variables; see docs/STORE_RELEASE.md'; exit 1; }
+          test "$AUTO_PUBLISH_APPROVED" = true || { echo 'Owner must confirm automatic public publication after approval'; exit 1; }
+          if [ "$STORE" = firefox ]; then
+            test "$AMO_AUTO_PUBLISH_APPROVED" = true || { echo 'Owner must approve AMO listed automatic publication'; exit 1; }
+          fi
+      - name: Sign only with JDK, request review and automatic publication
+        env:
+          GH_TOKEN: ${{ secrets.GH_MIRROR_TOKEN }}
+          STORE_SETUP_CONFIRMED: ${{ vars.STORE_SETUP_CONFIRMED }}
+          STORE_AUTO_PUBLISH_APPROVED: ${{ vars.STORE_AUTO_PUBLISH_APPROVED }}
+          ANDROID_UPLOAD_CERT_SHA256: ${{ vars.ANDROID_UPLOAD_CERT_SHA256 }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          AMO_ADDON_ID: ${{ vars.AMO_ADDON_ID }}
+          AMO_AUTO_PUBLISH_APPROVED: ${{ vars.AMO_AUTO_PUBLISH_APPROVED }}
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+          FDROID_MR: ${{ vars.FDROID_MR }}
+          FDROID_APP_ID: com.borodutch.plainwallet
+          FDROID_FORK: backmeupplz/fdroiddata
+          FDROID_BRANCH: com.borodutch.plainwallet
+          STORE: ${{ matrix.store }}
+        run: python3 scripts/release/submit.py "$STORE"
+      - name: Copy the signed APKs to the Forgejo release
+        if: matrix.store == 'apk'
+        env:
+          TOKEN: ${{ github.token }}
+          ASSETS: ${{ github.server_url }}/api/v1/repos/${{ github.repository }}/releases/${{ github.event.release.id }}/assets
+          DOWNLOAD: https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          existing=$(curl -fsS -H "Authorization: token $TOKEN" "$ASSETS" | jq -r '.[].name')
+          for name in "plainwallet-${TAG#v}-android.apk" plainwallet.apk; do
+            grep -qxF "$name" <<<"$existing" && continue
+            curl -fsSL -o "$name" "$DOWNLOAD/$name"
+            curl -fsS -H "Authorization: token $TOKEN" -F "attachment=@$name" "$ASSETS?name=$name" >/dev/null
+          done
+      - name: Record early submission failure without credentials
+        if: always()
+        env:
+          STORE: ${{ matrix.store }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path("outcome.json")
+          if not p.exists():
+              p.write_text(json.dumps({"store": os.environ["STORE"], "state": "failed", "error": "Submission job did not reach outcome; inspect setup/authentication/build artifact steps"}) + "\n")
+          PY
+      - uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e # v4
+        if: always()
+        with:
+          name: outcome-${{ matrix.store }}-${{ github.run_attempt }}
+          path: outcome.json
+          if-no-files-found: warn
+          retention-days: 90
+  # Release only. Builds the archives credential-free (no secrets in those steps), then submits; the App Store key
+  # exists only in the submission step.
+  submit-apple:
+    if: needs.select-stores.outputs.appstore == 'true'
+    needs: [build, select-stores, github-release]
+    runs-on: macos-26
+    timeout-minutes: 180
+    permissions:
+      contents: read # the journal is on the GitHub release (GH_MIRROR_TOKEN)
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '26.8.2'
+      - name: Credential-free iOS and Mac archives
+        run: |
+          npm ci
+          npm run build:macos
+          rm -rf ios/web && cp -R .output/android-mv3 ios/web
+          python3 scripts/release/build.py apple
+      - uses: https://code.forgejo.org/forgejo/download-artifact@d8d0a99033603453ad2255e58720b460a0555e1e # v4
+        with:
+          name: unsigned-release
+          path: release-out
+      - name: Verify setup gates before using the key
+        env:
+          CONFIRMED: ${{ vars.STORE_SETUP_CONFIRMED }}
+          AUTO_PUBLISH_APPROVED: ${{ vars.STORE_AUTO_PUBLISH_APPROVED }}
+        run: |
+          test "$CONFIRMED" = true || { echo 'Configure store variables; see docs/STORE_RELEASE.md'; exit 1; }
+          test "$AUTO_PUBLISH_APPROVED" = true || { echo 'Owner must confirm automatic public publication after approval'; exit 1; }
+      - name: Cloud-sign and upload with Apple's tools, replace older reviews, request review and automatic release
+        env:
+          GH_TOKEN: ${{ secrets.GH_MIRROR_TOKEN }}
+          STORE_SETUP_CONFIRMED: ${{ vars.STORE_SETUP_CONFIRMED }}
+          STORE_AUTO_PUBLISH_APPROVED: ${{ vars.STORE_AUTO_PUBLISH_APPROVED }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: 3FT23S9NSM
+          ASC_ISSUER_ID: a18f42ff-6c44-410c-badf-50b11de8dbb8
+        run: python3 scripts/release/submit.py appstore
+      - name: Record early submission failure without credentials
+        if: always()
+        env:
+          STORE: appstore
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path("outcome.json")
+          if not p.exists():
+              p.write_text(json.dumps({"store": os.environ["STORE"], "state": "failed", "error": "Submission job did not reach outcome; inspect setup/authentication/build artifact steps"}) + "\n")
+          PY
+      - uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e # v4
+        if: always()
+        with:
+          name: outcome-appstore-${{ github.run_attempt }}
+          path: outcome.json
+          if-no-files-found: warn
+          retention-days: 90
+  report:
+    if: always() && github.repository == 'backmeupplz/plainwallet' && github.event_name == 'release' && !github.event.release.prerelease && !github.event.release.draft
+    needs: [build, select-stores, github-release, submit, submit-apple]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/release
+      - uses: https://code.forgejo.org/forgejo/download-artifact@d8d0a99033603453ad2255e58720b460a0555e1e # v4
+        with:
+          pattern: outcome-*
+          path: outcomes
+      - uses: https://code.forgejo.org/forgejo/download-artifact@d8d0a99033603453ad2255e58720b460a0555e1e # v4
+        if: always()
+        with:
+          pattern: selection-outcomes-*
+          path: outcomes
+          merge-multiple: true
+      - name: Summarize independent per-store outcomes
+        if: always()
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_number }}
+        run: python3 scripts/release/report.py

@@ -120,18 +120,21 @@ class ReportTests(unittest.TestCase):
         self.assertTrue(all("attempt" not in row for row in rows.values()))
 
     def test_workflow_keeps_reporting_and_artifacts_without_issue_permission(self):
-        workflow = (ROOT / ".github/workflows/store-release.yml").read_text()
-        report = workflow.split("  report:\n", 1)[1]
-        self.assertNotIn("issues:", workflow)
-        for forbidden in ("GH_TOKEN", "secrets.", "environment:", "id-token:"):
-            self.assertNotIn(forbidden, report)
-        self.assertIn("contents: read", report)
-        self.assertIn("if: always()", report)
-        self.assertIn("pattern: outcome-*", report)
-        self.assertIn("pattern: selection-outcomes-*", report)
-        self.assertIn("run: python3 scripts/release/report.py", report)
-        self.assertIn("name: outcome-${{ matrix.store }}-${{ github.run_attempt }}", workflow)
-        self.assertIn("retention-days: 90", workflow)
-        submit = workflow.split("  submit:\n", 1)[1].split("  report:\n", 1)[0]
-        self.assertIn("contents: write", submit)
-        self.assertIn("id-token: write", submit)
+        for path in (".forgejo/workflows/store-release.yml", ".github/workflows/store-release.yml"):
+            workflow = (ROOT / path).read_text()
+            report = workflow.split("  report:\n", 1)[1]
+            self.assertNotIn("issues:", workflow)
+            for forbidden in ("GH_TOKEN", "secrets.", "environment:", "id-token:"):
+                self.assertNotIn(forbidden, report)
+            self.assertIn("contents: read", report)
+            self.assertIn("if: always()", report)
+            self.assertIn("pattern: outcome-*", report)
+            self.assertIn("pattern: selection-outcomes-*", report)
+            self.assertIn("run: python3 scripts/release/report.py", report)
+            self.assertIn("name: outcome-${{ matrix.store }}-${{ github.run_attempt }}", workflow)
+            self.assertIn("retention-days: 90", workflow)
+            submit = workflow.split("  submit:\n", 1)[1].split("  report:\n", 1)[0]
+            self.assertIn("contents: write", submit)
+        # Google's short-lived credentials exist only on GitHub; Forgejo has no OIDC.
+        self.assertIn("id-token: write", (ROOT / ".github/workflows/store-release.yml").read_text())
+        self.assertNotIn("id-token:", (ROOT / ".forgejo/workflows/store-release.yml").read_text())

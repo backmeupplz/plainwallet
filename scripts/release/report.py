@@ -26,14 +26,16 @@ def main():
     release = event["release"]
     title = "Store submissions: " + release["tag_name"] + " (release " + str(release["id"]) + ")"
     rows = outcomes("outcomes")
-    run = "https://github.com/" + env["GITHUB_REPOSITORY"] + "/actions/runs/" + env["GITHUB_RUN_ID"]
+    # Forgejo links runs by their number in the repository, so its workflow passes the link.
+    run = env.get("RUN_URL") or "https://github.com/" + env["GITHUB_REPOSITORY"] + "/actions/runs/" + env["GITHUB_RUN_ID"]
     body = "## " + title + "\n\nStore submission outcomes. Release policy is automatic publication after approval for enabled stores; Play targets production. Only successful per-store outcomes confirm a submission request. Each outcome includes its evidence attempt; older outcomes are historical, not proof of current-attempt success. Paused/skipped stores made no submission attempt in that reported attempt. Submitted is not approved/live.\n\n"
     body += "Release: " + release["html_url"] + "\nRun: " + run + "\n\n"
     for row in rows:
         body += "### " + row["store"] + "\n\x60\x60\x60json\n" + json.dumps(row, indent=2) + "\n\x60\x60\x60\n"
     body += "\nPlay commit requests review with managed publishing disabled (owner-confirmed, not API-verified); confirm Changes in review and eventual production availability in Publishing overview. Chrome PENDING_REVIEW with a DEFAULT_PUBLISH receipt will publish after approval; STAGED or legacy/uncertain pending reviews require explicit reconciliation, not another submission. Chrome PUBLISHED and AMO public indicate public store state; pending states never prove live availability. Legacy Play commits are not proof of automatic production rollout.\n"
-    with open(env["GITHUB_STEP_SUMMARY"], "a") as f:
-        f.write(body)
+    if env.get("GITHUB_STEP_SUMMARY"):
+        with open(env["GITHUB_STEP_SUMMARY"], "a") as f:
+            f.write(body)
     print(body)
 
 

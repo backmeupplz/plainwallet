@@ -117,7 +117,7 @@ It differs from the Android app where iOS does:
 
 ## Store releases
 
-Published stable GitHub releases can submit updates to Play, the App Store (iOS and Mac), Chrome Web Store and AMO, attach the signed APK, and update the F-Droid merge request, after owner setup. See [store release setup, publication choices and recovery](docs/STORE_RELEASE.md). Credentials and store approval are not included; review submission is not public rollout.
+Stable releases published on [git.borodutch.com](https://git.borodutch.com/backmeupplz/plainwallet) can submit updates to Play, the App Store (iOS and Mac), Chrome Web Store and AMO, attach the signed APK, and update the F-Droid merge request, after owner setup. See [store release setup, publication choices and recovery](docs/STORE_RELEASE.md). Credentials and store approval are not included; review submission is not public rollout.
 
 ## Develop
 
