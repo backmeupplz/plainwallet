@@ -13,7 +13,7 @@ permissions:
 # One release at a time, across tags: stores have one editable submission slot.
 concurrency:
   group: store-release-${{ github.event_name == 'release' && 'production' || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }} # a newer push supersedes a PR run
 jobs:
   build:
     if: github.event_name != 'release' || (!github.event.release.prerelease && !github.event.release.draft)
@@ -25,6 +25,19 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
+      # Pull requests and main restore Node, the JDK, the Android SDK and Gradle's dependencies instead of downloading
+      # them (Gradle still checks every dependency against verification-metadata.xml). Releases start from nothing.
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        if: github.event_name != 'release'
+        with:
+          path: |
+            /opt/hostedtoolcache/node
+            /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk
+            ~/.android/sdk
+            ~/.gradle/wrapper/dists
+            ~/.gradle/caches/modules-2
+          key: build-${{ hashFiles('package-lock.json', 'android/**/*.kts', 'android/gradle/**') }}
+          restore-keys: build-
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '26.8.2'
@@ -32,22 +45,29 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      # A restored SDK already has its licenses; Gradle installs the platform and build tools it needs.
+      - id: sdk
+        run: test -d ~/.android/sdk/licenses && echo "ANDROID_HOME=$HOME/.android/sdk" >> "$GITHUB_ENV" || echo missing=1 >> "$GITHUB_OUTPUT"
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        if: steps.sdk.outputs.missing
         with:
           packages: platform-tools
       - name: Credential-free tests and builds
         run: |
-          python3 -m unittest discover -s scripts/release -p 'test_*.py'
           npm ci
-          npm test
+          # The tests only read the sources, so they run alongside the builds.
+          (python3 -m unittest discover -s scripts/release -p 'test_*.py' && npm test) > tests.log 2>&1 &
+          tests=$!
           npm run build
           npm exec -- tsc --noEmit
           npm exec -- wxt build -b firefox --mv3
           cd android
           ./gradlew --no-daemon --dependency-verification strict bundleRelease assembleRelease
+          wait $tests && cat ../tests.log || { cat ../tests.log; exit 1; }
       - name: Bind package, manifests and AAB to immutable release
         run: python3 scripts/release/build.py ci
       - uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e # v4
+        if: github.event_name == 'release' # only the store submissions use it
         with:
           name: unsigned-release
           path: release-out/
