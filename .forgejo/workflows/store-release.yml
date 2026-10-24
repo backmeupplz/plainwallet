@@ -34,9 +34,9 @@ jobs:
             /opt/hostedtoolcache/node
             /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk
             ~/.android/sdk
-            !~/.android/sdk/cmdline-tools
+            !/root/.android/sdk/cmdline-tools
             ~/.gradle/wrapper/dists
-            !~/.gradle/wrapper/dists/**/*.zip
+            !/root/.gradle/wrapper/dists/**/*.zip
             ~/.gradle/caches/modules-2
           key: build-${{ hashFiles('package-lock.json', 'android/**/*.kts', 'android/gradle/**') }}
           restore-keys: build-
