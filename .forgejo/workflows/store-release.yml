@@ -34,7 +34,9 @@ jobs:
             /opt/hostedtoolcache/node
             /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk
             ~/.android/sdk
+            !~/.android/sdk/cmdline-tools
             ~/.gradle/wrapper/dists
+            !~/.gradle/wrapper/dists/**/*.zip
             ~/.gradle/caches/modules-2
           key: build-${{ hashFiles('package-lock.json', 'android/**/*.kts', 'android/gradle/**') }}
           restore-keys: build-
@@ -45,7 +47,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      # A restored SDK already has its licenses; Gradle installs the platform and build tools it needs.
+      # A restored SDK has its licenses, platform and build tools (Gradle installs those it misses), so it needs no sdkmanager.
       - id: sdk
         run: test -d ~/.android/sdk/licenses && echo "ANDROID_HOME=$HOME/.android/sdk" >> "$GITHUB_ENV" || echo missing=1 >> "$GITHUB_OUTPUT"
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
