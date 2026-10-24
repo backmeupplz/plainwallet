@@ -17,7 +17,10 @@ concurrency:
 jobs:
   build:
     if: github.event_name != 'release' || (!github.event.release.prerelease && !github.event.release.draft)
-    runs-on: ubuntu-24.04
+    # Our own pushes and PRs run on the Mac runners, where Node, the JDK, the SDK and Gradle's caches persist between
+    # runs. Releases (whose artifact the store jobs take) and outsiders' PRs (bridged from GitHub by the `github` user)
+    # run on Linux.
+    runs-on: ${{ github.event_name != 'release' && (github.event_name != 'pull_request' || contains(fromJSON('["backmeupplz","renovate","claude"]'), github.event.pull_request.user.login)) && 'macos-latest' || 'ubuntu-24.04' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -25,10 +28,21 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      # Pull requests and main restore Node, the JDK, the Android SDK and Gradle's dependencies instead of downloading
-      # them (Gradle still checks every dependency against verification-metadata.xml). Releases start from nothing.
+      # Mac: Homebrew's Node (when it is the pinned version) and JDK, a per-runner SDK (Gradle installs the platform and
+      # build tools it needs) and Gradle's own caches in the runner user's home.
+      - id: mac
+        name: Mac toolchain
+        if: runner.os == 'macOS'
+        run: |
+          sdk="${PWD%%/work/*}/android-sdk"
+          [ -d "$sdk/licenses" ] || { mkdir -p "$sdk" && cp -R /opt/homebrew/share/android-commandlinetools/licenses "$sdk/"; }
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
+          echo "JAVA_HOME=/opt/homebrew/opt/openjdk@21" >> "$GITHUB_ENV"
+          if [ "$(/opt/homebrew/bin/node --version)" = v26.8.2 ]; then echo /opt/homebrew/bin >> "$GITHUB_PATH"; echo node=brew >> "$GITHUB_OUTPUT"; fi
+      # Linux pull requests and main restore Node, the JDK, the Android SDK and Gradle's dependencies instead of
+      # downloading them (Gradle still checks every dependency against verification-metadata.xml). Releases start from nothing.
       - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        if: github.event_name != 'release'
+        if: github.event_name != 'release' && runner.os == 'Linux'
         with:
           path: |
             /opt/hostedtoolcache/node
@@ -41,14 +55,17 @@ jobs:
           key: build-${{ hashFiles('package-lock.json', 'android/**/*.kts', 'android/gradle/**') }}
           restore-keys: build-
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        if: steps.mac.outputs.node != 'brew'
         with:
           node-version: '26.8.2'
       - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        if: runner.os == 'Linux'
         with:
           distribution: temurin
           java-version: '21'
       # A restored SDK has its licenses, platform and build tools (Gradle installs those it misses), so it needs no sdkmanager.
       - id: sdk
+        if: runner.os == 'Linux'
         run: test -d ~/.android/sdk/licenses && echo "ANDROID_HOME=$HOME/.android/sdk" >> "$GITHUB_ENV" || echo missing=1 >> "$GITHUB_OUTPUT"
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
         if: steps.sdk.outputs.missing
