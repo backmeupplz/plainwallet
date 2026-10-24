@@ -28,7 +28,7 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      # Mac: Homebrew's Node (when it is the pinned version) and JDK, a per-runner SDK (Gradle installs the platform and
+      # Mac: Homebrew's Node (when it is the pinned version), a per-runner JDK and SDK (Gradle installs the platform and
       # build tools it needs) and Gradle's own caches in the runner user's home.
       - id: mac
         name: Mac toolchain
@@ -37,7 +37,15 @@ jobs:
           sdk="${PWD%%/work/*}/android-sdk"
           [ -d "$sdk/licenses" ] || { mkdir -p "$sdk" && cp -R /opt/homebrew/share/android-commandlinetools/licenses "$sdk/"; }
           echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
-          echo "JAVA_HOME=/opt/homebrew/opt/openjdk@21" >> "$GITHUB_ENV"
+          # Temurin, pinned and checked, kept per runner: Homebrew's JDK can't load the user's private freetype.
+          jdk="${PWD%%/work/*}/temurin-21.0.13+9"
+          if [ ! -x "$jdk/Contents/Home/bin/java" ]; then
+            rm -rf "$jdk.tmp" && mkdir -p "$jdk.tmp"
+            curl -fsSL -o "$jdk.tmp/jdk.tgz" https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.13_9.tar.gz
+            echo "bf036b35b071bfb2f54f2c0af8ee8d88afa95ee6eb3dce02c0f94cfc2524d04a  $jdk.tmp/jdk.tgz" | shasum -a 256 -c
+            tar -xzf "$jdk.tmp/jdk.tgz" -C "$jdk.tmp" --strip-components 1 && rm "$jdk.tmp/jdk.tgz" && mv "$jdk.tmp" "$jdk"
+          fi
+          echo "JAVA_HOME=$jdk/Contents/Home" >> "$GITHUB_ENV"
           if [ "$(/opt/homebrew/bin/node --version)" = v26.8.2 ]; then echo /opt/homebrew/bin >> "$GITHUB_PATH"; echo node=brew >> "$GITHUB_OUTPUT"; fi
       # Linux pull requests and main restore Node, the JDK, the Android SDK and Gradle's dependencies instead of
       # downloading them (Gradle still checks every dependency against verification-metadata.xml). Releases start from nothing.
