@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /STORE_RELEASE.md
+
+Sitemap: https://plainwallet.app/sitemap.xml

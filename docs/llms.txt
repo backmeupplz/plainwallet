@@ -1,0 +1,18 @@
+# Plain Wallet
+
+> A very minimal open-source EVM wallet: a browser extension for Chrome, Brave and Edge, an Android app, and a Mac app with a Safari extension plus an iPhone app (both in App Store review). About 2,850 lines of TypeScript with three runtime dependencies (viem and the bip39/hashing libraries it is built on), MIT-licensed, with no servers, accounts or analytics. Not audited: don't keep funds in it that you can't afford to lose.
+
+Keys stay on the device, in a password-encrypted vault (scrypt, AES-256-GCM) that locks after 15 minutes. Every signature needs a click in the wallet's own window. Before you approve, each transaction is simulated on the network's RPC to show balance changes or the revert reason; token approvals and transfers are spelled out in a sentence with unlimited amounts flagged, and typed-data signatures that can hand over assets (permits, marketplace orders, Safe transactions) are flagged too. Watch-only accounts let a cold wallet on another device sign by copy and paste or by file. Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche and Gnosis are built in; other networks can be added. It has no portfolio prices, NFTs, swaps, hardware-wallet support or ENS.
+
+## Install
+
+- [Chrome Web Store](https://chromewebstore.google.com/detail/plain-wallet/pmnbalegifiefmohkolfpclnmkooifcp): Chrome, Brave, Edge and other Chromium browsers
+- [Google Play](https://play.google.com/store/apps/details?id=com.borodutch.plainwallet): Android 11+, or the [APK](https://github.com/backmeupplz/plainwallet/releases/latest/download/plainwallet.apk)
+- [Firefox and LibreWolf](https://github.com/backmeupplz/plainwallet#firefox--librewolf): build from source while the add-on waits for review
+
+## Docs
+
+- [README and security model](https://github.com/backmeupplz/plainwallet#security-model)
+- [Privacy policy](https://github.com/backmeupplz/plainwallet/blob/main/PRIVACY.md)
+- [Source code](https://github.com/backmeupplz/plainwallet)
+- [Questions and bug reports](https://github.com/backmeupplz/plainwallet/issues)
