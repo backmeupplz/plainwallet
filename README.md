@@ -83,11 +83,11 @@ Get it on [Google Play](https://play.google.com/store/apps/details?id=com.borodu
 
 ```sh
 npm ci
-cd android && ./gradlew assembleDebug   # runs `npm run build:android` first; Gradle checks every download against gradle/verification-metadata.xml
-adb install app/build/outputs/apk/debug/app-debug.apk
+cd android && ./gradlew assembleFdroidDebug   # runs `npm run build:android` first; Gradle checks every download against gradle/verification-metadata.xml
+adb install app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk
 ```
 
-Debug builds let Chrome DevTools into both WebViews and allow screenshots of the wallet; don't keep funds in one. Release builds come out of Gradle unsigned and are signed separately, so no build tool ever sees the release key: `./gradlew assembleRelease`, then `apksigner sign --ks <keystore> --ks-key-alias plainwallet --out plainwallet-<version>-android.apk app/build/outputs/apk/release/app-release-unsigned.apk` (it asks for the password).
+Debug builds let Chrome DevTools into both WebViews and allow screenshots of the wallet; don't keep funds in one. Release builds come out of Gradle unsigned and are signed separately, so no build tool ever sees the release key: `./gradlew assembleFdroidRelease`, then `apksigner sign --ks <keystore> --ks-key-alias plainwallet --out plainwallet-<version>-android.apk app/build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk` (it asks for the password). The `fdroid` build is the APK on the releases and F-Droid, with no Google code; the `play` build, for Google Play, adds Play's own rating card, which it asks for at most twice (`app/src/play/`).
 
 The wallet always sits under a blue band across the top of the screen; a website never does. If a page asks for your password or seed phrase, it isn't Plain Wallet. Differences from the extension, beyond one tab and no downloads, uploads, pop-up dialogs or links to other apps:
 

@@ -99,7 +99,7 @@ The site's "Or download the APK" button links `releases/latest/download/plainwal
 
 ### F-Droid: store-fdroid
 
-F-Droid ships the APK above as a reproducible build: it builds `android/app` from the tagged commit, compares it with `plainwallet-<version>-android.apk` (`Binaries`), and publishes ours when they match (`AllowedAPKSigningKeys` = the upload certificate). Release APKs therefore come out of Gradle unsigned and without the encrypted dependency block (`dependenciesInfo { includeInApk = false }`); F-Droid's recipe builds the web half in its prebuild step with Debian's Node and passes `-PprebuiltWeb`, since its scanner deletes npm's prebuilt build tools before Gradle runs. Two clean clones built byte-identical unsigned APKs, and Node 22 gave the same web output as the pinned 26.8.2.
+F-Droid ships the APK above as a reproducible build: it builds `android/app`'s `fdroid` flavor (recipe `gradle: [fdroid]`; the `play` flavor only adds Play's rating card, for the AAB) from the tagged commit, compares it with `plainwallet-<version>-android.apk` (`Binaries`), and publishes ours when they match (`AllowedAPKSigningKeys` = the upload certificate). Release APKs therefore come out of Gradle unsigned and without the encrypted dependency block (`dependenciesInfo { includeInApk = false }`); F-Droid's recipe builds the web half in its prebuild step with Debian's Node and passes `-PprebuiltWeb`, since its scanner deletes npm's prebuilt build tools before Gradle runs. Two clean clones built byte-identical unsigned APKs, and Node 22 gave the same web output as the pinned 26.8.2.
 
 While the app's merge request in fdroid/fdroiddata is open, store `fdroid` rewrites its metadata (one build entry: this version, versionCode and the release commit) on the fork branch `backmeupplz/fdroiddata:com.borodutch.plainwallet` with `scripts/release/fdroid.py`, shared with the maintainer's other apps (keep it identical). It waits for the APK above, compares before pushing, so a rerun is a no-op, and does nothing once the merge request is merged: F-Droid's checkupdates follows new tags itself. On Forgejo (formerly environment **store-fdroid**): secret `GITLAB_TOKEN`, a GitLab personal access token with only the `write_repository` scope, used for `git push` and never printed; variables `FDROID_MR` (the merge request number), `STORE_SETUP_CONFIRMED=true` and `STORE_AUTO_PUBLISH_APPROVED=true`. Repository variable `STORE_FDROID_PAUSED` defaults to `true`; set it to `false` once the merge request exists.
 
@@ -122,7 +122,7 @@ python3 -m unittest discover -s scripts/release -p 'test_*.py'
 npm run build
 npm exec -- tsc --noEmit
 npm exec -- wxt build -b firefox --mv3
-(cd android && ./gradlew --no-daemon --dependency-verification strict bundleRelease assembleRelease)
+(cd android && ./gradlew --no-daemon --dependency-verification strict bundlePlayRelease assembleFdroidRelease testPlayDebugUnitTest)
 GITHUB_EVENT_NAME=push python3 scripts/release/build.py ci
 # Apple archives (macOS with Xcode):
 npm run build:macos && rm -rf ios/web && cp -R .output/android-mv3 ios/web

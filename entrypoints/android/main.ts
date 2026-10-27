@@ -15,6 +15,8 @@ background.main()
 extras.autolockSetting = mac
 extras.files = false // copy and paste only: a web view has nowhere to save or pick a file
 extras.autolockOff = 'When off, the wallet stays unlocked until you lock it, quit the app, or your Mac sleeps or locks its screen.'
+// The phones may then ask for a store rating; they decide when (android/app/src/play/, ios/PlainWallet/RatingPrompt.swift).
+if (!mac) extras.confirmed = () => app.send({ type: 'confirmed' })
 // The app just brought this page up: an approval, or you opened the wallet.
 addEventListener('plainwallet-render', () => {
   asked = false

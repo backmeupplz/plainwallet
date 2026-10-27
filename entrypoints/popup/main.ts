@@ -67,9 +67,11 @@ const act = (fn: () => unknown) => async () => {
 }
 /** Filled in by the apps (entrypoints/android): the phones' favorite sites above the balances, fingerprint unlock, and
  * no auto-lock switch (they lock themselves when you leave them); the Mac app's own note under that switch.
- * `files`: watch-only requests and signatures go by file too, not only by copy and paste; the apps only copy. */
+ * `files`: watch-only requests and signatures go by file too, not only by copy and paste; the apps only copy.
+ * `confirmed`: you closed a confirmed transaction's success screen, when the phones may ask for a store rating. */
 export const extras = { home: (): Node[] => [], unlock: (): Node[] => [], settings: (): Node[] => [], autolockSetting: true,
-  autolockOff: 'When off, the wallet stays unlocked until you lock it or restart the browser.', files: !import.meta.env?.SAFARI }
+  autolockOff: 'When off, the wallet stays unlocked until you lock it or restart the browser.', files: !import.meta.env?.SAFARI,
+  confirmed: () => {} }
 const icons = {
   lock: 'M7 11V7a5 5 0 0 1 10 0v4 M5 11h14v10H5Z M12 15v2',
   settings: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z M9 3l-1 3-3 1-2 3 2 2-1 3 2 3 3-1 2 3h3l1-3 3-1 2-3-2-2 1-3-2-3-3 1-2-3Z',
@@ -474,9 +476,13 @@ function submitted(content: HTMLElement, network: Network, from: string, hash: `
   content.replaceChildren(status, h('p', { className: 'mono' }, hash), h('button', { onclick: copy(hash) }, 'Copy hash'),
     h('button', { className: 'primary', onclick: () => openDebank(from) }, 'View on DeBank'))
   void mined(network, hash).then(
-    (receipt) => receipt.status === 'success'
-      ? Object.assign(status, { className: '', textContent: 'Confirmed. The transaction succeeded.' })
-      : Object.assign(status, { className: 'stamp', textContent: 'Failed. The transaction was included but reverted; only the fee was spent.' }),
+    (receipt) => {
+      if (receipt.status !== 'success')
+        return Object.assign(status, { className: 'stamp', textContent: 'Failed. The transaction was included but reverted; only the fee was spent.' })
+      Object.assign(status, { className: '', textContent: 'Confirmed. The transaction succeeded.' })
+      // Closed by you, not by the wallet locking (which closes every dialog).
+      content.closest('dialog')?.addEventListener('close', async () => { if (await isUnlocked()) extras.confirmed() })
+    },
     () => Object.assign(status, { className: '', textContent: 'Not included after 10 minutes. Check it on DeBank.' }))
 }
 /** A transaction exported from a watch-only account: out to the device with the key, back in, broadcast. */
@@ -861,6 +867,7 @@ async function settingsDialog(s: State) {
   }
   empty()
   const jev = field('API key', { type: 'password', value: jevKey, autocomplete: 'off', spellcheck: false })
+  const version = browser.runtime.getManifest().version
   content.append(h('button', { onclick: () => { dialog.close(); exportDialog(s) } }, 'Export seeds / private keys'),
     h('button', { onclick: () => { dialog.close(); signDialog(s) } }, 'Sign a request from a watch-only device'),
     h('button', { onclick: run(async () => { dialog.close(); await accountDialog(s) }) }, 'Manage accounts'),
@@ -876,8 +883,10 @@ async function settingsDialog(s: State) {
           return key ? browser.storage.local.set({ jevKey: key }) : browser.storage.local.remove('jevKey')
         }) }, 'Save API key'))),
     ...extras.settings(),
-    h('p', {}, `Plain Wallet ${browser.runtime.getManifest().version} · `,
-      h('a', { href: 'https://github.com/backmeupplz/plainwallet', target: '_blank', rel: 'noreferrer' }, 'Source code on GitHub')))
+    h('p', {}, `Plain Wallet ${version} · `,
+      h('a', { href: 'https://github.com/backmeupplz/plainwallet', target: '_blank', rel: 'noreferrer' }, 'Source code on GitHub'), ' · ',
+      // The support channel of the site and PRIVACY.md: an issue, with the version filled in.
+      h('a', { href: `https://github.com/backmeupplz/plainwallet/issues/new?body=${encodeURIComponent(`\n\nPlain Wallet ${version}`)}`, target: '_blank', rel: 'noreferrer' }, 'Send feedback')))
 }
 
 function mainScreen(s: State) {

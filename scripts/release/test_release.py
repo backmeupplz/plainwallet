@@ -98,7 +98,7 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(checksums[0].get("value"), digest)
                 self.assertEqual(list(checksums[0]), [])  # No alternate accepted hashes.
         workflow = (ROOT / ".forgejo/workflows/store-release.yml").read_text()
-        self.assertIn("./gradlew --no-daemon --dependency-verification strict bundleRelease", workflow)
+        self.assertIn("./gradlew --no-daemon --dependency-verification strict bundlePlayRelease assembleFdroidRelease", workflow)
         self.assertNotRegex(workflow, r"--dependency-verification[ =]+(?:off|lenient)\b")
         self.assertNotIn("--write-verification-metadata", workflow)
 

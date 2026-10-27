@@ -258,6 +258,7 @@ public class MainActivity extends Activity {
         // Away longer than a minute, by the phone's uptime clock (the date setting doesn't move it): locked.
         if (wallet != null && hiddenAt != 0 && SystemClock.elapsedRealtime() - hiddenAt > LOCK_AFTER_MS) toWallet(json("type", "lock"));
         hiddenAt = 0;
+        RatingPrompt.opened(this);
     }
 
     @Override
@@ -454,6 +455,9 @@ public class MainActivity extends Activity {
                     break;
                 case "fingerprint-unlock":
                     unlockWithFingerprint();
+                    break;
+                case "confirmed": // you closed a transaction's success screen
+                    RatingPrompt.confirmed(this);
                     break;
             }
         } catch (JSONException ignored) {

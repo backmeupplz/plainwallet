@@ -153,6 +153,7 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
 
     func active(_ on: Bool) {
         inactive = !on
+        if on { RatingPrompt.opened() }
         covered()
         // Back in the app: you may have set up Face ID meanwhile; a locked wallet asks again.
         if on && returning {
@@ -292,6 +293,8 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
             fingerprint(nil)
         case "fingerprint-unlock":
             unlockWithFingerprint()
+        case "confirmed": // you closed a transaction's success screen
+            RatingPrompt.confirmed(in: view.window?.windowScene)
         default:
             break
         }

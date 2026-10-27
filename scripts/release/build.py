@@ -142,7 +142,7 @@ def main():
         validate_manifest(json.loads((directory / "manifest.json").read_text()), meta["version"], browser)
         archive(directory, out / (browser + ".zip"))
     subprocess.run(["git", "archive", "--format=zip", "--output=" + str(out / "firefox-source.zip"), sha], check=True)
-    aab = Path("android/app/build/outputs/bundle/release/app-release.aab")
+    aab = Path("android/app/build/outputs/bundle/playRelease/app-play-release.aab")
     require(aab.is_file(), "Unsigned release AAB missing")
     gradle = Path("android/app/build.gradle.kts").read_text()
     require('applicationId = "com.borodutch.plainwallet"' in gradle and 'versionName = version' in gradle and 'major * 10000 + minor * 100 + patch' in gradle, "Android identity/mapping changed")
@@ -150,8 +150,9 @@ def main():
         validate_android(z.read("base/manifest/AndroidManifest.xml"), meta)
         require(not any(n.upper().startswith("META-INF/") and n.upper().endswith((".RSA", ".DSA", ".EC")) for n in z.namelist()), "Build must not sign AAB")
     (out / "android.aab").write_bytes(aab.read_bytes())
-    # Same Gradle run as the AAB. Signed later (submit.py apk); F-Droid rebuilds this unsigned APK from source.
-    apk = Path("android/app/build/outputs/apk/release/app-release-unsigned.apk")
+    # Same Gradle run as the AAB, the build without Google code. Signed later (submit.py apk); F-Droid rebuilds this
+    # unsigned APK from source (its recipe's gradle: fdroid).
+    apk = Path("android/app/build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk")
     require(apk.is_file(), "Unsigned release APK missing")
     with zipfile.ZipFile(apk) as z:
         require(not any(n.upper().startswith("META-INF/") and n.upper().endswith((".RSA", ".DSA", ".EC")) for n in z.namelist()), "Build must not sign APK")

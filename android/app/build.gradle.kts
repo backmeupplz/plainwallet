@@ -24,6 +24,12 @@ android {
         versionCode = code
         versionName = version
     }
+    // play: Google Play's own rating card (RatingPrompt). fdroid: the APK on the releases and F-Droid, no Google code.
+    flavorDimensions += "store"
+    productFlavors {
+        create("play") { dimension = "store" }
+        create("fdroid") { dimension = "store" }
+    }
     // R8 strips the unused library code out of the release build; androidx.webkit brings its own keep rules.
     buildTypes {
         release {
@@ -39,5 +45,9 @@ android {
     dependenciesInfo { includeInApk = false }
 }
 
-// For WebView's document-start scripts and web message listeners, which tell the app each page's real origin.
-dependencies { implementation("androidx.webkit:webkit:1.17.1") }
+dependencies {
+    // For WebView's document-start scripts and web message listeners, which tell the app each page's real origin.
+    implementation("androidx.webkit:webkit:1.17.1")
+    "playImplementation"("com.google.android.play:review:2.0.2") // the rating card, Play build only
+    testImplementation("junit:junit:4.13.2")
+}
