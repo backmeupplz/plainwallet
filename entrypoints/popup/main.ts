@@ -885,8 +885,8 @@ async function settingsDialog(s: State) {
     ...extras.settings(),
     h('p', {}, `Plain Wallet ${version} · `,
       h('a', { href: 'https://github.com/backmeupplz/plainwallet', target: '_blank', rel: 'noreferrer' }, 'Source code on GitHub'), ' · ',
-      // The support channel of the site and PRIVACY.md: an issue, with the version filled in.
-      h('a', { href: `https://github.com/backmeupplz/plainwallet/issues/new?body=${encodeURIComponent(`\n\nPlain Wallet ${version}`)}`, target: '_blank', rel: 'noreferrer' }, 'Send feedback')))
+      // The support address of the site and PRIVACY.md, with the version filled in
+      h('a', { href: `mailto:plainwallet@borodutch.com?subject=${encodeURIComponent(`Plain Wallet ${version}`)}`, target: '_blank', rel: 'noreferrer' }, 'Send feedback')))
 }
 
 function mainScreen(s: State) {

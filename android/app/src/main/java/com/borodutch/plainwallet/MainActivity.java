@@ -2,6 +2,8 @@ package com.borodutch.plainwallet;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -632,6 +634,14 @@ public class MainActivity extends Activity {
     }
 
     void open(String link) {
+        if (link.startsWith("mailto:")) {  // Send feedback: the mail app, or the address when there is none
+            try {
+                startActivity(new Intent(Intent.ACTION_SENDTO, Uri.parse(link)));
+            } catch (ActivityNotFoundException e) {
+                Toast.makeText(this, "Write to plainwallet@borodutch.com", Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
         if (link.contains("\\") || !web(Uri.parse(link))) return;
         browser.loadUrl(link);
         showWallet(false);

@@ -15,4 +15,5 @@ Keys stay on the device, in a password-encrypted vault (scrypt, AES-256-GCM) tha
 - [README and security model](https://github.com/backmeupplz/plainwallet#security-model)
 - [Privacy policy](https://github.com/backmeupplz/plainwallet/blob/main/PRIVACY.md)
 - [Source code](https://github.com/backmeupplz/plainwallet)
+- Support email: plainwallet@borodutch.com
 - [Questions and bug reports](https://github.com/backmeupplz/plainwallet/issues)

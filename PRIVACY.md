@@ -20,4 +20,4 @@ Plain Wallet has no servers, accounts, analytics or telemetry. Its developer rec
 
 Nothing is sold or shared with anyone else, or used for anything other than running the wallet.
 
-Questions: open an issue at https://github.com/backmeupplz/plainwallet/issues.
+Questions: email plainwallet@borodutch.com, or open an issue at https://github.com/backmeupplz/plainwallet/issues.

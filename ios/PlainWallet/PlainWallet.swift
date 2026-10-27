@@ -475,7 +475,9 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
     }
 
     func open(_ link: String) {
-        guard !link.contains("\\"), let u = URL(string: link), Self.web(u) else { return }
+        guard !link.contains("\\"), let u = URL(string: link) else { return }
+        if u.scheme?.lowercased() == "mailto" { return UIApplication.shared.open(u) }  // Send feedback: the mail app
+        guard Self.web(u) else { return }
         browser.load(URLRequest(url: u))
         showWallet(false)
     }
