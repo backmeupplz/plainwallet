@@ -115,6 +115,16 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '26.8.2'
+      # The iOS tests (ios/PlainWalletTests) compile here but run locally: simulator runs would hold up the shared Mac.
+      # Compiling only needs the app's web folder to exist (the next step fills it). xcodebuild gets a clean environment
+      # since it reads every variable as a build setting, except DEVELOPER_DIR, which picks the same Xcode as the archives.
+      - name: iOS tests compile
+        run: |
+          mkdir -p ios/web
+          env -i HOME="$HOME" PATH="$PATH" TMPDIR="${TMPDIR:-/tmp}" ${DEVELOPER_DIR:+DEVELOPER_DIR="$DEVELOPER_DIR"} \
+            xcodebuild -quiet -project ios/PlainWallet.xcodeproj \
+            -scheme PlainWallet -destination 'generic/platform=iOS Simulator' -derivedDataPath build-apple/tests \
+            CODE_SIGNING_ALLOWED=NO build-for-testing
       - name: Credential-free iOS and Mac archives
         run: |
           npm ci

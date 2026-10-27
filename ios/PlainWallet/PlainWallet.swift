@@ -60,6 +60,8 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
     var wallet: WKWebView!, browser: WKWebView!
     let bar = UIStackView(), address = UITextField(), star = UIButton(type: .system), home = UIButton()
     let views = UIView(), progress = UIProgressView(progressViewStyle: .bar), cover = UIView()
+    var edges: [NSLayoutConstraint] = [] // the address bar and pages' top, left, bottom and right, from the screen's (see insets)
+    var covering: [CGRect]? // in place of what iOS reports covering the screen: the tests' unfolded iPhone Duo (FoldTests)
     var url: URL? // the page the browser shows: its committed address, never one still loading
     var icon: String?, iconFor: URL? // that page's favicon as a PNG data URL, and the page it came from
     var observers: [NSKeyValueObservation] = []
@@ -126,6 +128,13 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
         column.axis = .vertical
         view.addSubview(column)
         column.translatesAutoresizingMaskIntoConstraints = false
+        // The status bar and address bar take the wallet's blue while it shows (see showWallet); the pages go down to
+        // the screen's edge and keep clear of the home indicator themselves. The edges' distances are set in
+        // viewWillLayoutSubviews. Nothing else depends on the width: folding an iPhone Duo just resizes these views,
+        // and the pages lay themselves out (style.css), so the session, a form or an approval in them carries over
+        // (PlainWalletTests/FoldTests.swift). Portrait only, on the Duo too: unfolded, it's nearly square already.
+        edges = [column.topAnchor.constraint(equalTo: view.topAnchor), column.leftAnchor.constraint(equalTo: view.leftAnchor),
+                 view.bottomAnchor.constraint(equalTo: column.bottomAnchor), view.rightAnchor.constraint(equalTo: column.rightAnchor)]
         NSLayoutConstraint.activate([
             field.heightAnchor.constraint(equalToConstant: 44),
             { let c = bar.heightAnchor.constraint(equalToConstant: 56); c.priority = .required - 1; return c }(), // 0 while hidden
@@ -136,17 +145,41 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
             progress.topAnchor.constraint(equalTo: views.topAnchor),
             progress.leadingAnchor.constraint(equalTo: views.leadingAnchor),
             progress.trailingAnchor.constraint(equalTo: views.trailingAnchor),
-            // The status bar and address bar take the wallet's blue while it shows (see showWallet); the pages go
-            // down to the screen's edge and keep clear of the home indicator themselves.
-            column.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            column.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            column.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            column.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-        ])
+        ] + edges)
         browser.isHidden = true
         showWallet(true)
         // Screen recording and mirroring show the cover rather than the wallet (iOS can't keep it out of screenshots).
         registerForTraitChanges([UITraitSceneCaptureState.self]) { (self: Main, _: UITraitCollection) in self.covered() }
+    }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        // iOS says nothing when these change; they're the screen's, and come with a new size or safe area, which lay out again.
+        var occluded = covering ?? []
+        if covering == nil, #available(iOS 27.1, *) { occluded = view.reservedRegions(kind: .occlusion).map(\.frame) }
+        let e = Self.insets(top: view.safeAreaInsets.top, clearOf: occluded, in: view.bounds)
+        for (edge, inset) in zip(edges, [e.top, e.left, e.bottom, e.right]) where edge.constant != inset { edge.constant = inset }
+    }
+
+    /**
+     How far the address bar and the pages keep from the screen's edges: below the status bar, and clear of whatever
+     covers the screen (the iPhone Duo's status pill, the camera in it), on whichever side costs them the least room.
+     */
+    static func insets(top: CGFloat, clearOf occluded: [CGRect], in bounds: CGRect) -> UIEdgeInsets {
+        var e = UIEdgeInsets(top: top, left: 0, bottom: 0, right: 0)
+        // Largest first: what sits inside one already cleared (the camera in the pill) costs nothing more.
+        for r in occluded.sorted(by: { $0.width * $0.height > $1.width * $1.height }) {
+            let c = bounds.inset(by: e)
+            guard r.intersects(c) else { continue }
+            let room = [(r.maxY - c.minY) * c.width, (r.maxX - c.minX) * c.height, (c.maxY - r.minY) * c.width, (c.maxX - r.minX) * c.height]
+            switch room.indices.min(by: { room[$0] < room[$1] })! {
+            case 0: e.top += r.maxY - c.minY
+            case 1: e.left += r.maxX - c.minX
+            case 2: e.bottom += c.maxY - r.minY
+            default: e.right += c.maxX - r.minX
+            }
+        }
+        return e
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle { wallet?.isHidden == false ? .lightContent : .default }

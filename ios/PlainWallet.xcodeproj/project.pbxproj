@@ -10,17 +10,36 @@
 		A10000000000000000000002 /* web in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* web */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		A10000000000000000000020 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000009 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000008;
+			remoteInfo = PlainWallet;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		A10000000000000000000001 /* web */ = {isa = PBXFileReference; lastKnownFileType = folder; path = web; sourceTree = "<group>"; };
 		A10000000000000000000003 /* Plain Wallet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Plain Wallet.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000021 /* PlainWalletTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PlainWalletTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A10000000000000000000004 /* PlainWallet */ = {isa = PBXFileSystemSynchronizedRootGroup; path = PlainWallet; sourceTree = "<group>"; };
+		A10000000000000000000022 /* PlainWalletTests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = PlainWalletTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A10000000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000023 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -34,6 +53,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000004 /* PlainWallet */,
+				A10000000000000000000022 /* PlainWalletTests */,
 				A10000000000000000000001 /* web */,
 				A10000000000000000000007 /* Products */,
 			);
@@ -43,6 +63,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000003 /* Plain Wallet.app */,
+				A10000000000000000000021 /* PlainWalletTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,6 +91,26 @@
 			productReference = A10000000000000000000003 /* Plain Wallet.app */;
 			productType = "com.apple.product-type.application";
 		};
+		A10000000000000000000024 /* PlainWalletTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000025 /* Build configuration list for PBXNativeTarget "PlainWalletTests" */;
+			buildPhases = (
+				A10000000000000000000026 /* Sources */,
+				A10000000000000000000023 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A10000000000000000000027 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A10000000000000000000022 /* PlainWalletTests */,
+			);
+			name = PlainWalletTests;
+			productName = PlainWalletTests;
+			productReference = A10000000000000000000021 /* PlainWalletTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -79,6 +120,11 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2700;
 				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					A10000000000000000000024 = {
+						TestTargetID = A10000000000000000000008;
+					};
+				};
 			};
 			buildConfigurationList = A10000000000000000000013 /* Build configuration list for PBXProject "PlainWallet" */;
 			developmentRegion = en;
@@ -95,6 +141,7 @@
 			projectRoot = "";
 			targets = (
 				A10000000000000000000008 /* PlainWallet */,
+				A10000000000000000000024 /* PlainWalletTests */,
 			);
 		};
 /* End PBXProject section */
@@ -118,7 +165,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10000000000000000000026 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A10000000000000000000027 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000008 /* PlainWallet */;
+			targetProxy = A10000000000000000000020 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A10000000000000000000014 /* Debug */ = {
@@ -197,9 +259,48 @@
 			};
 			name = Release;
 		};
+		A10000000000000000000028 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.borodutch.plainwallet.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Plain Wallet.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Plain Wallet";
+			};
+			name = Debug;
+		};
+		A10000000000000000000029 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.borodutch.plainwallet.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Plain Wallet.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Plain Wallet";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A10000000000000000000025 /* Build configuration list for PBXNativeTarget "PlainWalletTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000028 /* Debug */,
+				A10000000000000000000029 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		A10000000000000000000010 /* Build configuration list for PBXNativeTarget "PlainWallet" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

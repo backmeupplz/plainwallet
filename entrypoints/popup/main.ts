@@ -958,6 +958,13 @@ function mainScreen(s: State) {
   ]
 }
 
+// The home screen's wallet in a block of its own, apart from the header and the apps' favorites: on a narrow screen
+// just the rows under them; on a wide one (a tablet, an unfolded phone) a column beside the favorites (style.css).
+function home([top, ...rest]: Node[]) {
+  const aside = rest.filter((n) => n instanceof Element && n.classList.contains('favorites'))
+  return [top!, ...aside, h('div', { className: 'wallet' }, ...rest.filter((n) => !aside.includes(n)))]
+}
+
 // Only reachable unlocked: that's when load() has the key to check the state with.
 const tamperedScreen = () => [
   header(iconButton('Lock', icons.lock, act(lock))),
@@ -985,7 +992,7 @@ export async function render(stillCurrent = () => true) {
     touch() // using the wallet pushes the auto-lock back
     jevKey = ((await browser.storage.local.get('jevKey')).jevKey as string | undefined) ?? ''
     ;[watching, waiting] = [new Set(await watchedAddresses()), await exported()]
-    screen = pending.length ? approvalScreen(pending[0]!, pending.length - 1) : mainScreen(s)
+    screen = pending.length ? approvalScreen(pending[0]!, pending.length - 1) : home(mainScreen(s))
   }
   if (mine !== renderId || viewClosed || !stillCurrent()) return
   if (s instanceof Error || seed || !s.vault || unlocked) invalidateUnlockView()

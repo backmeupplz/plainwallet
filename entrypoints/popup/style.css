@@ -100,3 +100,16 @@ li::marker { color: var(--muted); font-size: 11px; }
 .favorites button > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .favorites p { grid-column: 1 / -1; }
 .favorites img { width: 32px; height: 32px; border-radius: 8px; }
+
+/* The home screen's wallet (main.ts: home): just the next rows on a narrow screen. On a wide one (a tablet, an
+   unfolded phone) it keeps its readable column and the favorites get one beside it, rather than one stretched column.
+   An unfolded iPhone Duo's page is 585px wide, beside its status pill (ios/PlainWallet: insets); 560px fits both columns
+   (348px, 24px between, a 72px favorite tile, and the body's padding), and a phone's width (the Duo's cover's 382px
+   page too) stays one column. */
+.wallet { display: contents; }
+@media (min-width: 560px) {
+  #app:has(> .favorites) { display: grid; grid-template-columns: minmax(348px, 400px) minmax(0, 320px); grid-auto-flow: row dense; justify-content: center; align-items: start; gap: 12px 24px; max-width: none; }
+  #app:has(> .favorites) > :not(.favorites, .wallet) { grid-column: 1 / -1; } /* the header, an error */
+  #app:has(> .favorites) > .wallet { grid-column: 1; display: flex; flex-direction: column; gap: 12px; }
+  #app:has(> .favorites) > .favorites { grid-column: 2; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }
+}
