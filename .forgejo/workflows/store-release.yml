@@ -278,6 +278,7 @@ jobs:
           FDROID_APP_ID: com.borodutch.plainwallet
           FDROID_FORK: backmeupplz/fdroiddata
           FDROID_BRANCH: com.borodutch.plainwallet
+          FDROID_GRADLE: fdroid # the flavor build.py takes the release APK from (assembleFdroidRelease)
           STORE: ${{ matrix.store }}
         run: python3 scripts/release/submit.py "$STORE"
       - name: Copy the signed APKs to the Forgejo release

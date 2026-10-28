@@ -5,7 +5,8 @@ Once the merge request is merged, F-Droid's checkupdates follows new tags itself
   fdroid.py <version> <version code> <commit> [--dry-run]   (--dry-run prints the change and pushes nothing)
   env: FDROID_MR (merge request number in fdroid/fdroiddata), FDROID_APP_ID, FDROID_FORK (e.g. backmeupplz/fdroiddata),
        FDROID_BRANCH, GITLAB_TOKEN (write_repository on the fork; only needed to push),
-       optional FDROID_UPDATE_CHECK_MODE and FDROID_BINARIES to change those fields too (e.g. a new tag scheme)"""
+       optional FDROID_UPDATE_CHECK_MODE and FDROID_BINARIES to change those fields too (e.g. a new tag scheme),
+       optional FDROID_GRADLE: the build entry's gradle value, the product flavor F-Droid builds (e.g. fdroid)"""
 import difflib, json, os, re, subprocess, sys, tempfile, urllib.request
 from urllib.parse import quote
 
@@ -19,7 +20,7 @@ def replace(metadata, pattern, new, field):
     return metadata
 
 
-def rewrite(metadata, version, code, commit, update_check_mode=None, binaries=None):
+def rewrite(metadata, version, code, commit, update_check_mode=None, binaries=None, gradle=None):
     """The metadata at this release, formatted the way fdroiddata's rewritemeta check wants it.
     Exits if it doesn't hold exactly one build entry."""
     if len(re.findall(r"(?m)^  - versionName:", metadata)) != 1:
@@ -34,6 +35,9 @@ def rewrite(metadata, version, code, commit, update_check_mode=None, binaries=No
         # rewritemeta (ruamel.yaml, width 80) puts a value longer than 80 characters on a line of its own
         metadata = replace(metadata, r"(?m)^Binaries:.*(?:\n  \S.*)?$",
                            lambda m: "Binaries: " + ("\n  " if len(binaries) > 80 else "") + binaries, "Binaries")
+    if gradle:
+        # A flavored app needs its flavor here: with "yes" Gradle builds every flavor and fdroidserver finds no APK
+        metadata = replace(metadata, r"(?m)^( +)gradle:\n(?:\1  - .*\n)+", lambda m: f"{m[1]}gradle:\n{m[1]}  - {gradle}\n", "gradle")
     return metadata
 
 
@@ -51,7 +55,8 @@ def main():
     if mr["state"] != "opened":
         return print(f"F-Droid merge request !{mr['iid']} is {mr['state']}: F-Droid picks up new tags itself")
     old = urllib.request.urlopen(f"{API}{quote(fork, safe='')}/repository/files/{quote(path, safe='')}/raw?ref={quote(branch)}").read().decode()
-    new = rewrite(old, version, code, commit, os.environ.get("FDROID_UPDATE_CHECK_MODE"), os.environ.get("FDROID_BINARIES"))
+    new = rewrite(old, version, code, commit, os.environ.get("FDROID_UPDATE_CHECK_MODE"), os.environ.get("FDROID_BINARIES"),
+                  os.environ.get("FDROID_GRADLE"))
     if new == old:
         return print(f"F-Droid merge request !{mr['iid']} is at {version} already")
     print("".join(difflib.unified_diff(old.splitlines(True), new.splitlines(True), path, path)))

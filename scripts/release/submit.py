@@ -350,6 +350,7 @@ def fdroid(meta, env, journal, run=subprocess.run, pause=time.sleep):
     # No journal: fdroid.py compares the merge request's metadata and pushes only a change, so a rerun is a no-op.
     child = {k: os.environ[k] for k in ("PATH", "HOME") if k in os.environ}
     child.update({k: env[k] for k in ("GITLAB_TOKEN", "FDROID_MR", "FDROID_APP_ID", "FDROID_FORK", "FDROID_BRANCH")})
+    child.update({k: env[k] for k in ("FDROID_GRADLE",) if env.get(k)})
     p = run([sys.executable, str(Path(__file__).with_name("fdroid.py")), meta["version"], str(meta["versionCode"]), meta["sha"]], env=child, capture_output=True, text=True)
     print(p.stdout)
     require(p.returncode == 0, "F-Droid merge request update failed: " + (p.stderr.strip().splitlines() or ["see log"])[-1])

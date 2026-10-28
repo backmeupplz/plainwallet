@@ -199,6 +199,34 @@ class AppleApkFdroidTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Release APK missing"):
             fdroid(META, env, empty, run=run_ok, pause=lambda s: None)
 
+    def test_fdroid_rewrite_sets_the_gradle_flavor(self):
+        # The fork's 0.5.5 entry: gradle: [yes] builds both store flavors and fdroidserver finds no APK
+        metadata = ("AutoName: Plain Wallet\nBuilds:\n  - versionName: 0.5.5\n    versionCode: 505\n    commit: " + "b" * 40 +
+                    "\n    subdir: android/app\n    gradle:\n      - yes\n    prebuild:\n      - cd ../..\n      - npm ci\n"
+                    "    gradleprops:\n      - prebuiltWeb\n\nCurrentVersion: 0.5.5\nCurrentVersionCode: 505\n")
+        new = fdroid_script.rewrite(metadata, "0.5.6", "506", "c" * 40, gradle="fdroid")
+        self.assertEqual(new, metadata.replace("0.5.5", "0.5.6").replace("505", "506").replace("b" * 40, "c" * 40).replace("      - yes\n", "      - fdroid\n"))
+        # The next release keeps the flavor, and the same value is no change at all
+        self.assertIn("    gradle:\n      - fdroid\n    prebuild:", fdroid_script.rewrite(new, "0.5.7", "507", "d" * 40))
+        self.assertEqual(fdroid_script.rewrite(new, "0.5.6", "506", "c" * 40, gradle="fdroid"), new)
+        with self.assertRaises(SystemExit):
+            fdroid_script.rewrite(metadata.replace("    gradle:\n      - yes\n", ""), "0.5.6", "506", "c" * 40, gradle="fdroid")
+
+    def test_fdroid_passes_the_gradle_flavor_on(self):
+        journal = MemoryJournal("fdroid")
+        journal.assets = {"plainwallet-" + META["version"] + "-android.apk": {}}
+        env = {"GITLAB_TOKEN": "t", "FDROID_MR": "123", "FDROID_APP_ID": "com.borodutch.plainwallet", "FDROID_FORK": "f", "FDROID_BRANCH": "b"}
+        seen = []
+        def run(argv, **kw):
+            seen.append(kw["env"].get("FDROID_GRADLE"))
+            return subprocess.CompletedProcess(argv, 0, "", "")
+        fdroid(META, {**env, "FDROID_GRADLE": "fdroid"}, journal, run=run, pause=lambda s: None)
+        fdroid(META, env, journal, run=run, pause=lambda s: None)
+        self.assertEqual(seen, ["fdroid", None])
+        workflow = (Path(__file__).parents[2] / ".forgejo/workflows/store-release.yml").read_text()
+        self.assertRegex(workflow, r"(?m)^ +FDROID_GRADLE: fdroid(?: +#.*)?$")
+        self.assertIn("assembleFdroidRelease", workflow)
+
     def test_fdroid_push_failure_reports_git_output_without_the_token(self):
         metadata = "AutoName: Plain Wallet\nBuilds:\n  - versionName: 0.5.4\n    versionCode: 504\n    commit: " + "b" * 40 + "\nCurrentVersion: 0.5.4\nCurrentVersionCode: 504\n"
         def urlopen(url):
