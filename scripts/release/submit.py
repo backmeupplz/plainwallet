@@ -438,7 +438,25 @@ def appstore_platform(meta, journal, platform, api, upload, notes, pause):
         return api("apps/" + APP_STORE_APP + "/appStoreVersions?filter[platform]=" + p + "&limit=50&fields[appStoreVersions]=versionString,appStoreState")["data"]
     def state(v):
         return v["attributes"]["appStoreState"]
+    def ready_submissions():
+        return api("reviewSubmissions?filter[app]=" + APP_STORE_APP + "&filter[platform]=" + p + "&filter[state]=READY_FOR_REVIEW")["data"]
+    def holds(submission, version):
+        items = api("reviewSubmissions/" + submission + "/items?include=appStoreVersion")
+        return any(i["id"] == version for i in items.get("included", []) if i["type"] == "appStoreVersions")
+    def send(submission):
+        submitted = journal.once("review-" + platform, lambda: api("reviewSubmissions/" + submission, method="PATCH", body={"data": {"type": "reviewSubmissions", "id": submission, "attributes": {"submitted": True}}}), lambda r: {"id": submission, "state": r["data"]["attributes"]["state"]})
+        require(submitted["id"] == submission, "The App Store review receipt is for another submission; reconcile in App Store Connect")
+        require(submitted["state"] in ("WAITING_FOR_REVIEW", "IN_REVIEW", "COMPLETE"), "App Store did not confirm the review submission; reconcile in App Store Connect")
+        return {"platform": platform, "version": meta["version"], "build": meta["versionCode"], "submission": submission, "state": submitted["state"]}
     mine = [v for v in versions() if v["attributes"]["versionString"] == meta["version"] and state(v) not in EDITABLE]
+    if mine and state(mine[0]) == "READY_FOR_REVIEW":
+        # The version is in a draft submission that was never sent (#234): send that draft rather than report it pending.
+        version = mine[0]["id"]
+        held = [s["id"] for s in ready_submissions() if holds(s["id"], version)]
+        require(len(held) == 1, "App Store version " + meta["version"] + " is READY_FOR_REVIEW outside one draft submission; reconcile in App Store Connect")
+        attached = api("appStoreVersions/" + version + "/build?fields[builds]=version")["data"]
+        require(attached and attached["attributes"]["version"] == str(meta["versionCode"]), "App Store version " + meta["version"] + " is not on build " + str(meta["versionCode"]) + "; reconcile in App Store Connect")
+        return {**send(held[0]), "resumed": True}
     if mine:
         return {"platform": platform, "version": meta["version"], "state": state(mine[0]), "existing": True}
     builds = api("builds?filter[app]=" + APP_STORE_APP + "&filter[preReleaseVersion.platform]=" + p + "&limit=200&fields[builds]=version,processingState")["data"]
@@ -481,14 +499,11 @@ def appstore_platform(meta, journal, platform, api, upload, notes, pause):
     if any(state(v) == "READY_FOR_SALE" for v in current):  # a first version can't have What's New
         for localization in api("appStoreVersions/" + version + "/appStoreVersionLocalizations?fields[appStoreVersionLocalizations]=locale")["data"]:
             api("appStoreVersionLocalizations/" + localization["id"], method="PATCH", body={"data": {"type": "appStoreVersionLocalizations", "id": localization["id"], "attributes": {"whatsNew": notes(localization.get("attributes", {}).get("locale"))}}})
-    ready = api("reviewSubmissions?filter[app]=" + APP_STORE_APP + "&filter[platform]=" + p + "&filter[state]=READY_FOR_REVIEW")["data"]
+    ready = ready_submissions()
     submission = ready[0]["id"] if ready else journal.once("submission-" + platform, lambda: api("reviewSubmissions", method="POST", body={"data": {"type": "reviewSubmissions", "attributes": {"platform": p}, "relationships": {"app": {"data": {"type": "apps", "id": APP_STORE_APP}}}}}), lambda r: {"id": r["data"]["id"]})["id"]
-    items = api("reviewSubmissions/" + submission + "/items?include=appStoreVersion")
-    if not any(i["id"] == version for i in items.get("included", []) if i["type"] == "appStoreVersions"):
+    if not holds(submission, version):
         journal.once("item-" + platform, lambda: api("reviewSubmissionItems", method="POST", body={"data": {"type": "reviewSubmissionItems", "relationships": {"reviewSubmission": {"data": {"type": "reviewSubmissions", "id": submission}}, "appStoreVersion": {"data": {"type": "appStoreVersions", "id": version}}}}}), lambda r: {"id": r["data"]["id"]})
-    submitted = journal.once("review-" + platform, lambda: api("reviewSubmissions/" + submission, method="PATCH", body={"data": {"type": "reviewSubmissions", "id": submission, "attributes": {"submitted": True}}}), lambda r: {"id": submission, "state": r["data"]["attributes"]["state"]})
-    require(submitted["state"] in ("WAITING_FOR_REVIEW", "IN_REVIEW", "COMPLETE"), "App Store did not confirm the review submission; reconcile in App Store Connect")
-    return {"platform": platform, "version": meta["version"], "build": meta["versionCode"], "submission": submission, "state": submitted["state"]}
+    return send(submission)
 
 
 def appstore(meta, env, journal, event, api=None, upload=None, pause=time.sleep):

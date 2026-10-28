@@ -75,6 +75,9 @@ class FakeAppStore:
             i = "v" + str(len(self.versions) + 1)
             self.versions[i] = {"platform": attrs["platform"], "versionString": attrs["versionString"], "state": "PREPARE_FOR_SUBMISSION"}
             return {"data": {"id": i}}
+        if parts[0] == "appStoreVersions" and parts[-1] == "build" and method == "GET":
+            found = [b for b in self.builds if b["id"] == self.attached.get(parts[1])]
+            return {"data": {"id": found[0]["id"], "attributes": {"version": found[0]["version"]}} if found else None}
         if parts[0] == "appStoreVersions" and parts[-1] == "build":
             self.attached[parts[1]] = body["data"]["id"]
             return {}
@@ -114,6 +117,40 @@ class AppleApkFdroidTests(unittest.TestCase):
         again = run(fake, journal)
         self.assertTrue(all(r.get("existing") for r in again["platforms"]))
         self.assertEqual(len(fake.writes), writes)
+
+    def draft(self, build=str(META["versionCode"]), held=True):
+        # #234: iOS submitted; the Mac version sits in a draft submission that was never sent.
+        fake = FakeAppStore(
+            [{"id": "ios", "platform": "IOS", "versionString": META["version"], "state": "WAITING_FOR_REVIEW"}, {"id": "mac", "platform": "MAC_OS", "versionString": META["version"], "state": "READY_FOR_REVIEW"}],
+            [{"id": "draft", "platform": "MAC_OS", "state": "READY_FOR_REVIEW", "versions": ["mac"] if held else []}],
+            [{"id": "b-mac", "version": build, "platform": "MAC_OS", "pre": META["version"], "processingState": "VALID"}])
+        fake.attached["mac"] = "b-mac"
+        return fake
+
+    def test_unsent_draft_holding_the_version_is_submitted(self):
+        fake, journal = self.draft(), MemoryJournal("appstore")
+        journal.put(journal.name("item-macos", "started"), {"state": "started"})  # the item went in by hand
+        outcome = run(fake, journal)
+        ios, mac = outcome["platforms"]
+        self.assertTrue(ios.get("existing"))
+        self.assertEqual((mac["state"], mac["submission"], mac.get("resumed")), ("WAITING_FOR_REVIEW", "draft", True))
+        self.assertEqual(fake.writes, [("PATCH", "reviewSubmissions/draft", {"submitted": True})], "no upload, version or item step")
+        self.assertEqual(journal.read(journal.name("review-macos", "receipt")), {"id": "draft", "state": "WAITING_FOR_REVIEW"})
+        # A rerun finds it submitted and writes nothing.
+        again = run(fake, journal)
+        self.assertTrue(all(r.get("existing") for r in again["platforms"]))
+        self.assertEqual(len(fake.writes), 1)
+
+    def test_unsent_draft_on_another_build_or_without_the_version_is_never_sent(self):
+        for fake, reason in ((self.draft(build="501"), "is not on build 502"), (self.draft(held=False), "outside one draft submission")):
+            with self.assertRaisesRegex(ValueError, reason):
+                run(fake)
+            self.assertEqual(fake.writes, [])
+        # A review receipt from an earlier, since-cancelled submission never stands in for sending this draft.
+        fake, journal = self.draft(), MemoryJournal("appstore")
+        journal.put(journal.name("review-macos", "receipt"), {"id": "cancelled", "state": "WAITING_FOR_REVIEW"})
+        with self.assertRaisesRegex(ValueError, "receipt is for another submission"):
+            run(fake, journal)
 
     def test_newer_submission_in_review_is_never_cancelled(self):
         fake = FakeAppStore([{"id": "ios", "platform": "IOS", "versionString": "9.0.0", "state": "IN_REVIEW"}], [{"id": "new", "platform": "IOS", "state": "IN_REVIEW", "versions": ["ios"]}])
