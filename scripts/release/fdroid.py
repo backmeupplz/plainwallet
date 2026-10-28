@@ -42,7 +42,8 @@ def rewrite(metadata, version, code, commit, update_check_mode=None, binaries=No
 
 
 def git_failure(command, status, output, token):
-    """git's output on one line, since submit.py reports only the last line of stderr, with the token masked in case git echoes it."""
+    """git's output on one line, so a caller that shows only the last line of stderr (plainwallet's submit.py) still says why,
+    with the token masked in case git echoes it."""
     output = " | ".join(line.strip() for line in output.splitlines() if line.strip()).replace(token, "***")
     return f"git {command} failed with status {status}: {output or 'no output'}"
 
