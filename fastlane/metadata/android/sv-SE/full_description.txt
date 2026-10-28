@@ -1,0 +1,9 @@
+Plain Wallet är en mycket minimalistisk kryptoplånbok med öppen källkod för Ethereum och andra EVM-nätverk. På Android är den en web3-webbläsare med plånboken inbyggd: skriv in en webbplats så får den Plain Wallet som sin plånbok, med samma tydliga godkännanden för anslutningar, signaturer, transaktioner och nätverksbyten som i webbläsartillägget.
+
+Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche och Gnosis är inbyggda, och du kan lägga till vilket annat EVM-nätverk som helst. Stjärnmärk de dappar du använder så ligger de kvar överst på plånbokens startskärm. Du kan skicka gastoken eller vilken ERC-20-token som helst, se dina saldon och anslutna webbplatser, ha en kall plånbok som bevakningskonto och signera dess transaktioner offline på en annan enhet, och låsa upp med fingeravtrycket om du vill.
+
+Varje godkännande visar webbplatsen, nätverket, kontot och, för en transaktion, mottagaren, beloppet och den högsta avgiften. Godkännanden och överföringar av tokens skrivs ut i en mening där obegränsade belopp flaggas, och varje transaktion simuleras först, så att du ser hur dina saldon ändras eller varför den skulle misslyckas innan du signerar.
+
+Plånboken låses efter 15 minuter utan användning, när du har varit borta från appen i en minut och varje gång Android avslutar appen. Dina nycklar, ditt valv och dina inställningar stannar på telefonen i lagring som webbplatser inte kommer åt, och ingenting säkerhetskopieras till molnet.
+
+Plain Wallet har inga servrar, konton, analyser eller telemetri, och utvecklaren får inga data från den. Den består av ungefär 2 850 rader TypeScript med tre beroenden vid körning och är öppen källkod under MIT-licensen.

@@ -1,0 +1,9 @@
+Plain Wallet, Ethereum ve diğer EVM ağları için çok sade, açık kaynaklı bir kripto para cüzdanıdır. Android'de cüzdanı yerleşik bir web3 tarayıcısıdır: bir site yazdığınızda site, cüzdan olarak Plain Wallet'ı kullanır ve bağlantılar, imzalar, işlemler ve ağ değişiklikleri için tarayıcı uzantısındakiyle aynı açık onaylar gelir.
+
+Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche ve Gnosis hazır gelir, dilediğiniz başka bir EVM ağını da ekleyebilirsiniz. Kullandığınız dapp'leri yıldızlayarak cüzdanın ana ekranında en üstte tutun. Gas ücretinin ödendiği tokeni veya herhangi bir ERC-20 tokenini gönderebilir, bakiyelerinizi ve bağlı siteleri görebilir, soğuk cüzdanınızı yalnızca izleme hesabı olarak tutup işlemlerini başka bir cihazda çevrimdışı imzalayabilir ve dilerseniz kilidi parmak izinizle açabilirsiniz.
+
+Her onay siteyi, ağı ve hesabı, bir işlemde ise ayrıca alıcıyı, tutarı ve en yüksek ücreti gösterir. Token onayları ve transferler tek bir cümleyle açıklanır ve sınırsız tutarlar işaretlenir. Her işlem önce simüle edilir, böylece imzalamadan önce bakiyelerinizin nasıl değişeceğini ya da işlemin neden başarısız olacağını görürsünüz.
+
+Cüzdan 15 dakika kullanılmadığında, uygulamadan bir dakika uzak kaldığınızda ve Android uygulamayı her kapattığında kilitlenir. Anahtarlarınız, kasanız ve ayarlarınız telefonunuzda, sitelerin erişemediği bir depolama alanında kalır ve hiçbir şey buluta yedeklenmez.
+
+Plain Wallet'ta sunucu, üyelik, analitik veya telemetri yoktur ve geliştiricisi ondan hiçbir veri almaz. Yaklaşık 2.850 satır TypeScript ve üç çalışma zamanı bağımlılığından oluşur ve MIT lisansıyla açık kaynaktır.

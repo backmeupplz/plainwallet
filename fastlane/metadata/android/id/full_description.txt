@@ -1,0 +1,9 @@
+Plain Wallet adalah dompet kripto open source (sumber terbuka) yang sangat minimalis untuk Ethereum dan jaringan EVM lainnya. Di Android, Plain Wallet adalah browser web3 dengan dompet bawaan: ketik sebuah situs, dan situs itu memakai Plain Wallet sebagai dompetnya, dengan persetujuan yang sama jelasnya seperti di ekstensi browser untuk koneksi, tanda tangan, transaksi, dan pergantian jaringan.
+
+Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche, dan Gnosis sudah tersedia, dan Anda bisa menambahkan jaringan EVM lain mana pun. Beri bintang pada dapp yang Anda pakai agar tetap di bagian atas layar utama dompet. Anda bisa mengirim token gas atau token ERC-20 apa pun, melihat saldo dan situs yang terhubung, menyimpan dompet dingin (cold wallet) sebagai akun hanya pantau dan menandatangani transaksinya secara offline di perangkat lain, serta membuka dompet dengan sidik jari jika mau.
+
+Setiap persetujuan menampilkan situs, jaringan, dan akun, dan untuk transaksi juga penerima, jumlah, serta biaya maksimum. Persetujuan dan transfer token dijelaskan dalam satu kalimat, dengan jumlah tanpa batas yang ditandai, dan setiap transaksi disimulasikan terlebih dahulu, sehingga sebelum menandatangani Anda melihat perubahan saldo Anda atau alasan transaksi itu akan gagal.
+
+Dompet terkunci setelah 15 menit tidak digunakan, setelah satu menit Anda meninggalkan aplikasi, dan setiap kali Android menutup aplikasi. Kunci, vault, dan pengaturan Anda tetap di ponsel Anda, di penyimpanan yang tidak bisa dijangkau situs, dan tidak ada yang dicadangkan ke cloud.
+
+Plain Wallet tidak punya server, akun, analitik, atau telemetri, dan pengembangnya tidak menerima data apa pun darinya. Kodenya sekitar 2.850 baris TypeScript dengan tiga dependensi runtime, open source dengan lisensi MIT.

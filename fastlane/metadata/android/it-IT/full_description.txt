@@ -1,0 +1,9 @@
+Plain Wallet è un portafoglio crypto open source e molto minimalista per Ethereum e le altre reti EVM. Su Android è un browser web3 con il wallet integrato: digita un sito e il sito avrà Plain Wallet come wallet, con le stesse approvazioni chiare per connessioni, firme, transazioni e cambi di rete dell’estensione per browser.
+
+Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche e Gnosis sono già incluse, e puoi aggiungere qualsiasi altra rete EVM. Aggiungi una stella alle dapp che usi per tenerle in cima alla schermata principale del wallet. Puoi inviare il token del gas o qualsiasi token ERC-20, vedere i tuoi saldi e i siti collegati, tenere un portafoglio freddo come account in sola lettura e firmarne le transazioni offline su un altro dispositivo, e se vuoi sbloccare con l’impronta digitale.
+
+Ogni approvazione mostra il sito, la rete, l’account e, per una transazione, il destinatario, l’importo e la commissione massima. Le approvazioni e i trasferimenti di token sono spiegati in una frase, con gli importi illimitati segnalati, e ogni transazione viene prima simulata, così vedi come cambierebbe il tuo saldo, o il motivo per cui fallirebbe, prima di firmare.
+
+Il wallet si blocca dopo 15 minuti di inattività, dopo un minuto fuori dall’app e ogni volta che Android chiude l’app. Le tue chiavi, la cassaforte e le impostazioni restano sul telefono, in uno spazio a cui i siti non possono accedere, e non viene fatto alcun backup nel cloud.
+
+Plain Wallet non ha server, account, analisi né telemetria, e il suo sviluppatore non riceve alcun dato. Sono circa 2.850 righe di TypeScript con tre dipendenze di runtime, open source con licenza MIT.

@@ -1,0 +1,9 @@
+Plain Wallet is een zeer minimalistische, open-source crypto-wallet voor Ethereum en andere EVM-netwerken: een digitale portemonnee voor je tokens, met de sleutels op je eigen telefoon. Op Android is het een web3-browser met de wallet ingebouwd: typ een site in en die krijgt Plain Wallet als wallet, met dezelfde duidelijke goedkeuringen voor verbindingen, handtekeningen, transacties en netwerkwissels als de browserextensie.
+
+Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche en Gnosis zijn ingebouwd, en je kunt elk ander EVM-netwerk toevoegen. Geef de dapps die je gebruikt een ster, dan blijven ze bovenaan het startscherm van de wallet staan. Je kunt de gastoken of elke ERC-20-token versturen, je saldi en verbonden sites bekijken, een cold wallet als alleen-bekijken-account houden en de transacties ervan offline op een ander apparaat ondertekenen, en als je wilt, ontgrendel je met je vingerafdruk.
+
+Elke goedkeuring laat de site, het netwerk en het account zien, en bij een transactie ook de ontvanger, het bedrag en de maximale kosten. Goedkeuringen en overdrachten van tokens worden in een gewone zin uitgelegd, met onbeperkte bedragen gemarkeerd, en elke transactie wordt eerst gesimuleerd, zodat je je saldowijzigingen of de reden waarom ze zou mislukken ziet voordat je ondertekent.
+
+De wallet vergrendelt na 15 minuten zonder gebruik, nadat je de app een minuut hebt verlaten en telkens wanneer Android de app afsluit. Je sleutels, kluis en instellingen blijven op je telefoon, in opslag waar sites niet bij kunnen, en er gaat niets als back-up naar de cloud.
+
+Plain Wallet heeft geen servers, accounts, analytics of telemetrie, en de ontwikkelaar ontvangt er geen gegevens van. Het zijn ongeveer 2.850 regels TypeScript met drie runtime-afhankelijkheden, open source onder de MIT-licentie.

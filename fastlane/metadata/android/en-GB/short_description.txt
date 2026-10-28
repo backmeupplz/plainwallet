@@ -1,0 +1,1 @@
+Open-source crypto wallet for Ethereum and EVM with a web3 dapp browser built in

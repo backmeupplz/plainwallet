@@ -1,7 +1,9 @@
-Plain Wallet is a very minimal wallet for Ethereum and other EVM networks. On Android it's a browser with the wallet built in: type a site and it gets Plain Wallet as its wallet, with the same clear approvals for connections, signatures, transactions and network changes as the browser extension.
+Plain Wallet is a very minimal, open-source crypto wallet for Ethereum and other EVM networks. On Android it's a web3 browser with the wallet built in: type a site and it gets Plain Wallet as its wallet, with the same clear approvals for connections, signatures, transactions and network changes as the browser extension.
 
-Star the sites you use to keep them on top of the wallet's home screen. You can send tokens, see your balances and connected sites, keep watch-only accounts and sign offline, and unlock with your fingerprint if you like.
+Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche and Gnosis are built in, and you can add any other EVM network. Star the dapps you use to keep them on top of the wallet's home screen. You can send the gas token or any ERC-20 token, see your balances and connected sites, keep a cold wallet as a watch-only account and sign its transactions offline on another device, and unlock with your fingerprint if you like.
 
-The wallet locks after 15 minutes without use, after a minute away from the app and whenever Android ends the app. Its vault and settings stay on your phone in storage that sites can't reach, and nothing is backed up to the cloud.
+Every approval shows the site, the network, the account, and for a transaction the recipient, the amount and the maximum fee. Token approvals and transfers are spelled out in a sentence with unlimited amounts flagged, and each transaction is simulated first, so you see your balance changes or the reason it would fail before you sign.
+
+The wallet locks after 15 minutes without use, after a minute away from the app and whenever Android ends the app. Your keys, vault and settings stay on your phone in storage that sites can't reach, and nothing is backed up to the cloud.
 
 Plain Wallet has no servers, accounts, analytics or telemetry, and its developer receives no data from it. It's about 2,850 lines of TypeScript with three runtime dependencies, open source under the MIT license.

@@ -1,0 +1,1 @@
+Open-source crypto-wallet voor Ethereum en EVM, met een ingebouwde web3-browser

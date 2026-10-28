@@ -1,0 +1,1 @@
+Open-Source-Krypto-Wallet für Ethereum und EVM mit eingebautem Web3-dApp-Browser

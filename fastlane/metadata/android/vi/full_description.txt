@@ -1,0 +1,9 @@
+Plain Wallet là một ví crypto (ví tiền điện tử) mã nguồn mở, cực kỳ tối giản cho Ethereum và các mạng EVM khác. Trên Android, đây là một trình duyệt web3 tích hợp sẵn ví: bạn gõ một trang, và trang đó dùng Plain Wallet làm ví của mình, với cùng kiểu phê duyệt rõ ràng như trên tiện ích trình duyệt cho kết nối, chữ ký, giao dịch và việc chuyển mạng.
+
+Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche và Gnosis có sẵn, và bạn có thể thêm bất kỳ mạng EVM nào khác. Gắn sao cho các dapp bạn hay dùng để chúng luôn nằm trên cùng màn hình chính của ví. Bạn có thể gửi token gas hoặc bất kỳ token ERC-20 nào, xem số dư và các trang đã kết nối, giữ một ví lạnh dưới dạng tài khoản chỉ xem và ký giao dịch của nó ngoại tuyến trên một thiết bị khác, và mở khóa bằng vân tay nếu muốn.
+
+Mỗi lần phê duyệt đều cho thấy trang, mạng, tài khoản, và với giao dịch thì cả người nhận, số lượng và phí tối đa. Việc phê duyệt và chuyển token được diễn giải thành một câu, số lượng không giới hạn được đánh dấu, và mỗi giao dịch đều được mô phỏng trước, nên bạn thấy số dư sẽ thay đổi thế nào hoặc lý do giao dịch sẽ thất bại trước khi ký.
+
+Ví tự khóa sau 15 phút không sử dụng, sau một phút bạn rời khỏi ứng dụng và mỗi khi Android đóng ứng dụng. Khóa, kho bảo mật và cài đặt của bạn nằm trên điện thoại, trong vùng lưu trữ mà các trang web không truy cập được, và không có gì được sao lưu lên đám mây.
+
+Plain Wallet không có máy chủ, tài khoản người dùng, phân tích hay đo lường từ xa, và nhà phát triển không nhận được dữ liệu nào từ ví. Ví gồm khoảng 2.850 dòng TypeScript với ba thư viện phụ thuộc khi chạy, mã nguồn mở theo giấy phép MIT.
