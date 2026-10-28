@@ -43,6 +43,12 @@ def error_reason(e):
         reason = str(error.get("status", "")) + " " + str(error.get("message", ""))
     elif isinstance(errors, list) and errors and isinstance(errors[0], dict):
         reason = str(errors[0].get("code", "")) + " " + str(errors[0].get("detail", ""))
+        # App Store Connect puts the cause of a 409 (say a required attribute) under meta.associatedErrors, path -> errors
+        meta = errors[0].get("meta")
+        associated = meta.get("associatedErrors") if isinstance(meta, dict) else None
+        first = next((a for v in associated.values() if isinstance(v, list) for a in v if isinstance(a, dict) and (a.get("code") or a.get("detail"))), None) if isinstance(associated, dict) else None
+        if first:
+            reason += "; " + str(first.get("code") or "") + " " + str(first.get("detail") or "")
     else:
         reason = str(data.get("detail", ""))
     return " ".join(reason.split())[:300]
@@ -565,21 +571,24 @@ def sync_screenshots(api, localization, files, put, pause=time.sleep):
 
 def sync_localizations(api, kind, path, parent, names, copied, listings):
     """Each locale's texts on a version or app info, adding the locales it lacks (with en-US's URLs). Returns
-    locale -> localization id and the locales that changed."""
+    locale -> localization id and the locales that changed. A localization without the URLs gets en-US's too: App
+    Store Connect makes a version's localizations itself, empty, when the app info gains a locale, and review
+    requires the support URL."""
     existing = {l["attributes"]["locale"]: l for l in api(path)["data"]}
     base = (existing.get("en-US") or next(iter(existing.values()), {"attributes": {}}))["attributes"]
     ids, changed = {}, []
     for locale, (texts, _) in sorted(listings.items()):
         fields = {attribute: texts[section] for attribute, section in names.items() if texts.get(section)}
         old = existing.get(locale)
-        if old and all(old["attributes"].get(k) == v for k, v in fields.items()):
+        have = old["attributes"] if old else {}
+        fields.update({k: base[k] for k in copied if base.get(k) and not have.get(k)})
+        if old and all(have.get(k) == v for k, v in fields.items()):
             ids[locale] = old["id"]
             continue
         if old:
             api(kind + "/" + old["id"], method="PATCH", body={"data": {"type": kind, "id": old["id"], "attributes": fields}})
             ids[locale] = old["id"]
         else:
-            fields.update({k: base[k] for k in copied if base.get(k)})
             ids[locale] = api(kind, method="POST", body={"data": {"type": kind, "attributes": dict(fields, locale=locale), "relationships": parent}})["data"]["id"]
         changed.append(locale)
     return ids, changed

@@ -1,5 +1,7 @@
 """Store listings in every language (Play edit and App Store localizations) against fakes: no network or credentials."""
 import hashlib
+import io
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -209,6 +211,33 @@ class AppStoreListingTests(unittest.TestCase):
         writes = len(fake.writes)
         self.assertEqual(listing("ios", "ios"), {"texts": [], "screenshots": []})
         self.assertEqual(len(fake.writes), writes)
+
+    def test_a_localization_app_store_connect_made_empty_gets_en_us_urls(self):
+        fake = self.store()
+        # the app info gained de-DE, so App Store Connect made the version's de-DE localization itself, without URLs
+        fake.locs["appStoreVersionLocalizations"]["de-ios"] = {"locale": "de-DE", "parent": "ios"}
+        submit.sync_appstore_listing(fake, "ios", "ios", self.listings, lambda op, data: None)
+        self.assertIn(("PATCH", "appStoreVersionLocalizations/de-ios", {"keywords": "krypto", "promotionalText": "Neu.", "description": "Deutsch.", "supportUrl": "https://s", "marketingUrl": "https://m"}), fake.writes)
+        self.assertNotIn("POST", [w[0] for w in fake.writes if w[1] == "appStoreVersionLocalizations"])
+        # texts already in place: a missing URL alone still needs a write; a localization's own URL is kept
+        fake.locs["appStoreVersionLocalizations"]["de-ios"].pop("supportUrl")
+        fake.locs["appStoreVersionLocalizations"]["de-ios"]["marketingUrl"] = "https://de"
+        fake.writes = []
+        self.assertEqual(submit.sync_appstore_listing(fake, "ios", "ios", self.listings, lambda op, data: None)["texts"], ["de-DE"])
+        self.assertEqual([(m, p, a.get("supportUrl"), "marketingUrl" in a) for m, p, a in fake.writes], [("PATCH", "appStoreVersionLocalizations/de-ios", "https://s", False)])
+        self.assertEqual(fake.locs["appStoreVersionLocalizations"]["de-ios"]["marketingUrl"], "https://de")
+        fake.writes = []
+        self.assertEqual(submit.sync_appstore_listing(fake, "ios", "ios", self.listings, lambda op, data: None)["texts"], [])
+        self.assertEqual(fake.writes, [], "in sync: no writes")
+
+    def test_app_store_connect_error_names_its_first_associated_error(self):
+        body = {"errors": [{"status": "409", "code": "STATE_ERROR.ENTITY_STATE_INVALID", "detail": "The item is not in a valid state.",
+                            "meta": {"associatedErrors": {"/v1/appStoreVersionLocalizations/x": [{"code": "ENTITY_ERROR.ATTRIBUTE.REQUIRED", "detail": "You must provide a value for the attribute 'supportUrl'."}]}}}]}
+        self.assertEqual(submit.error_reason(io.BytesIO(json.dumps(body).encode())),
+                         "STATE_ERROR.ENTITY_STATE_INVALID The item is not in a valid state.; ENTITY_ERROR.ATTRIBUTE.REQUIRED You must provide a value for the attribute 'supportUrl'.")
+        for meta in (None, "x", {"associatedErrors": []}, {"associatedErrors": {"/v1/x": ["x"]}}):
+            body["errors"][0]["meta"] = meta
+            self.assertEqual(submit.error_reason(io.BytesIO(json.dumps(body).encode())), "STATE_ERROR.ENTITY_STATE_INVALID The item is not in a valid state.")
 
     def test_a_screenshot_apple_rejects_stops_the_release(self):
         fake = self.store()
