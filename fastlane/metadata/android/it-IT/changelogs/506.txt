@@ -1,0 +1,1 @@
+Nelle lingue che si scrivono da destra a sinistra, come l'arabo, gli importi dei token ora sono allineati al bordo dell'elenco dei saldi.

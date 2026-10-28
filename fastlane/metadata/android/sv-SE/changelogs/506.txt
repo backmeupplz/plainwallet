@@ -1,0 +1,1 @@
+I språk som skrivs från höger till vänster, som arabiska, ligger tokenbeloppen i saldolistan nu jämnt mot kanten.

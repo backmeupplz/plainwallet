@@ -17,6 +17,9 @@ import xml.etree.ElementTree as ET
 
 import submit
 
+# The stores in these tests never see the repo's real listings (test_listings.py covers them).
+submit.LISTINGS = submit.APPSTORE = Path(tempfile.mkdtemp())
+
 ROOT = Path(__file__).resolve().parents[2]
 
 from build import release_version, validate_manifest, validate_android, archive

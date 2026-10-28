@@ -275,6 +275,14 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
         let inpage = try! String(contentsOf: Bundle.main.url(forResource: "android-inpage", withExtension: "js", subdirectory: "web")!, encoding: .utf8)
         config.userContentController.addUserScript(WKUserScript(source: bridge + inpage, injectionTime: .atDocumentStart,
                                                                 forMainFrameOnly: true, in: .page))
+        #if SHOTS
+        // Only in scripts/shots/ios.sh's build: a style the store screenshots put on sites (Shots.swift hides a dated banner)
+        if let css = ProcessInfo.processInfo.environment["SHOTS_SITE_CSS"] {
+            let source = "document.documentElement.appendChild(Object.assign(document.createElement('style'), { textContent: "
+                + String(data: try! JSONEncoder().encode(css), encoding: .utf8)! + " }))"
+            config.userContentController.addUserScript(WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        }
+        #endif
         config.userContentController.addScriptMessageHandler(self, contentWorld: .page, name: "plainwalletNative")
         let view = WKWebView(frame: .zero, configuration: config)
         setUp(view)

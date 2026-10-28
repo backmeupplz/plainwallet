@@ -1,0 +1,1 @@
+En los idiomas que se escriben de derecha a izquierda, como el árabe, los importes de los tokens se alinean ahora con el borde de la lista de saldos.

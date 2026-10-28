@@ -1,0 +1,1 @@
+Dans les langues qui s'écrivent de droite à gauche, comme l'arabe, les montants des jetons s'alignent désormais sur le bord de la liste des soldes.

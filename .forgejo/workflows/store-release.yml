@@ -194,7 +194,7 @@ jobs:
       matrix:
         store: ${{ fromJSON(needs.select-stores.outputs.stores) }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45 # Play's job also sends every language's listing images
     permissions:
       contents: write # APK copies on the Forgejo release; the journal is on the GitHub release (GH_MIRROR_TOKEN)
     enable-openid-connect: true # short-lived Google credentials; the provider admits only v* release runs of this workflow

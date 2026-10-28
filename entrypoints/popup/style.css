@@ -78,9 +78,10 @@ pre { margin: 0; font: calc(12rem / 14)/1.5 var(--mono); white-space: pre-wrap; 
 
 .balances { padding: 12px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
 .balances dt { font: calc(13rem / 14) var(--mono); color: var(--ink); }
-.balances dd { font-size: calc(13rem / 14); text-align: end; }
+/* at the row's far end in either direction: a number's own (plaintext) direction would put text-align: end on the
+   right in Arabic too, beside its symbol */
+.balances dd { font-size: calc(13rem / 14); text-align: end; justify-self: end; }
 dd.skeleton { width: calc(64rem / 14); height: calc(13rem / 14); margin-block: calc(3rem / 14); border-radius: 4px; background: var(--rule); }
-.balances dd.skeleton { justify-self: end; }
 /* checks on a request: one line each, the details folding out under a chevron */
 .fold { padding: 8px 12px; border: 1px dashed var(--rule); border-radius: 8px; font-size: calc(13rem / 14); }
 .fold summary { display: flex; align-items: center; gap: 6px; list-style: none; cursor: pointer; color: var(--muted); }

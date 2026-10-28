@@ -432,33 +432,244 @@ def whats_new(event, logs, platform="ios"):
     return lambda locale: notes.get(locale) or fallback
 
 
-def appstore_platform(meta, journal, platform, api, upload, notes, pause):
+# Store listings in every language, from the repo: Play's in fastlane/metadata/android/<Play language>/ (texts and
+# images/, which F-Droid shows too), the App Store's in appstore/<locale>/listing.md (en-US: appstore/listing.md) with
+# the 6.9" iPhone screenshots in appstore/screenshots/<locale>/. Each release sends what differs from the store.
+LISTINGS = Path("fastlane/metadata/android")
+APPSTORE = Path("appstore")
+PLAY_TEXTS = {"title": "title.txt", "shortDescription": "short_description.txt", "fullDescription": "full_description.txt"}
+PLAY_IMAGES = ("featureGraphic", "phoneScreenshots", "sevenInchScreenshots", "tenInchScreenshots")
+IMAGE_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
+VERSION_TEXTS = {"description": "Description", "keywords": "Keywords", "promotionalText": "Promotional text"}
+INFO_TEXTS = {"name": "Name", "subtitle": "Subtitle"}
+IPHONE_SHOTS = "APP_IPHONE_67"  # the 6.9" set (1320x2868); Apple scales it for smaller iPhones
+LIVE_INFO = ("READY_FOR_DISTRIBUTION", "READY_FOR_SALE", "ACCEPTED", "REPLACED_WITH_NEW_INFO")
+
+
+def image_files(folder, pattern):
+    """The images in a folder matching a glob, in numeric order (2.jpg before 10.jpg)"""
+    files = [f for f in folder.glob(pattern) if f.is_file() and f.suffix.lower() in IMAGE_TYPES] if folder.is_dir() else []
+    return sorted(files, key=lambda f: (int(f.stem) if f.stem.isdigit() else 1 << 30, f.name))
+
+
+def play_listings(root=None):
+    """Play language -> (texts, {image kind: files}) for each language folder with a title.txt"""
+    root = root or LISTINGS
+    out = {}
+    for folder in sorted(root.iterdir()) if root.is_dir() else []:
+        if not (folder / "title.txt").is_file():
+            continue
+        texts = {k: (folder / f).read_text(encoding="utf-8").strip() for k, f in PLAY_TEXTS.items() if (folder / f).is_file()}
+        images = {kind: image_files(folder / "images", kind + ".*" if kind == "featureGraphic" else kind + "/*") for kind in PLAY_IMAGES}
+        out[folder.name] = (texts, {k: v for k, v in images.items() if v})
+    return out
+
+
+def sections(path):
+    """The "## Title" sections of a listing.md, without their "(max N)" and surrounding blank lines"""
+    out, name = {}, None
+    for line in path.read_text(encoding="utf-8").split("\n"):
+        m = re.match(r"^## (.+?)(?: \(max \d+\))?$", line)
+        if m:
+            name = m[1]
+            out[name] = []
+        elif name:
+            out[name].append(line)
+    return {k: "\n".join(v).strip() for k, v in out.items()}
+
+
+def appstore_listings(root=None):
+    """App Store locale -> (its listing.md sections, its 6.9" screenshots)"""
+    root = root or APPSTORE
+    paths = {"en-US": root / "listing.md"} if (root / "listing.md").is_file() else {}
+    paths.update({d.name: d / "listing.md" for d in sorted(root.iterdir()) if (d / "listing.md").is_file()} if root.is_dir() else {})
+    return {locale: (sections(path), image_files(root / "screenshots" / locale, "*")) for locale, path in paths.items()}
+
+
+def sync_play_listings(api, token, path, listings):
+    """Makes the edit's listings match the repo: texts, then each image kind exactly as the files, in order. Nothing is
+    public before the commit and a kind is always rewritten whole, so a failed image call is tried again (Play answers
+    5xx now and then over hundreds of uploads) and a rerun picks up where it stopped. Returns what changed."""
+    upload = path.replace("/androidpublisher/v3/", "/upload/androidpublisher/v3/", 1)
+    current = {listing.get("language"): listing for listing in api(path + "/listings", token).get("listings", [])}
+    changed = []
+    for language, (texts, images) in sorted(listings.items()):
+        listing = {"language": language, **texts}
+        if any(current.get(language, {}).get(k) != v for k, v in listing.items()):
+            # a PATCH keeps what the repo doesn't hold, like a promo video; a language Play lacks is added with a PUT
+            api(path + "/listings/" + language, token, method="PATCH" if language in current else "PUT", body=listing)
+            changed.append(language)
+        for kind, files in images.items():
+            url = path + "/listings/" + language + "/" + kind
+            want = [hashlib.sha256(f.read_bytes()).hexdigest() for f in files]
+            def have():
+                return [i.get("sha256") for i in api(url, token).get("images", [])]
+            if have() == want:
+                continue
+            for attempt in range(3):
+                try:
+                    api(url, token, method="DELETE")
+                    for f in files:
+                        api(upload + "/listings/" + language + "/" + kind + "?uploadType=media", token, method="POST", body=f.read_bytes(), content_type=IMAGE_TYPES[f.suffix.lower()])
+                except (APIError, RuntimeError) as error:
+                    if attempt == 2 or isinstance(error, APIError) and error.status < 500:
+                        raise
+                    continue
+                if have() == want:
+                    break
+            else:
+                raise ValueError("Play " + language + " " + kind + " don't match the repo after three tries")
+            changed.append(language + " " + kind)
+    return changed
+
+
+def put_asset(operation, data):
+    """One part of an App Store Connect asset upload, to Apple's own upload host"""
+    url = urlparse(operation["url"])
+    require(url.scheme == "https" and (url.hostname or "").endswith(".apple.com"), "Unexpected App Store upload host")
+    headers = {h["name"]: h["value"] for h in operation.get("requestHeaders", [])}
+    try:
+        with build_opener(NoRedirect).open(Request(operation["url"], data=data, method=operation["method"], headers=headers), timeout=300) as r:
+            r.read()
+    except HTTPError as e:
+        e.close()
+        raise APIError(e.code, "screenshot upload") from None
+    except (URLError, TimeoutError):
+        raise RuntimeError("Screenshot upload outcome uncertain; the next run replaces the set") from None
+
+
+def sync_screenshots(api, localization, files, put, pause=time.sleep):
+    """Makes the localization's 6.9" iPhone set exactly these files, in order; a rerun replaces a half-sent set"""
+    sets = {s["attributes"]["screenshotDisplayType"]: s["id"] for s in api("appStoreVersionLocalizations/" + localization + "/appScreenshotSets?limit=50")["data"]}
+    shots = api("appScreenshotSets/" + sets[IPHONE_SHOTS] + "/appScreenshots?limit=50")["data"] if IPHONE_SHOTS in sets else []
+    want = [hashlib.md5(f.read_bytes()).hexdigest() for f in files]
+    if [s["attributes"].get("sourceFileChecksum") for s in shots] == want and all((s["attributes"].get("assetDeliveryState") or {}).get("state") != "FAILED" for s in shots):
+        return False
+    for s in shots:
+        api("appScreenshots/" + s["id"], method="DELETE")
+    shot_set = sets.get(IPHONE_SHOTS) or api("appScreenshotSets", method="POST", body={"data": {"type": "appScreenshotSets", "attributes": {"screenshotDisplayType": IPHONE_SHOTS}, "relationships": {"appStoreVersionLocalization": {"data": {"type": "appStoreVersionLocalizations", "id": localization}}}}})["data"]["id"]
+    for f, checksum in zip(files, want):
+        data = f.read_bytes()
+        shot = api("appScreenshots", method="POST", body={"data": {"type": "appScreenshots", "attributes": {"fileName": f.name, "fileSize": len(data)}, "relationships": {"appScreenshotSet": {"data": {"type": "appScreenshotSets", "id": shot_set}}}}})["data"]
+        for operation in shot["attributes"]["uploadOperations"]:
+            put(operation, data[operation["offset"]:operation["offset"] + operation["length"]])
+        api("appScreenshots/" + shot["id"], method="PATCH", body={"data": {"type": "appScreenshots", "id": shot["id"], "attributes": {"uploaded": True, "sourceFileChecksum": checksum}}})
+    for _ in range(60):  # Apple checks each file after the upload: one it rejects stops the release here, not in review
+        states = [(s["attributes"].get("assetDeliveryState") or {}).get("state") for s in api("appScreenshotSets/" + shot_set + "/appScreenshots?limit=50")["data"]]
+        require("FAILED" not in states, "App Store rejected a screenshot of " + files[0].parent.name + "; check its files and rerun")
+        if all(state == "COMPLETE" for state in states):
+            return True
+        pause(5)
+    raise ValueError("App Store still processing the screenshots of " + files[0].parent.name + "; rerun the failed job later")
+
+
+def sync_localizations(api, kind, path, parent, names, copied, listings):
+    """Each locale's texts on a version or app info, adding the locales it lacks (with en-US's URLs). Returns
+    locale -> localization id and the locales that changed."""
+    existing = {l["attributes"]["locale"]: l for l in api(path)["data"]}
+    base = (existing.get("en-US") or next(iter(existing.values()), {"attributes": {}}))["attributes"]
+    ids, changed = {}, []
+    for locale, (texts, _) in sorted(listings.items()):
+        fields = {attribute: texts[section] for attribute, section in names.items() if texts.get(section)}
+        old = existing.get(locale)
+        if old and all(old["attributes"].get(k) == v for k, v in fields.items()):
+            ids[locale] = old["id"]
+            continue
+        if old:
+            api(kind + "/" + old["id"], method="PATCH", body={"data": {"type": kind, "id": old["id"], "attributes": fields}})
+            ids[locale] = old["id"]
+        else:
+            fields.update({k: base[k] for k in copied if base.get(k)})
+            ids[locale] = api(kind, method="POST", body={"data": {"type": kind, "attributes": dict(fields, locale=locale), "relationships": parent}})["data"]["id"]
+        changed.append(locale)
+    return ids, changed
+
+
+def app_infos(api):
+    """The app's infos (shared by iOS and the Mac), the ones that aren't live yet first"""
+    infos = api("apps/" + APP_STORE_APP + "/appInfos")["data"]
+    state = lambda i: i["attributes"].get("state", i["attributes"].get("appStoreState"))
+    return sorted(infos, key=lambda i: (state(i) in LIVE_INFO, state(i) == "REPLACED_WITH_NEW_INFO"))  # a replaced one last
+
+
+def pending_app_info(api):
+    """The app info that isn't live yet, which App Store Connect makes with a new version"""
+    infos = app_infos(api)
+    require(infos and infos[0]["attributes"].get("state", infos[0]["attributes"].get("appStoreState")) not in LIVE_INFO, "No editable App Store app info for the names and subtitles")
+    return infos[0]["id"]
+
+
+def social_media_answered(api):
+    """Whether the age rating answers socialMedia, without which App Review rejects the submission. Read before
+    anything changes, so an unanswered one never pulls an older version out of review: from the app info that isn't
+    live yet, or between releases (when there's none) from the live one, whose rating a new version copies."""
+    infos = app_infos(api)
+    require(infos, "No App Store app info")
+    rating = api("appInfos/" + infos[0]["id"] + "/ageRatingDeclaration").get("data") or {}
+    return rating.get("attributes", {}).get("socialMedia") is not None
+
+
+def sync_app_info(api, listings):
+    """Name and subtitle per locale on the app info that isn't live yet. Returns the locales that changed. When the
+    newest app info already has them all (say the Mac job rerun after iOS went live, which leaves only the live one),
+    nothing needs an editable one."""
+    infos = app_infos(api)
+    require(infos, "No App Store app info")
+    existing = {l["attributes"]["locale"]: l["attributes"] for l in api("appInfos/" + infos[0]["id"] + "/appInfoLocalizations?limit=200")["data"]}
+    if all(locale in existing and all(existing[locale].get(k) == texts[section] for k, section in INFO_TEXTS.items() if texts.get(section))
+           for locale, (texts, _) in listings.items()):
+        return []
+    info = pending_app_info(api)
+    return sync_localizations(api, "appInfoLocalizations", "appInfos/" + info + "/appInfoLocalizations?limit=200", {"appInfo": {"data": {"type": "appInfos", "id": info}}}, INFO_TEXTS, ("privacyPolicyUrl", "privacyChoicesUrl"), listings)[1]
+
+
+def sync_appstore_listing(api, platform, version, listings, put, pause=time.sleep):
+    """The version's description, keywords and promotional text per locale, and on iOS the 6.9" screenshots (the Mac
+    shows the primary language's)"""
+    ids, changed = sync_localizations(api, "appStoreVersionLocalizations", "appStoreVersions/" + version + "/appStoreVersionLocalizations?limit=200", {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version}}}, VERSION_TEXTS, ("supportUrl", "marketingUrl"), listings)
+    shots = [locale for locale, (_, files) in sorted(listings.items()) if platform == "ios" and files and sync_screenshots(api, ids[locale], files, put, pause)]
+    return {"texts": changed, "screenshots": shots}
+
+
+def store_versions(api, platform):
+    return api("apps/" + APP_STORE_APP + "/appStoreVersions?filter[platform]=" + PLATFORMS[platform] + "&limit=50&fields[appStoreVersions]=versionString,appStoreState")["data"]
+
+
+def store_state(v):
+    return v["attributes"]["appStoreState"]
+
+
+def ready_submissions(api, platform):
+    return api("reviewSubmissions?filter[app]=" + APP_STORE_APP + "&filter[platform]=" + PLATFORMS[platform] + "&filter[state]=READY_FOR_REVIEW")["data"]
+
+
+def holds(api, submission, version):
+    items = api("reviewSubmissions/" + submission + "/items?include=appStoreVersion")
+    return any(i["id"] == version for i in items.get("included", []) if i["type"] == "appStoreVersions")
+
+
+def send_review(meta, journal, platform, api, submission):
+    submitted = journal.once("review-" + platform, lambda: api("reviewSubmissions/" + submission, method="PATCH", body={"data": {"type": "reviewSubmissions", "id": submission, "attributes": {"submitted": True}}}), lambda r: {"id": submission, "state": r["data"]["attributes"]["state"]})
+    require(submitted["id"] == submission, "The App Store review receipt is for another submission; reconcile in App Store Connect")
+    require(submitted["state"] in ("WAITING_FOR_REVIEW", "IN_REVIEW", "COMPLETE"), "App Store did not confirm the review submission; reconcile in App Store Connect")
+    return {"platform": platform, "version": meta["version"], "build": meta["versionCode"], "submission": submission, "state": submitted["state"]}
+
+
+def appstore_build(meta, journal, platform, api, upload, pause):
+    """Step 1, which changes nothing in review: the platform's build, uploaded and processed. Returns its id, or the
+    result when this version is already submitted."""
     p = PLATFORMS[platform]
-    def versions():
-        return api("apps/" + APP_STORE_APP + "/appStoreVersions?filter[platform]=" + p + "&limit=50&fields[appStoreVersions]=versionString,appStoreState")["data"]
-    def state(v):
-        return v["attributes"]["appStoreState"]
-    def ready_submissions():
-        return api("reviewSubmissions?filter[app]=" + APP_STORE_APP + "&filter[platform]=" + p + "&filter[state]=READY_FOR_REVIEW")["data"]
-    def holds(submission, version):
-        items = api("reviewSubmissions/" + submission + "/items?include=appStoreVersion")
-        return any(i["id"] == version for i in items.get("included", []) if i["type"] == "appStoreVersions")
-    def send(submission):
-        submitted = journal.once("review-" + platform, lambda: api("reviewSubmissions/" + submission, method="PATCH", body={"data": {"type": "reviewSubmissions", "id": submission, "attributes": {"submitted": True}}}), lambda r: {"id": submission, "state": r["data"]["attributes"]["state"]})
-        require(submitted["id"] == submission, "The App Store review receipt is for another submission; reconcile in App Store Connect")
-        require(submitted["state"] in ("WAITING_FOR_REVIEW", "IN_REVIEW", "COMPLETE"), "App Store did not confirm the review submission; reconcile in App Store Connect")
-        return {"platform": platform, "version": meta["version"], "build": meta["versionCode"], "submission": submission, "state": submitted["state"]}
-    mine = [v for v in versions() if v["attributes"]["versionString"] == meta["version"] and state(v) not in EDITABLE]
-    if mine and state(mine[0]) == "READY_FOR_REVIEW":
+    mine = [v for v in store_versions(api, platform) if v["attributes"]["versionString"] == meta["version"] and store_state(v) not in EDITABLE]
+    if mine and store_state(mine[0]) == "READY_FOR_REVIEW":
         # The version is in a draft submission that was never sent (#234): send that draft rather than report it pending.
         version = mine[0]["id"]
-        held = [s["id"] for s in ready_submissions() if holds(s["id"], version)]
+        held = [s["id"] for s in ready_submissions(api, platform) if holds(api, s["id"], version)]
         require(len(held) == 1, "App Store version " + meta["version"] + " is READY_FOR_REVIEW outside one draft submission; reconcile in App Store Connect")
         attached = api("appStoreVersions/" + version + "/build?fields[builds]=version")["data"]
         require(attached and attached["attributes"]["version"] == str(meta["versionCode"]), "App Store version " + meta["version"] + " is not on build " + str(meta["versionCode"]) + "; reconcile in App Store Connect")
-        return {**send(held[0]), "resumed": True}
+        return {**send_review(meta, journal, platform, api, held[0]), "resumed": True}
     if mine:
-        return {"platform": platform, "version": meta["version"], "state": state(mine[0]), "existing": True}
+        return {"platform": platform, "version": meta["version"], "state": store_state(mine[0]), "existing": True}
     builds = api("builds?filter[app]=" + APP_STORE_APP + "&filter[preReleaseVersion.platform]=" + p + "&limit=200&fields[builds]=version,processingState")["data"]
     upload_receipt = journal.read(journal.name("upload-" + platform, "receipt"))
     if not upload_receipt:
@@ -470,25 +681,41 @@ def appstore_platform(meta, journal, platform, api, upload, notes, pause):
         processing = found[0]["attributes"]["processingState"] if found else "PROCESSING"
         require(processing in ("PROCESSING", "VALID"), "App Store processing of build " + str(meta["versionCode"]) + " failed: " + processing)
         if processing == "VALID":
-            build = found[0]["id"]
-            break
+            return found[0]["id"]
         pause(40)
-    else:
-        raise ValueError("Build still processing; rerun the failed job later")
-    for submission in api("reviewSubmissions?filter[app]=" + APP_STORE_APP + "&filter[platform]=" + p + "&filter[state]=" + ",".join(OPEN_REVIEW))["data"]:
+    raise ValueError("Build still processing; rerun the failed job later")
+
+
+def open_reviews(meta, platform, api):
+    """The platform's open review submissions with their versions, each of which must be older than this release"""
+    found = []
+    for submission in api("reviewSubmissions?filter[app]=" + APP_STORE_APP + "&filter[platform]=" + PLATFORMS[platform] + "&filter[state]=" + ",".join(OPEN_REVIEW))["data"]:
         items = api("reviewSubmissions/" + submission["id"] + "/items?include=appStoreVersion&fields[appStoreVersions]=versionString")
         names = [i["attributes"]["versionString"] for i in items.get("included", []) if i["type"] == "appStoreVersions"]
         require(names and all(older(n, meta["version"]) for n in names), "Another App Store submission is open; only an older one is replaced")
+        found.append((submission, names))
+    return found
+
+
+def appstore_cancel_older(meta, journal, platform, api, reviews, pause):
+    """Step 2: an older version of the platform still in review is pulled out of it. Every platform's open reviews
+    are checked, then all pulled, before any listing changes: the names and subtitles sit on app info that iOS and the
+    Mac share, which App Store Connect locks while either has a version in review."""
+    for submission, names in reviews:
         journal.once("cancel-" + platform + "-" + submission["id"], lambda submission=submission: api("reviewSubmissions/" + submission["id"], method="PATCH", body={"data": {"type": "reviewSubmissions", "id": submission["id"], "attributes": {"canceled": True}}}), lambda r, names=names: {"cancelled": names})
     for _ in range(30):
-        current = versions()
-        if not any(state(v) in ("WAITING_FOR_REVIEW", "IN_REVIEW") for v in current):
-            break
+        if not any(store_state(v) in ("WAITING_FOR_REVIEW", "IN_REVIEW") for v in store_versions(api, platform)):
+            return
         pause(20)
-    else:
-        raise ValueError("Cancelled App Store review still pending; rerun the failed job later")
-    editable = [v for v in current if state(v) in EDITABLE]
-    require(len(editable) <= 1 and not any(state(v) in PENDING for v in current), "App Store version state needs console reconciliation")
+    raise ValueError("Cancelled App Store review still pending; rerun the failed job later")
+
+
+def appstore_submit(meta, journal, platform, api, build, notes, listing=lambda platform, version: {}):
+    """Step 3: the version with its build, every locale's listing and What's New, submitted for review"""
+    p = PLATFORMS[platform]
+    current = store_versions(api, platform)
+    editable = [v for v in current if store_state(v) in EDITABLE]
+    require(len(editable) <= 1 and not any(store_state(v) in PENDING for v in current), "App Store version state needs console reconciliation")
     attributes = {"versionString": meta["version"], "releaseType": "AFTER_APPROVAL"}
     if editable:
         version = editable[0]["id"]
@@ -496,17 +723,20 @@ def appstore_platform(meta, journal, platform, api, upload, notes, pause):
     else:
         version = journal.once("version-" + platform, lambda: api("appStoreVersions", method="POST", body={"data": {"type": "appStoreVersions", "attributes": {"platform": p, **attributes}, "relationships": {"app": {"data": {"type": "apps", "id": APP_STORE_APP}}}}}), lambda r: {"id": r["data"]["id"]})["id"]
     api("appStoreVersions/" + version + "/relationships/build", method="PATCH", body={"data": {"type": "builds", "id": build}})
-    if any(state(v) == "READY_FOR_SALE" for v in current):  # a first version can't have What's New
+    # Every locale's texts first, so What's New below reaches them all
+    listed = listing(platform, version)
+    if any(store_state(v) == "READY_FOR_SALE" for v in current):  # a first version can't have What's New
         for localization in api("appStoreVersions/" + version + "/appStoreVersionLocalizations?fields[appStoreVersionLocalizations]=locale")["data"]:
             api("appStoreVersionLocalizations/" + localization["id"], method="PATCH", body={"data": {"type": "appStoreVersionLocalizations", "id": localization["id"], "attributes": {"whatsNew": notes(localization.get("attributes", {}).get("locale"))}}})
-    ready = ready_submissions()
+    ready = ready_submissions(api, platform)
     submission = ready[0]["id"] if ready else journal.once("submission-" + platform, lambda: api("reviewSubmissions", method="POST", body={"data": {"type": "reviewSubmissions", "attributes": {"platform": p}, "relationships": {"app": {"data": {"type": "apps", "id": APP_STORE_APP}}}}}), lambda r: {"id": r["data"]["id"]})["id"]
-    if not holds(submission, version):
+    if not holds(api, submission, version):
         journal.once("item-" + platform, lambda: api("reviewSubmissionItems", method="POST", body={"data": {"type": "reviewSubmissionItems", "relationships": {"reviewSubmission": {"data": {"type": "reviewSubmissions", "id": submission}}, "appStoreVersion": {"data": {"type": "appStoreVersions", "id": version}}}}}), lambda r: {"id": r["data"]["id"]})
-    return send(submission)
+    return {**send_review(meta, journal, platform, api, submission), "listing": listed}
 
 
-def appstore(meta, env, journal, event, api=None, upload=None, pause=time.sleep):
+def appstore(meta, env, journal, event, api=None, upload=None, pause=time.sleep, listings=None, put=put_asset):
+    listings = appstore_listings() if listings is None else listings
     with tempfile.TemporaryDirectory() as directory:
         key = Path(directory) / "AuthKey.p8"
         key.write_text(env["ASC_KEY_P8"])
@@ -514,11 +744,26 @@ def appstore(meta, env, journal, event, api=None, upload=None, pause=time.sleep)
         call = api or (lambda path, **kw: request("https://api.appstoreconnect.apple.com/v1/" + path, asc_token(key, env), **kw))
         send = upload or (lambda platform: export_upload(platform, key, env))
         logs = changelogs(meta)
-        results = [appstore_platform(meta, journal, platform, call, send, whats_new(event, logs, platform), pause) for platform in PLATFORMS]
+        info = {}
+
+        def listing(platform, version):
+            if not listings:
+                return {}
+            if not info:  # names and subtitles are shared by iOS and the Mac
+                info["names"] = sync_app_info(call, listings)
+            return {"names": info["names"], **sync_appstore_listing(call, platform, version, listings, put, pause)}
+        if listings:
+            require(social_media_answered(call), "The App Store age rating doesn't answer socialMedia yet, so App Review would reject the submission; answer it in App Store Connect and rerun")
+        builds = {platform: appstore_build(meta, journal, platform, call, send, pause) for platform in PLATFORMS}
+        reviews = {platform: open_reviews(meta, platform, call) for platform, build in builds.items() if isinstance(build, str)}
+        for platform, found in reviews.items():
+            appstore_cancel_older(meta, journal, platform, call, found, pause)
+        results = [build if isinstance(build, dict) else appstore_submit(meta, journal, platform, call, build, whats_new(event, logs, platform), listing)
+                   for platform, build in builds.items()]
     return {"store": "appstore", "version": meta["version"], "platforms": results, "state": ", ".join(r["platform"] + ": " + r["state"] for r in results), "publication": "automatic-after-approval"}
 
 
-def play(meta, env, journal, api=request, sign=signed_bundle, logs=None):
+def play(meta, env, journal, api=request, sign=signed_bundle, logs=None, listings=None):
     base = "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/com.borodutch.plainwallet/edits"
     token = env["GOOGLE_ACCESS_TOKEN"]
     require(env.get("PLAY_TRACK") == "production", "Play track must be production")
@@ -549,6 +794,8 @@ def play(meta, env, journal, api=request, sign=signed_bundle, logs=None):
         data = sign(env)
         receipt = journal.once("bundle", lambda: api("https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/com.borodutch.plainwallet/edits/" + edit["id"] + "/bundles?uploadType=media", token, method="POST", body=data, content_type="application/octet-stream"), lambda r: {"versionCode": r["versionCode"], "sha256": r.get("sha256")})
     require(receipt["versionCode"] == meta["versionCode"], "Play uploaded wrong versionCode")
+    # Every language's listing first, so the notes below reach them all
+    listing_changes = sync_play_listings(api, token, path, play_listings() if listings is None else listings)
     # Notes go only to the languages the listing has (Play refuses others), up to 500 characters each.
     listed = {listing.get("language") for listing in api(path + "/listings", token).get("listings", [])}
     notes = [{"language": language, "text": text[:500]} for language, text in sorted((changelogs(meta) if logs is None else logs).items()) if language in listed]
@@ -557,7 +804,7 @@ def play(meta, env, journal, api=request, sign=signed_bundle, logs=None):
     require(track_receipt.get("track") == "production", "Play did not confirm production track; no commit")
     journal.once("validate", lambda: api(path + ":validate", token, method="POST"), lambda r: {"valid": True})
     committed = journal.once("commit", lambda: api(path + ":commit?changesNotSentForReview=false&changesInReviewBehavior=CANCEL_IN_REVIEW_AND_SUBMIT", token, method="POST"), lambda r: {"id": r["id"], "track": "production", "managedPublishingDisabledConfirmed": True})
-    return {"store": "play", "version": meta["version"], "versionCode": meta["versionCode"], "editId": committed["id"], "track": "production", "state": "committed-for-review; verify Publishing overview", "publication": "automatic-after-approval; console setting owner-confirmed, not API-verified"}
+    return {"store": "play", "version": meta["version"], "versionCode": meta["versionCode"], "editId": committed["id"], "track": "production", "state": "committed-for-review; verify Publishing overview", "publication": "automatic-after-approval; console setting owner-confirmed, not API-verified", "listing": listing_changes}
 
 
 def main():

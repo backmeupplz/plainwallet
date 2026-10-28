@@ -1,0 +1,1 @@
+In talen die van rechts naar links lopen, zoals Arabisch, staan de tokenbedragen in de saldolijst nu netjes tegen de rand.

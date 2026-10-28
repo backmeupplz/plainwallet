@@ -1,0 +1,1 @@
+Token-Beträge in der Saldenliste stehen in Sprachen, die von rechts nach links laufen, etwa Arabisch, jetzt bündig am Rand.

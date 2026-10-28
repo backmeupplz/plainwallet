@@ -1,0 +1,1 @@
+Token amounts in the balance list now line up at the edge in right-to-left languages such as Arabic.

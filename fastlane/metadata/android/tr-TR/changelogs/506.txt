@@ -1,0 +1,1 @@
+Arapça gibi sağdan sola yazılan dillerde bakiye listesindeki token tutarları artık kenara hizalanıyor.

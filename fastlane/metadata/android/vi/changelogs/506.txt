@@ -1,0 +1,1 @@
+Trong các ngôn ngữ viết từ phải sang trái như tiếng Ả Rập, số lượng token trong danh sách số dư giờ đã được căn thẳng theo mép.
