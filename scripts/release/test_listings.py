@@ -110,10 +110,11 @@ class ListingTests(unittest.TestCase):
     def test_appstore_listings_read_sections_and_screenshots(self):
         root = tree({"listing.md": "# x\n\n## Name (max 30)\nPlain Wallet\n\n## Description (max 4000)\nOne.\n\nTwo.\n",
                      "de-DE/listing.md": "## Name (max 30)\nPlain Wallet DE\n", "screenshots/de-DE/2.jpg": b"2", "screenshots/de-DE/1.jpg": b"1",
-                     "screenshots/de-DE/duo-outer/1.jpg": b"duo"})
+                     "screenshots/de-DE/duo-outer/1.jpg": b"duo", "screenshots/de-DE/mac/10.jpg": b"m10", "screenshots/de-DE/mac/9.jpg": b"m9"})
         listings = appstore_listings(root)
-        self.assertEqual(listings["en-US"], ({"Name": "Plain Wallet", "Description": "One.\n\nTwo."}, []))
-        self.assertEqual([f.name for f in listings["de-DE"][1]], ["1.jpg", "2.jpg"], "Duo sets stay in the repo; the API has no Duo type")
+        self.assertEqual(listings["en-US"], ({"Name": "Plain Wallet", "Description": "One.\n\nTwo."}, {"ios": [], "macos": []}))
+        self.assertEqual([f.name for f in listings["de-DE"][1]["ios"]], ["1.jpg", "2.jpg"], "Duo sets stay in the repo; the API has no Duo type")
+        self.assertEqual([f.name for f in listings["de-DE"][1]["macos"]], ["9.jpg", "10.jpg"])
 
 
 class FakeListingStore(FakeAppStore):
@@ -148,13 +149,13 @@ class FakeListingStore(FakeAppStore):
             self.locs[parts[0]][parts[1]].update(attrs)
             return {}
         if parts[0] == "appStoreVersionLocalizations" and parts[-1] == "appScreenshotSets":
-            return {"data": [{"id": s, "attributes": {"screenshotDisplayType": "APP_IPHONE_67"}} for s, loc in self.sets.items() if loc == parts[1]]}
+            return {"data": [{"id": s, "attributes": {"screenshotDisplayType": kind}} for s, (loc, kind) in self.sets.items() if loc == parts[1]]}
         if parts[0] == "appScreenshotSets" and len(parts) == 3:
             return {"data": [{"id": i, "attributes": {"sourceFileChecksum": s["sum"], "assetDeliveryState": {"state": s.get("state", "COMPLETE" if s["sum"] else "AWAITING_UPLOAD")}}} for i, s in self.shots.items() if s["set"] == parts[1]]}
         if parts[0] == "appScreenshotSets":
             self.writes.append((method, url.path, attrs))
             i = "set" + str(len(self.sets) + 1)
-            self.sets[i] = body["data"]["relationships"]["appStoreVersionLocalization"]["data"]["id"]
+            self.sets[i] = (body["data"]["relationships"]["appStoreVersionLocalization"]["data"]["id"], attrs["screenshotDisplayType"])
             return {"data": {"id": i}}
         if parts[0] == "appScreenshots":
             self.writes.append((method, url.path, attrs))
@@ -176,7 +177,7 @@ class AppStoreListingTests(unittest.TestCase):
     def setUp(self):
         root = tree({"listing.md": "## Name (max 30)\nPlain Wallet\n\n## Subtitle (max 30)\nWallet\n\n## Keywords (max 100)\neth\n\n## Description (max 4000)\nEnglish.\n",
                      "de-DE/listing.md": "## Name (max 30)\nPlain Wallet DE\n\n## Keywords (max 100)\nkrypto\n\n## Promotional text (max 170)\nNeu.\n\n## Description (max 4000)\nDeutsch.\n",
-                     "screenshots/de-DE/1.jpg": b"de1", "screenshots/de-DE/2.jpg": b"de2"})
+                     "screenshots/de-DE/1.jpg": b"de1", "screenshots/de-DE/2.jpg": b"de2", "screenshots/de-DE/mac/1.jpg": b"mac1"})
         self.listings = appstore_listings(root)
 
     def store(self, **kw):
@@ -192,16 +193,19 @@ class AppStoreListingTests(unittest.TestCase):
                                   pause=lambda s: None, listings=self.listings, put=lambda op, data: fake.put.append((op["url"], data)))
         ios, mac = outcome["platforms"]
         self.assertEqual(ios["listing"], {"names": ["de-DE"], "texts": ["de-DE", "en-US"], "screenshots": ["de-DE"]})
-        self.assertEqual(mac["listing"]["screenshots"], [], "the Mac shows the primary language's screenshots")
+        self.assertEqual(mac["listing"]["screenshots"], ["de-DE"], "en-US has no Mac set here: it keeps what the store shows")
         de_info = next(l for l in fake.locs["appInfoLocalizations"].values() if l["locale"] == "de-DE")
         self.assertEqual((de_info["name"], de_info["privacyPolicyUrl"]), ("Plain Wallet DE", "https://p"))
         de_ios = next(l for l in fake.locs["appStoreVersionLocalizations"].values() if l["locale"] == "de-DE" and l["parent"] == "ios")
         self.assertEqual((de_ios["keywords"], de_ios["promotionalText"], de_ios["supportUrl"]), ("krypto", "Neu.", "https://s"))
-        self.assertEqual([d for _, d in fake.put], [b"de1", b"de2"])
-        self.assertEqual(sorted(s["sum"] for s in fake.shots.values()), sorted(hashlib.md5(b).hexdigest() for b in (b"de1", b"de2")))
-        # Listings come before the review submission
-        order = [w[1].split("/")[0] for w in fake.writes]
-        self.assertLess(max(i for i, k in enumerate(order) if k == "appScreenshots"), order.index("reviewSubmissions", order.index("appScreenshots")))
+        self.assertEqual([d for _, d in fake.put], [b"de1", b"de2", b"mac1"])
+        sets = {kind: sorted(s["sum"] for s in fake.shots.values() if fake.sets[s["set"]] == (loc, kind)) for loc, kind in fake.sets.values()}
+        self.assertEqual(sets, {"APP_IPHONE_67": sorted(hashlib.md5(b).hexdigest() for b in (b"de1", b"de2")), "APP_DESKTOP": [hashlib.md5(b"mac1").hexdigest()]})
+        self.assertEqual({fake.locs["appStoreVersionLocalizations"][loc]["parent"]: kind for loc, kind in fake.sets.values()}, {"ios": "APP_IPHONE_67", "mac": "APP_DESKTOP"})
+        # Each platform's listing comes before its review submission: iOS's screenshots, its review, the Mac's, its review
+        order = [w[1].split("/")[0] for w in fake.writes if w[1].split("/")[0] in ("appScreenshots", "reviewSubmissions")]
+        self.assertEqual([k for i, k in enumerate(order) if not i or order[i - 1] != k],
+                         ["reviewSubmissions", "appScreenshots", "reviewSubmissions", "appScreenshots", "reviewSubmissions"], "the first pulls the older iOS review")
 
     def test_in_sync_listing_writes_nothing_more(self):
         fake = self.store()

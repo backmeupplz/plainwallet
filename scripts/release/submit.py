@@ -440,7 +440,8 @@ def whats_new(event, logs, platform="ios"):
 
 # Store listings in every language, from the repo: Play's in fastlane/metadata/android/<Play language>/ (texts and
 # images/, which F-Droid shows too), the App Store's in appstore/<locale>/listing.md (en-US: appstore/listing.md) with
-# the 6.9" iPhone screenshots in appstore/screenshots/<locale>/. Each release sends what differs from the store.
+# the 6.9" iPhone screenshots in appstore/screenshots/<locale>/ and the Mac's in its mac/. Each release sends what differs
+# from the store.
 LISTINGS = Path("fastlane/metadata/android")
 APPSTORE = Path("appstore")
 PLAY_TEXTS = {"title": "title.txt", "shortDescription": "short_description.txt", "fullDescription": "full_description.txt"}
@@ -448,7 +449,9 @@ PLAY_IMAGES = ("featureGraphic", "phoneScreenshots", "sevenInchScreenshots", "te
 IMAGE_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
 VERSION_TEXTS = {"description": "Description", "keywords": "Keywords", "promotionalText": "Promotional text"}
 INFO_TEXTS = {"name": "Name", "subtitle": "Subtitle"}
-IPHONE_SHOTS = "APP_IPHONE_67"  # the 6.9" set (1320x2868); Apple scales it for smaller iPhones
+# platform -> its screenshot set and where a locale's is under appstore/screenshots/<locale>/: iOS the 6.9" set
+# (1320x2868), which Apple scales for smaller iPhones, the Mac one at 2880x1800
+SHOTS = {"ios": ("APP_IPHONE_67", ""), "macos": ("APP_DESKTOP", "mac")}
 LIVE_INFO = ("READY_FOR_DISTRIBUTION", "READY_FOR_SALE", "ACCEPTED", "REPLACED_WITH_NEW_INFO")
 
 
@@ -485,11 +488,12 @@ def sections(path):
 
 
 def appstore_listings(root=None):
-    """App Store locale -> (its listing.md sections, its 6.9" screenshots)"""
+    """App Store locale -> (its listing.md sections, {platform: its screenshots})"""
     root = root or APPSTORE
     paths = {"en-US": root / "listing.md"} if (root / "listing.md").is_file() else {}
     paths.update({d.name: d / "listing.md" for d in sorted(root.iterdir()) if (d / "listing.md").is_file()} if root.is_dir() else {})
-    return {locale: (sections(path), image_files(root / "screenshots" / locale, "*")) for locale, path in paths.items()}
+    return {locale: (sections(path), {platform: image_files(root / "screenshots" / locale / folder, "*") for platform, (_, folder) in SHOTS.items()})
+            for locale, path in paths.items()}
 
 
 def sync_play_listings(api, token, path, listings):
@@ -544,16 +548,17 @@ def put_asset(operation, data):
         raise RuntimeError("Screenshot upload outcome uncertain; the next run replaces the set") from None
 
 
-def sync_screenshots(api, localization, files, put, pause=time.sleep):
-    """Makes the localization's 6.9" iPhone set exactly these files, in order; a rerun replaces a half-sent set"""
+def sync_screenshots(api, localization, kind, files, put, pause=time.sleep):
+    """Makes the localization's set of this display type exactly these files, in order; a rerun replaces a half-sent set"""
     sets = {s["attributes"]["screenshotDisplayType"]: s["id"] for s in api("appStoreVersionLocalizations/" + localization + "/appScreenshotSets?limit=50")["data"]}
-    shots = api("appScreenshotSets/" + sets[IPHONE_SHOTS] + "/appScreenshots?limit=50")["data"] if IPHONE_SHOTS in sets else []
+    shots = api("appScreenshotSets/" + sets[kind] + "/appScreenshots?limit=50")["data"] if kind in sets else []
     want = [hashlib.md5(f.read_bytes()).hexdigest() for f in files]
+    where = files[0].parent.as_posix().rsplit("screenshots/", 1)[-1]  # de-DE, or de-DE/mac
     if [s["attributes"].get("sourceFileChecksum") for s in shots] == want and all((s["attributes"].get("assetDeliveryState") or {}).get("state") != "FAILED" for s in shots):
         return False
     for s in shots:
         api("appScreenshots/" + s["id"], method="DELETE")
-    shot_set = sets.get(IPHONE_SHOTS) or api("appScreenshotSets", method="POST", body={"data": {"type": "appScreenshotSets", "attributes": {"screenshotDisplayType": IPHONE_SHOTS}, "relationships": {"appStoreVersionLocalization": {"data": {"type": "appStoreVersionLocalizations", "id": localization}}}}})["data"]["id"]
+    shot_set = sets.get(kind) or api("appScreenshotSets", method="POST", body={"data": {"type": "appScreenshotSets", "attributes": {"screenshotDisplayType": kind}, "relationships": {"appStoreVersionLocalization": {"data": {"type": "appStoreVersionLocalizations", "id": localization}}}}})["data"]["id"]
     for f, checksum in zip(files, want):
         data = f.read_bytes()
         shot = api("appScreenshots", method="POST", body={"data": {"type": "appScreenshots", "attributes": {"fileName": f.name, "fileSize": len(data)}, "relationships": {"appScreenshotSet": {"data": {"type": "appScreenshotSets", "id": shot_set}}}}})["data"]
@@ -562,11 +567,11 @@ def sync_screenshots(api, localization, files, put, pause=time.sleep):
         api("appScreenshots/" + shot["id"], method="PATCH", body={"data": {"type": "appScreenshots", "id": shot["id"], "attributes": {"uploaded": True, "sourceFileChecksum": checksum}}})
     for _ in range(60):  # Apple checks each file after the upload: one it rejects stops the release here, not in review
         states = [(s["attributes"].get("assetDeliveryState") or {}).get("state") for s in api("appScreenshotSets/" + shot_set + "/appScreenshots?limit=50")["data"]]
-        require("FAILED" not in states, "App Store rejected a screenshot of " + files[0].parent.name + "; check its files and rerun")
+        require("FAILED" not in states, "App Store rejected a screenshot of " + where + "; check its files and rerun")
         if all(state == "COMPLETE" for state in states):
             return True
         pause(5)
-    raise ValueError("App Store still processing the screenshots of " + files[0].parent.name + "; rerun the failed job later")
+    raise ValueError("App Store still processing the screenshots of " + where + "; rerun the failed job later")
 
 
 def sync_localizations(api, kind, path, parent, names, copied, listings):
@@ -633,10 +638,11 @@ def sync_app_info(api, listings):
 
 
 def sync_appstore_listing(api, platform, version, listings, put, pause=time.sleep):
-    """The version's description, keywords and promotional text per locale, and on iOS the 6.9" screenshots (the Mac
-    shows the primary language's)"""
+    """The version's description, keywords and promotional text per locale, and its platform's screenshots: iOS the
+    6.9" iPhone set, the Mac its own (a locale without one shows the primary language's)"""
     ids, changed = sync_localizations(api, "appStoreVersionLocalizations", "appStoreVersions/" + version + "/appStoreVersionLocalizations?limit=200", {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version}}}, VERSION_TEXTS, ("supportUrl", "marketingUrl"), listings)
-    shots = [locale for locale, (_, files) in sorted(listings.items()) if platform == "ios" and files and sync_screenshots(api, ids[locale], files, put, pause)]
+    kind = SHOTS[platform][0]
+    shots = [locale for locale, (_, files) in sorted(listings.items()) if files[platform] and sync_screenshots(api, ids[locale], kind, files[platform], put, pause)]
     return {"texts": changed, "screenshots": shots}
 
 
