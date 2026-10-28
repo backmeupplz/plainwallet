@@ -116,8 +116,9 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKScri
         return nil
     }
 
+    // Web links go to the default browser; Send feedback's mailto goes to the default mail app.
     func open(_ link: String) {
-        guard let url = URL(string: link), ["https", "http"].contains(url.scheme?.lowercased()) else { return }
+        guard let url = URL(string: link), ["https", "http", "mailto"].contains(url.scheme?.lowercased()) else { return }
         NSWorkspace.shared.open(url)
     }
 

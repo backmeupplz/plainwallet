@@ -1,0 +1,3 @@
+Plain Wallet finns nu på många fler språk och följer enhetens språk. Arabiska visas från höger till vänster.
+På breda skärmar, som en uppfälld telefon, visar appen din plånbok bredvid dina favoritwebbplatser.
+Inställningar → Skicka feedback öppnar nu ett mejl till plainwallet@borodutch.com.

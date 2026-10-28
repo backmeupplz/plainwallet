@@ -1,0 +1,3 @@
+Plain Wallet obsługuje teraz znacznie więcej języków i używa języka Twojego urządzenia. Arabski wyświetla się od prawej do lewej.
+Na szerokich ekranach, np. na rozłożonym telefonie, aplikacja pokazuje portfel obok ulubionych stron.
+Ustawienia → Wyślij opinię otwiera teraz e-mail do plainwallet@borodutch.com.

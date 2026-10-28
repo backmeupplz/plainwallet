@@ -1,0 +1,3 @@
+O Plain Wallet agora está em muito mais idiomas e segue o idioma do seu aparelho. O árabe é exibido da direita para a esquerda.
+Em telas largas, como um celular desdobrado, o app mostra sua carteira ao lado dos seus sites favoritos.
+Configurações → Enviar feedback agora abre um e-mail para plainwallet@borodutch.com.

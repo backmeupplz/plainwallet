@@ -1,0 +1,3 @@
+Plain Wallet artık çok daha fazla dilde ve cihazınızın dilini kullanıyor. Arapça sağdan sola görüntülenir.
+Açılmış katlanabilir telefon gibi geniş ekranlarda uygulama, cüzdanınızı favori sitelerinizin yanında gösterir.
+Ayarlar → Geri bildirim gönder artık plainwallet@borodutch.com adresine bir e-posta açar.

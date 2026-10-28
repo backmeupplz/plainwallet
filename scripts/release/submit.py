@@ -398,6 +398,9 @@ OTHER_PLATFORMS = re.compile(r"android|chrome|firefox|google|play store|edge|bra
                              r"|安卓|谷歌|火狐|アンドロイド|グーグル|クローム|ファイアフォックス|안드로이드|구글|크롬|파이어폭스"
                              r"|андроид|андроїд|гугл|хром|файрфокс|أندرويد|اندرويد|جوجل|غوغل|كروم|فايرفوكس"
                              r"|एंड्रॉयड|एंड्रॉइड|गूगल|क्रोम|แอนดรอยด์|กูเกิล|โครม", re.I)
+# The Mac app has no favorite sites (entrypoints/android/main.ts), so its notes leave out the lines about them, in every
+# store language.
+MAC_EXCLUDED = re.compile(r"favou?ri|preferiti|ulubion|избранн|обран|مفضل|पसंदीदा|お気に入り|즐겨찾|เว็บไซต์โปรด|yêu thích|收藏|最愛", re.I)
 # Release notes in each store language: fastlane/metadata/android/<Play language>/changelogs/<versionCode>.txt, which
 # F-Droid shows too. The App Store gets them under its own locale codes.
 CHANGELOGS = Path("fastlane/metadata/android")
@@ -406,9 +409,9 @@ APPLE_LOCALES = {"ar": "ar-SA", "de-DE": "de-DE", "en-GB": "en-GB", "en-US": "en
                  "pt-PT": "pt-PT", "ru-RU": "ru", "sv-SE": "sv", "th": "th", "tr-TR": "tr", "uk": "uk", "vi": "vi", "zh-CN": "zh-Hans", "zh-TW": "zh-Hant"}
 
 
-def app_store_notes(event):
+def app_store_notes(event, excluded=OTHER_PLATFORMS):
     text = (event.get("release", {}).get("body") or "").replace("\r", "").strip().split("\n\n")[0][:4000]
-    return text if text and not OTHER_PLATFORMS.search(text) else "Fixes and improvements."
+    return text if text and not excluded.search(text) else "Fixes and improvements."
 
 
 def changelogs(meta, root=CHANGELOGS):
@@ -417,13 +420,14 @@ def changelogs(meta, root=CHANGELOGS):
     return {f.parts[-3]: text for f in files if (text := f.read_text(encoding="utf-8").replace("\r", "").strip())}
 
 
-def whats_new(event, logs):
-    """App Store locale -> What's New: its language's notes without the lines naming another platform, else English's,
-    else the release's own text."""
+def whats_new(event, logs, platform="ios"):
+    """App Store locale -> What's New: its language's notes without the lines naming another platform (or, on the Mac,
+    a feature it lacks), else English's, else the release's own text."""
+    excluded = re.compile(OTHER_PLATFORMS.pattern + "|" + MAC_EXCLUDED.pattern, re.I) if platform == "macos" else OTHER_PLATFORMS
     def safe(text):
-        return "\n".join(line for line in text.split("\n") if not OTHER_PLATFORMS.search(line)).strip()[:4000]
+        return "\n".join(line for line in text.split("\n") if not excluded.search(line)).strip()[:4000]
     notes = {APPLE_LOCALES[language]: safe(text) for language, text in logs.items() if language in APPLE_LOCALES}
-    fallback = notes.get("en-US") or app_store_notes(event)
+    fallback = notes.get("en-US") or app_store_notes(event, excluded)
     return lambda locale: notes.get(locale) or fallback
 
 
@@ -493,8 +497,8 @@ def appstore(meta, env, journal, event, api=None, upload=None, pause=time.sleep)
         key.chmod(0o600)
         call = api or (lambda path, **kw: request("https://api.appstoreconnect.apple.com/v1/" + path, asc_token(key, env), **kw))
         send = upload or (lambda platform: export_upload(platform, key, env))
-        notes = whats_new(event, changelogs(meta))
-        results = [appstore_platform(meta, journal, platform, call, send, notes, pause) for platform in PLATFORMS]
+        logs = changelogs(meta)
+        results = [appstore_platform(meta, journal, platform, call, send, whats_new(event, logs, platform), pause) for platform in PLATFORMS]
     return {"store": "appstore", "version": meta["version"], "platforms": results, "state": ", ".join(r["platform"] + ": " + r["state"] for r in results), "publication": "automatic-after-approval"}
 
 

@@ -1,0 +1,3 @@
+Plain Wallet spricht jetzt viele weitere Sprachen und folgt der Sprache deines Geräts. Arabisch wird von rechts nach links angezeigt.
+Auf breiten Bildschirmen, etwa einem aufgeklappten Smartphone, zeigt die App deine Wallet neben deinen Favoriten.
+Einstellungen → Feedback senden öffnet jetzt eine E-Mail an plainwallet@borodutch.com.

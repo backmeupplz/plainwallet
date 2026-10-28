@@ -1,0 +1,3 @@
+Plain Wallet kini tersedia dalam lebih banyak bahasa dan mengikuti bahasa perangkat Anda. Bahasa Arab ditampilkan dari kanan ke kiri.
+Di layar lebar, seperti ponsel lipat yang dibuka, aplikasi menampilkan dompet Anda di samping situs favorit Anda.
+Pengaturan → Kirim masukan kini membuka email ke plainwallet@borodutch.com.

@@ -1,7 +1,7 @@
 {
   "name": "plainwallet",
-  "version": "0.5.4",
-  "versionCode": 504,
+  "version": "0.5.5",
+  "versionCode": 505,
   "description": "A very minimal EVM wallet Chrome extension",
   "license": "MIT",
   "private": true,

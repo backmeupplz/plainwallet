@@ -1,0 +1,3 @@
+Plain Wallet est désormais disponible dans beaucoup plus de langues et suit la langue de votre appareil. L'arabe s'affiche de droite à gauche.
+Sur les grands écrans, comme un téléphone déplié, l'app affiche votre portefeuille à côté de vos sites favoris.
+Réglages → Envoyer un avis ouvre désormais un e-mail à plainwallet@borodutch.com.

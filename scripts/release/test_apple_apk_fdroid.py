@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from urllib.parse import parse_qs, urlparse
 
-from submit import apk, fdroid, appstore, app_store_notes, changelogs, preflight, whats_new, APP_STORE_APP
+from submit import apk, fdroid, appstore, app_store_notes, changelogs, preflight, whats_new, APP_STORE_APP, APPLE_LOCALES
 from test_release import MemoryJournal
 
 META = {"version": "0.5.2", "versionCode": 502, "sha": "a" * 40, "releaseId": 1}
@@ -152,6 +152,17 @@ class AppleApkFdroidTests(unittest.TestCase):
         self.assertEqual(notes(None), "Faster unlock.")
         self.assertEqual(whats_new(EVENT, {})("de-DE"), "Faster unlock and clearer approvals.")
         self.assertEqual(changelogs(META, Path(root)), {}) # gone with the directory
+
+    def test_mac_whats_new_leaves_out_favorites_in_every_language(self):
+        logs = changelogs({"versionCode": 505}, Path(__file__).resolve().parents[2] / "fastlane/metadata/android")
+        self.assertEqual(len(logs), len(APPLE_LOCALES))
+        ios, mac = whats_new(EVENT, logs), whats_new(EVENT, logs, "macos")
+        for language, text in logs.items():
+            locale, favorites = APPLE_LOCALES[language], text.split("\n")[1]
+            self.assertEqual(ios(locale), text, language)
+            self.assertEqual(mac(locale), text.replace(favorites + "\n", ""), language) # just the favorites line goes
+            self.assertLessEqual(len(text), 500, language)
+        self.assertEqual(whats_new({"release": {"body": "Your favorite sites, side by side."}}, {}, "macos")("en-US"), "Fixes and improvements.")
 
     def test_apk_attaches_both_names_once(self):
         journal = MemoryJournal("apk")

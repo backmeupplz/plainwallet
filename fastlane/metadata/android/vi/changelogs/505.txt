@@ -1,0 +1,3 @@
+Plain Wallet nay có thêm nhiều ngôn ngữ và dùng ngôn ngữ của thiết bị. Tiếng Ả Rập hiển thị từ phải sang trái.
+Trên màn hình rộng, như điện thoại gập khi mở ra, ứng dụng hiển thị ví của bạn cạnh các trang yêu thích.
+Cài đặt → Gửi phản hồi giờ mở email tới plainwallet@borodutch.com.
