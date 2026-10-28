@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">Ara veya web adresi yaz</string>
+    <string name="favorite_site">Favorilere ekle</string>
+    <string name="wallet">Cüzdan</string>
+    <string name="webview_too_old">Plain Wallet için Android System WebView %1$d veya daha yeni bir sürüm gerekir. Play Store’dan güncelleyin.</string>
+    <string name="fingerprint_turn_on">Parmak iziyle kilit açmayı etkinleştir</string>
+    <string name="fingerprint_unlock">Plain Wallet’ın kilidini aç</string>
+    <string name="fingerprint_changed">Bu telefondaki parmak izleri veya ekran kilidi değişti, bu nedenle parmak iziyle kilit açma kapatıldı. Şifrenizle kilidi açın ve Ayarlar’dan yeniden etkinleştirin.</string>
+    <string name="use_password">Şifre kullan</string>
+    <string name="secret_in_address_bar">Bu bir seed ifadesi veya özel anahtar gibi görünüyor. Bunu asla bir web sitesine yazmayın.</string>
+    <string name="write_to">%1$s adresine yazın</string>
+</resources>

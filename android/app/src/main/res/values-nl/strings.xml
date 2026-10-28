@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">Zoek of typ webadres</string>
+    <string name="favorite_site">Voeg toe aan favorieten</string>
+    <string name="wallet">Wallet</string>
+    <string name="webview_too_old">Plain Wallet vereist Android System WebView %1$d of nieuwer. Werk het bij via de Play Store.</string>
+    <string name="fingerprint_turn_on">Ontgrendelen met vingerafdruk inschakelen</string>
+    <string name="fingerprint_unlock">Ontgrendel Plain Wallet</string>
+    <string name="fingerprint_changed">De vingerafdrukken of de schermvergrendeling van deze telefoon zijn gewijzigd, dus ontgrendelen met vingerafdruk is uitgeschakeld. Ontgrendel met je wachtwoord en schakel het opnieuw in via Instellingen.</string>
+    <string name="use_password">Gebruik wachtwoord</string>
+    <string name="secret_in_address_bar">Dat lijkt op een herstelzin of privésleutel. Typ deze nooit op een website.</string>
+    <string name="write_to">Schrijf naar %1$s</string>
+</resources>

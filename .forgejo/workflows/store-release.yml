@@ -203,7 +203,10 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-          sparse-checkout: scripts/release
+          # the release notes in every language (fastlane/metadata/android/*/changelogs) go to Play
+          sparse-checkout: |
+            scripts/release
+            fastlane/metadata/android
       - uses: https://code.forgejo.org/forgejo/download-artifact@d8d0a99033603453ad2255e58720b460a0555e1e # v4
         with:
           name: unsigned-release

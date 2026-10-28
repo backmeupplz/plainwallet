@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">ابحث أو اكتب عنوان ويب</string>
+    <string name="favorite_site">إضافة إلى المفضلة</string>
+    <string name="wallet">المحفظة</string>
+    <string name="webview_too_old">يتطلب Plain Wallet الإصدار %1$d أو أحدث من Android System WebView. حدِّثه من Play Store.</string>
+    <string name="fingerprint_turn_on">تشغيل فتح القفل ببصمة الإصبع</string>
+    <string name="fingerprint_unlock">فتح قفل Plain Wallet</string>
+    <string name="fingerprint_changed">تم تغيير بصمات الأصابع أو قفل الشاشة على هذا الهاتف، لذا تم إيقاف فتح القفل ببصمة الإصبع. افتح القفل باستخدام كلمة السر وأعد تشغيله من الإعدادات.</string>
+    <string name="use_password">استخدام كلمة السر</string>
+    <string name="secret_in_address_bar">يبدو أن هذه عبارة استرداد أو مفتاح خاص. لا تكتبها أبدًا في أي موقع ويب.</string>
+    <string name="write_to">راسلنا على %1$s</string>
+</resources>

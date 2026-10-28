@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">Pesquisar ou digitar endereço web</string>
+    <string name="favorite_site">Adicionar aos favoritos</string>
+    <string name="wallet">Carteira</string>
+    <string name="webview_too_old">O Plain Wallet precisa do Android System WebView %1$d ou mais recente. Atualize-o na Play Store.</string>
+    <string name="fingerprint_turn_on">Ativar desbloqueio por digital</string>
+    <string name="fingerprint_unlock">Desbloquear o Plain Wallet</string>
+    <string name="fingerprint_changed">As digitais ou o bloqueio de tela deste celular foram alterados, então o desbloqueio por digital foi desativado. Desbloqueie com sua senha e ative-o novamente em Configurações.</string>
+    <string name="use_password">Usar senha</string>
+    <string name="secret_in_address_bar">Isso parece uma frase de recuperação ou uma chave privada. Nunca digite isso em um site.</string>
+    <string name="write_to">Escreva para %1$s</string>
+</resources>

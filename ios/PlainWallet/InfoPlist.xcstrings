@@ -1,0 +1,154 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "NSFaceIDUsageDescription": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "افتح قفل Plain Wallet باستخدام Face ID بدلاً من كتابة كلمة السر."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entsperren Sie Plain Wallet mit Face ID, statt Ihr Passwort einzugeben."
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock Plain Wallet with Face ID instead of typing your password."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desbloquea Plain Wallet con Face ID en lugar de escribir tu contraseña."
+          }
+        },
+        "es-419": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desbloquea Plain Wallet con Face ID en lugar de escribir tu contraseña."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déverrouillez Plain Wallet avec Face ID au lieu de saisir votre mot de passe."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पासवर्ड लिखने के बजाय Face ID से Plain Wallet अनलॉक करें।"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buka kunci Plain Wallet dengan Face ID alih-alih mengetik kata sandi Anda."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sblocca Plain Wallet con Face ID invece di digitare la password."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パスワードを入力する代わりに、Face IDでPlain Walletのロックを解除します。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀번호를 입력하는 대신 Face ID로 Plain Wallet을 잠금 해제합니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ontgrendel Plain Wallet met Face ID in plaats van je wachtwoord te typen."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odblokowuj Plain Wallet za pomocą Face ID zamiast wpisywać hasło."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desbloqueie o Plain Wallet com o Face ID em vez de digitar sua senha."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desbloqueie o Plain Wallet com o Face ID em vez de escrever a sua palavra-passe."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разблокируйте Plain Wallet с помощью Face ID вместо ввода пароля."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lås upp Plain Wallet med Face ID i stället för att skriva ditt lösenord."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ปลดล็อก Plain Wallet ด้วย Face ID แทนการพิมพ์รหัสผ่าน"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şifrenizi yazmak yerine Plain Wallet’ın kilidini Face ID ile açın."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Розблоковуйте Plain Wallet за допомогою Face ID замість введення пароля."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở khóa Plain Wallet bằng Face ID thay vì nhập mật khẩu."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 Face ID 解锁 Plain Wallet，无需输入密码。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 Face ID 解鎖 Plain Wallet，不必輸入密碼。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock Plain Wallet with Face ID instead of typing your password."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

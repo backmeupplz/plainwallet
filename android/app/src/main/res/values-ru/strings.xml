@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">Введите запрос или веб-адрес</string>
+    <string name="favorite_site">Добавить в избранное</string>
+    <string name="wallet">Кошелёк</string>
+    <string name="webview_too_old">Для Plain Wallet нужен Android System WebView версии %1$d или новее. Обновите его в Play Store.</string>
+    <string name="fingerprint_turn_on">Включить разблокировку по отпечатку</string>
+    <string name="fingerprint_unlock">Разблокировать Plain Wallet</string>
+    <string name="fingerprint_changed">Отпечатки пальцев или блокировка экрана на этом телефоне изменились, поэтому разблокировка по отпечатку отключена. Разблокируйте паролем и снова включите её в Настройках.</string>
+    <string name="use_password">Использовать пароль</string>
+    <string name="secret_in_address_bar">Похоже на сид-фразу или приватный ключ. Никогда не вводите их на сайтах.</string>
+    <string name="write_to">Напишите нам на %1$s</string>
+</resources>

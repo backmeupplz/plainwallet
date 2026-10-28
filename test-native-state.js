@@ -7,6 +7,7 @@ import * as chains from 'viem/chains'
 import { toHex } from 'viem'
 import { mnemonicToAccount } from 'viem/accounts'
 import { nativeLocal } from './lib/shared-storage.ts'
+import { problem, t } from './lib/i18n.ts'
 
 const file = new Map()
 const storage = async (req) => {
@@ -21,7 +22,7 @@ const storage = async (req) => {
   return { values: Object.fromEntries([...file].filter(([k]) => req.get === null || req.get.includes(k))) }
 }
 const code = stripTypeScriptTypes(readFileSync(new URL('./lib/store.ts', import.meta.url), 'utf8')).replace(/^import .*$/gm, '').replace(/export /g, '')
-const deps = { ...wallet, ...chains, toHex, mnemonicToAccount }
+const deps = { ...wallet, ...chains, toHex, mnemonicToAccount, t, problem }
 const context = () => {
   const session = {}
   const local = nativeLocal(storage)

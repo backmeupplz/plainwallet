@@ -1,13 +1,14 @@
 // The Mac app and its Safari extension share one wallet: storage.local for both is a file in the app's app group
 // (macos/Shared/Storage.swift), read and written through the app (the wallet page's bridge) or the extension's native
 // handler. Signed state uses compare-and-set under the native file lock; Web Locks cannot span these two origins.
+import { problem } from './i18n.ts'
 type Reply = { values?: Record<string, string>; committed?: boolean; error?: string } | undefined
 
 /** A storage.local on `send`, which reaches Storage.swift. Values travel as JSON text; `null` deletes. */
 export function nativeLocal(send: (msg: object) => Promise<Reply>, wrote = async (_items: Record<string, unknown> | null) => {}) {
   const call = async (msg: object) => {
     const reply = await send(msg)
-    if (!reply || reply.error) throw new Error(reply?.error ?? 'The Plain Wallet app did not answer')
+    if (!reply || reply.error) throw reply?.error ? new Error(reply.error) : problem('The Plain Wallet app did not answer')
     return reply.values ?? {}
   }
   const write = async (items: Record<string, unknown>) => {
@@ -19,8 +20,8 @@ export function nativeLocal(send: (msg: object) => Promise<Reply>, wrote = async
     compareAndSet: async (expected: Record<string, unknown>, items: Record<string, unknown>) => {
       const encode = (values: Record<string, unknown>) => Object.fromEntries(Object.entries(values).map(([k, v]) => [k, v === undefined ? null : JSON.stringify(v)]))
       const reply = await send({ compareAndSet: { expected: encode(expected), set: encode(items) } })
-      if (!reply || reply.error) throw new Error(reply?.error ?? 'The Plain Wallet app did not answer')
-      if (reply.committed !== true) throw new Error('Wallet changed in another window; reopen it and try again')
+      if (!reply || reply.error) throw reply?.error ? new Error(reply.error) : problem('The Plain Wallet app did not answer')
+      if (reply.committed !== true) throw problem('Wallet changed in another window; reopen it and try again')
       await wrote(items)
     },
     get: async (keys?: string | string[] | null) =>

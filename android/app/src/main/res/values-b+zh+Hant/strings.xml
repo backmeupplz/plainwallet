@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">搜尋或輸入網址</string>
+    <string name="favorite_site">加入最愛</string>
+    <string name="wallet">錢包</string>
+    <string name="webview_too_old">Plain Wallet 需要 Android System WebView %1$d 或以上版本。請前往 Play Store 更新。</string>
+    <string name="fingerprint_turn_on">開啟指紋解鎖</string>
+    <string name="fingerprint_unlock">解鎖 Plain Wallet</string>
+    <string name="fingerprint_changed">這支手機的指紋或螢幕鎖定方式已變更，因此指紋解鎖已關閉。請使用密碼解鎖，然後在「設定」中重新開啟。</string>
+    <string name="use_password">使用密碼</string>
+    <string name="secret_in_address_bar">這看起來像是助記詞或私鑰。請勿在任何網站中輸入。</string>
+    <string name="write_to">請寄信至 %1$s</string>
+</resources>

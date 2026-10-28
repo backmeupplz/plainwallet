@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">Rechercher ou saisir une adresse web</string>
+    <string name="favorite_site">Ajouter aux favoris</string>
+    <string name="wallet">Portefeuille</string>
+    <string name="webview_too_old">Plain Wallet nécessite Android System WebView %1$d ou version ultérieure. Mettez-le à jour depuis le Play Store.</string>
+    <string name="fingerprint_turn_on">Activer le déverrouillage par empreinte</string>
+    <string name="fingerprint_unlock">Déverrouiller Plain Wallet</string>
+    <string name="fingerprint_changed">Les empreintes digitales ou le verrouillage de l’écran de ce téléphone ont changé, le déverrouillage par empreinte est donc désactivé. Déverrouillez avec votre mot de passe, puis réactivez-le dans les Paramètres.</string>
+    <string name="use_password">Utiliser le mot de passe</string>
+    <string name="secret_in_address_bar">Cela ressemble à une phrase de récupération ou à une clé privée. Ne la saisissez jamais sur un site web.</string>
+    <string name="write_to">Écrivez-nous à %1$s</string>
+</resources>

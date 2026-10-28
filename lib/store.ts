@@ -8,6 +8,7 @@ import { toHex } from 'viem'
 import { mnemonicToAccount } from 'viem/accounts'
 import { addressOf, decryptVault, deriveKey, encryptVault, mac, mnemonicOf, newMeta, toAccount, watched, type Secret, type VaultMeta } from './wallet'
 import '@/lib/shared-storage' // Safari: storage.local is the Mac app's
+import { problem, t } from './i18n.ts'
 
 export type Network = { id: number; name: string; rpc: string; symbol: string }
 export type Token = { address: `0x${string}`; symbol: string; decimals: number }
@@ -100,7 +101,7 @@ export const save = (patch: Partial<State> | ((s: State) => Partial<State>), key
     const k = key ?? (await unlockedKey())
     const before = await browser.storage.local.get()
     const s = await checked(before)
-    if (expectedVault !== undefined && s.vault !== expectedVault) throw new Error('Wallet changed in another window; reopen it and try again')
+    if (expectedVault !== undefined && s.vault !== expectedVault) throw problem('Wallet changed in another window; reopen it and try again')
     await write(k, { ...s, ...(typeof patch === 'function' ? patch(s) : patch) }, before)
   })
 
@@ -130,7 +131,7 @@ const storedVault = async () => ((await browser.storage.local.get('vault')).vaul
 const sessionKey = async () => (await browser.storage.session.get('key')).key as string | undefined
 const unlockedKey = async () => {
   const key = await sessionKey()
-  if (!key) throw new Error('Wallet is locked')
+  if (!key) throw problem('Wallet is locked')
   return key
 }
 export const isUnlocked = async () => !!(await sessionKey())
@@ -175,7 +176,7 @@ export const unlock = (password: string) =>
       const upgraded = await encryptVault(key, next, all)
       // Nothing is overwritten unless the new vault opens with the password again, from what was actually stored.
       const check = await decryptVault(await deriveKey(password, JSON.parse(upgraded)), upgraded)
-      if (JSON.stringify(check) !== JSON.stringify(all)) throw new Error('Vault upgrade check failed; nothing was changed')
+      if (JSON.stringify(check) !== JSON.stringify(all)) throw problem('Vault upgrade check failed; nothing was changed')
       await save({ vault: upgraded, addresses: all.map(addressOf), connections: {} }, key, vault)
       await browser.storage.local.remove('sites')
     }
@@ -186,7 +187,7 @@ export const unlock = (password: string) =>
  * vault (AES-GCM authenticates), just as a password-derived key does. */
 export const unlockWithKey = (key: string) =>
   navigator.locks.request('vault', async () => {
-    await decryptVault(key, await storedVault()).catch(() => Promise.reject(new Error('Fingerprint unlock no longer fits this wallet; unlock with your password')))
+    await decryptVault(key, await storedVault()).catch(() => Promise.reject(problem('Fingerprint unlock no longer fits this wallet; unlock with your password')))
     await setKey(key)
   })
 
@@ -195,7 +196,7 @@ export const secrets = async (): Promise<Secret[]> => decryptVault(await unlocke
 /** The vault account at `index`. `addresses` in storage is plaintext and unauthenticated, the vault is not: make sure they agree. */
 export async function signer(index: number, address: string) {
   const account = toAccount((await secrets())[index]!)
-  if (account.address !== address) throw new Error('Vault does not match the selected account')
+  if (account.address !== address) throw problem('Vault does not match the selected account')
   return account
 }
 
@@ -215,14 +216,14 @@ export const keepExported = (request: string, keep: boolean) => navigator.locks.
 /** Export always authenticates the supplied password, never the cached unlock key. */
 export async function exportAccount(index: number, password: string) {
   const session = await unlockedKey()
-  if (!password) throw new Error('Enter your password')
+  if (!password) throw problem('Enter your password')
   const vault = await storedVault()
   const key = await deriveKey(password, JSON.parse(vault))
-  const all = await decryptVault(key, vault).catch(() => { throw new Error('Wrong password') })
-  if (await sessionKey() !== session || (await storedVault()) !== vault) throw new Error('Wallet changed or locked; try again')
+  const all = await decryptVault(key, vault).catch(() => { throw problem('Wrong password') })
+  if (await sessionKey() !== session || (await storedVault()) !== vault) throw problem('Wallet changed or locked; try again')
   const secret = Number.isSafeInteger(index) && index >= 0 ? all[index] : undefined
-  if (!secret) throw new Error('Select a stored account')
-  if (watched(secret)) throw new Error('This account is watch-only: no seed phrase or key is stored for it here')
+  if (!secret) throw problem('Select a stored account')
+  if (watched(secret)) throw problem('This account is watch-only: no seed phrase or key is stored for it here')
   const mnemonic = mnemonicOf(secret)
   const addressIndex = typeof secret === 'object' && 'addressIndex' in secret ? secret.addressIndex : 0
   return {
@@ -237,10 +238,10 @@ export const addWallet = (secret: Secret, password?: string) => navigator.locks.
 
 async function appendWallet(secret: Secret, password?: string, expectedVault?: string) {
   const { vault, addresses } = await load()
-  if (expectedVault !== undefined && vault !== expectedVault) throw new Error('Seed source changed; reopen Manage accounts')
+  if (expectedVault !== undefined && vault !== expectedVault) throw problem('Seed source changed; reopen Manage accounts')
   const address = addressOf(secret)
-  if (addresses.includes(address)) throw new Error(watched(secret) ? 'This address is already in the wallet' : 'Wallet already added')
-  if (!vault && !password) throw new Error('Password required') // never derive a vault key from an empty password
+  if (addresses.includes(address)) throw new Error(watched(secret) ? t('This address is already in the wallet') : t('Wallet already added'))
+  if (!vault && !password) throw problem('Password required') // never derive a vault key from an empty password
   const meta: VaultMeta = vault ? JSON.parse(vault) : newMeta()
   const key = vault ? await unlockedKey() : await deriveKey(password!, meta)
   const all = [...(vault ? await decryptVault(key, vault) : []), secret]
@@ -283,7 +284,7 @@ const removeAccounts = (accounts: { index: number; address: string }[], group: b
   const key = await unlockedKey()
   const vault = await storedVault()
   const all = await decryptVault(key, vault)
-  const mismatch = () => { throw new Error('Vault does not match the selected accounts; reopen Manage accounts') }
+  const mismatch = () => { throw problem('Vault does not match the selected accounts; reopen Manage accounts') }
   const indexes = new Set(accounts.map((a) => a.index))
   if (!accounts.length || indexes.size !== accounts.length) mismatch()
   for (const { index, address } of accounts) {
@@ -294,7 +295,7 @@ const removeAccounts = (accounts: { index: number; address: string }[], group: b
     const mnemonic = mnemonicOf(all[accounts[0]!.index]!)
     if (!mnemonic || all.some((s, i) => (mnemonicOf(s) === mnemonic) !== indexes.has(i))) mismatch()
   }
-  if (all.length === indexes.size) throw new Error('This would remove your only account or all accounts. To delete them, lock the wallet and reset it.')
+  if (all.length === indexes.size) throw problem('This would remove your only account or all accounts. To delete them, lock the wallet and reset it.')
   const next = await encryptVault(key, JSON.parse(vault), all.filter((_, i) => !indexes.has(i)))
   await save((s) => {
     if (accounts.some(({ index, address }) => s.addresses[index] !== address)) mismatch()
@@ -312,8 +313,8 @@ export const addDerivedAccount = (source: number, address?: string) => navigator
   const all = await decryptVault(await unlockedKey(), vault)
   const selected = all[source]
   const mnemonic = selected && mnemonicOf(selected)
-  if (!mnemonic) throw new Error('Select a stored seed phrase')
-  if (address !== undefined && addressOf(selected!) !== address) throw new Error('Seed source changed; reopen Manage accounts')
+  if (!mnemonic) throw problem('Select a stored seed phrase')
+  if (address !== undefined && addressOf(selected!) !== address) throw problem('Seed source changed; reopen Manage accounts')
   let addressIndex = Math.max(...all.filter((s) => mnemonicOf(s) === mnemonic).map((s) => typeof s === 'object' && 'addressIndex' in s ? s.addressIndex : 0)) + 1
   const { addresses } = await load()
   // An address may already have been imported separately as a private key.

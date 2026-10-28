@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">Suchen oder Webadresse eingeben</string>
+    <string name="favorite_site">Zu Favoriten hinzufügen</string>
+    <string name="wallet">Wallet</string>
+    <string name="webview_too_old">Plain Wallet benötigt Android System WebView %1$d oder neuer. Aktualisieren Sie es im Play Store.</string>
+    <string name="fingerprint_turn_on">Entsperren per Fingerabdruck aktivieren</string>
+    <string name="fingerprint_unlock">Plain Wallet entsperren</string>
+    <string name="fingerprint_changed">Die Fingerabdrücke oder die Displaysperre auf diesem Smartphone wurden geändert, daher ist das Entsperren per Fingerabdruck deaktiviert. Entsperren Sie mit Ihrem Passwort und aktivieren Sie es in den Einstellungen erneut.</string>
+    <string name="use_password">Passwort verwenden</string>
+    <string name="secret_in_address_bar">Das sieht nach einer Seed-Phrase oder einem privaten Schlüssel aus. Geben Sie so etwas niemals auf einer Website ein.</string>
+    <string name="write_to">Schreiben Sie an %1$s</string>
+</resources>

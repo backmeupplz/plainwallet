@@ -380,6 +380,24 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "upload not successful"):
             chrome(META, ENV, MemoryJournal(), api)
 
+    def test_play_release_notes_in_every_language_that_has_them(self):
+        bodies = []
+        def api(url, token, **kw):
+            if url.endswith("/tracks"):
+                return {"tracks": []}
+            if url.endswith("/bundles"):
+                return {"bundles": []}
+            if url.endswith("/listings"):
+                return {"listings": [{"language": "en-US"}, {"language": "de-DE"}]}
+            if "uploadType=media" in url:
+                return {"versionCode": 203, "sha256": "fixture"}
+            if "/tracks/" in url:
+                bodies.append(kw["body"])
+                return {"track": "production"}
+            return {"id": "edit-id"}
+        play(META, ENV, MemoryJournal(), api, sign=lambda e: b"signed-fixture", logs={"en-US": "x" * 600, "de-DE": "Schneller entsperren.", "fr-FR": "Pas encore de fiche en français."})
+        self.assertEqual(bodies[0]["releases"][0]["releaseNotes"], [{"language": "de-DE", "text": "Schneller entsperren."}, {"language": "en-US", "text": "x" * 500}])
+
     def test_firefox_source_atomic_submission_and_replay(self):
         methods = []
         version = {"id": 7, "version": "0.2.3", "channel": "listed", "source": "source.zip", "file": {"status": "unreviewed"}}
@@ -467,7 +485,7 @@ class ReleaseTests(unittest.TestCase):
                 self.assertTrue(url.endswith("/tracks/production"))
                 return {"track": "production"}
             return {"id": "edit-id"}
-        result = play(META, ENV, journal, api, sign=lambda e: b"signed-fixture")
+        result = play(META, ENV, journal, api, sign=lambda e: b"signed-fixture", logs={})
         self.assertEqual(result["editId"], "edit-id")
         self.assertTrue(calls[-1][0].endswith(":commit?changesNotSentForReview=false&changesInReviewBehavior=CANCEL_IN_REVIEW_AND_SUBMIT"))
         self.assertNotIn("body", calls[-1][1])

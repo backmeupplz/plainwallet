@@ -1,6 +1,7 @@
 // Real UI helper with a minimal DOM and controllable browser frames; no wallet/profile/storage access.
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import { registerHooks } from 'node:module'
 
 class Element {
   isConnected = false
@@ -22,6 +23,8 @@ const frame = async () => {
   await Promise.resolve()
 }
 const paint = async () => { await frame(); await frame() }
+registerHooks({ resolve: (specifier, context, next) =>
+  next(specifier.startsWith('@/lib/') ? new URL(`./lib/${specifier.slice(6)}.ts`, import.meta.url).href : specifier, context) })
 const { invalidateUnlockView, unlockForm } = await import('./entrypoints/popup/unlock.ts')
 const deferred = () => {
   let resolve, reject
@@ -221,7 +224,7 @@ const renderSource = popup.slice(popup.indexOf('export async function render('),
 const makeRender = new Function('env',
   'let { browser, load, isUnlocked, touch, mainScreen, home, approvalScreen, unlockScreen, app, invalidateUnlockView, watchedAddresses, exported } = env; ' +
   "let renderId = 0, viewClosed = false, currentWindowId, seed = '', error = '', jevKey, watching, waiting; " +
-  "const TAMPERED = 'tampered'; " + renderSource +
+  "const TAMPERED = 'tampered', language = Promise.resolve(), t = (text) => text; " + renderSource +
   '; return { render, close() { viewClosed = true; renderId++ } }')
 const loads = [], settings = [], drawn = []
 let unlocked = false, invalidations = 0

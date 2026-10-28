@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">Tìm kiếm hoặc nhập địa chỉ web</string>
+    <string name="favorite_site">Thêm vào mục yêu thích</string>
+    <string name="wallet">Ví</string>
+    <string name="webview_too_old">Plain Wallet cần Android System WebView %1$d trở lên. Hãy cập nhật từ Play Store.</string>
+    <string name="fingerprint_turn_on">Bật mở khóa bằng vân tay</string>
+    <string name="fingerprint_unlock">Mở khóa Plain Wallet</string>
+    <string name="fingerprint_changed">Vân tay hoặc phương thức khóa màn hình trên điện thoại này đã thay đổi nên tính năng mở khóa bằng vân tay đã bị tắt. Hãy mở khóa bằng mật khẩu và bật lại trong Cài đặt.</string>
+    <string name="use_password">Dùng mật khẩu</string>
+    <string name="secret_in_address_bar">Đây có vẻ là cụm từ khôi phục hoặc khóa riêng tư. Đừng bao giờ nhập nó vào trang web.</string>
+    <string name="write_to">Gửi email tới %1$s</string>
+</resources>

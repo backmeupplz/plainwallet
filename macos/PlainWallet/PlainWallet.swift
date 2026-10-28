@@ -132,26 +132,26 @@ final class App: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKScri
             items.forEach(menu.addItem)
             bar.addItem(withTitle: title, action: nil, keyEquivalent: "").submenu = menu
         }
-        let safari = NSMenuItem(title: "Safari Extension Settings…", action: #selector(safariSettings), keyEquivalent: "")
+        let safari = NSMenuItem(title: String(localized: "Safari Extension Settings…"), action: #selector(safariSettings), keyEquivalent: "")
         safari.target = self
-        let redo = NSMenuItem(title: "Redo", action: Selector(("redo:")), keyEquivalent: "z")
+        let redo = NSMenuItem(title: String(localized: "Redo"), action: Selector(("redo:")), keyEquivalent: "z")
         redo.keyEquivalentModifierMask = [.command, .shift]
         add("Plain Wallet", [
-            NSMenuItem(title: "About Plain Wallet", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: ""),
+            NSMenuItem(title: String(localized: "About Plain Wallet"), action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: ""),
             safari, .separator(),
-            NSMenuItem(title: "Hide Plain Wallet", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h"),
-            NSMenuItem(title: "Quit Plain Wallet", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"),
+            NSMenuItem(title: String(localized: "Hide Plain Wallet"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h"),
+            NSMenuItem(title: String(localized: "Quit Plain Wallet"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"),
         ])
-        add("Edit", [
-            NSMenuItem(title: "Undo", action: Selector(("undo:")), keyEquivalent: "z"), redo, .separator(),
-            NSMenuItem(title: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x"),
-            NSMenuItem(title: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c"),
-            NSMenuItem(title: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v"),
-            NSMenuItem(title: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a"),
+        add(String(localized: "Edit"), [
+            NSMenuItem(title: String(localized: "Undo"), action: Selector(("undo:")), keyEquivalent: "z"), redo, .separator(),
+            NSMenuItem(title: String(localized: "Cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x"),
+            NSMenuItem(title: String(localized: "Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c"),
+            NSMenuItem(title: String(localized: "Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v"),
+            NSMenuItem(title: String(localized: "Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a"),
         ])
-        add("Window", [
-            NSMenuItem(title: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m"),
-            NSMenuItem(title: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"),
+        add(String(localized: "Window"), [
+            NSMenuItem(title: String(localized: "Minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m"),
+            NSMenuItem(title: String(localized: "Close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"),
         ])
         return bar
     }

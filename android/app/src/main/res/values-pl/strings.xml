@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">Wyszukaj lub wpisz adres</string>
+    <string name="favorite_site">Dodaj do ulubionych</string>
+    <string name="wallet">Portfel</string>
+    <string name="webview_too_old">Plain Wallet wymaga Android System WebView w wersji %1$d lub nowszej. Zaktualizuj go w Play Store.</string>
+    <string name="fingerprint_turn_on">Włącz odblokowywanie odciskiem palca</string>
+    <string name="fingerprint_unlock">Odblokuj Plain Wallet</string>
+    <string name="fingerprint_changed">Odciski palców lub blokada ekranu na tym telefonie zostały zmienione, więc odblokowywanie odciskiem palca jest wyłączone. Odblokuj hasłem i włącz je ponownie w Ustawieniach.</string>
+    <string name="use_password">Użyj hasła</string>
+    <string name="secret_in_address_bar">To wygląda na frazę seed lub klucz prywatny. Nigdy nie wpisuj ich na żadnej stronie internetowej.</string>
+    <string name="write_to">Napisz na adres %1$s</string>
+</resources>

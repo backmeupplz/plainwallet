@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">Cerca o inserisci un indirizzo web</string>
+    <string name="favorite_site">Aggiungi ai preferiti</string>
+    <string name="wallet">Wallet</string>
+    <string name="webview_too_old">Plain Wallet richiede Android System WebView %1$d o versioni successive. Aggiornalo dal Play Store.</string>
+    <string name="fingerprint_turn_on">Attiva lo sblocco con impronta</string>
+    <string name="fingerprint_unlock">Sblocca Plain Wallet</string>
+    <string name="fingerprint_changed">Le impronte o il blocco schermo di questo telefono sono cambiati, quindi lo sblocco con impronta è disattivato. Sblocca con la password e riattivalo in Impostazioni.</string>
+    <string name="use_password">Usa password</string>
+    <string name="secret_in_address_bar">Sembra una frase di recupero o una chiave privata. Non inserirla mai in un sito web.</string>
+    <string name="write_to">Scrivici a %1$s</string>
+</resources>

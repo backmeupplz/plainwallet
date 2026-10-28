@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">Sök eller skriv webbadress</string>
+    <string name="favorite_site">Lägg till i favoriter</string>
+    <string name="wallet">Plånbok</string>
+    <string name="webview_too_old">Plain Wallet kräver Android System WebView %1$d eller senare. Uppdatera den i Play Store.</string>
+    <string name="fingerprint_turn_on">Aktivera upplåsning med fingeravtryck</string>
+    <string name="fingerprint_unlock">Lås upp Plain Wallet</string>
+    <string name="fingerprint_changed">Fingeravtrycken eller skärmlåset på den här telefonen har ändrats, så upplåsning med fingeravtryck är avstängd. Lås upp med ditt lösenord och aktivera det igen i Inställningar.</string>
+    <string name="use_password">Använd lösenord</string>
+    <string name="secret_in_address_bar">Det där ser ut som en återställningsfras eller en privat nyckel. Skriv aldrig in den på en webbplats.</string>
+    <string name="write_to">Skriv till %1$s</string>
+</resources>

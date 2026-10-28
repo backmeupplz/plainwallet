@@ -80,7 +80,7 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
 
         // A browser's address bar: a rounded field showing whose page it is (all of the address while you edit), the
         // star inside it; empty on the wallet, which is the new-tab page here.
-        address.placeholder = "Search or type web address"
+        address.placeholder = String(localized: "Search or type web address")
         address.font = .systemFont(ofSize: 16)
         address.keyboardType = .webSearch
         address.returnKeyType = .go
@@ -89,7 +89,7 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
         address.spellCheckingType = .no
         address.clearButtonMode = .whileEditing
         address.delegate = self
-        star.accessibilityLabel = "Favorite this site"
+        star.accessibilityLabel = String(localized: "Favorite this site")
         star.addAction(UIAction { [unowned self] _ in toWallet(["type": "star"]) }, for: .primaryActionTriggered)
         starred(false)
         let field = UIStackView(arrangedSubviews: [address, star])
@@ -100,7 +100,7 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
         home.configuration = .plain()
         home.configuration!.image = UIImage(named: "Mark")
         home.configuration!.contentInsets = .init(top: 6, leading: 6, bottom: 6, trailing: 6)
-        home.accessibilityLabel = "Wallet"
+        home.accessibilityLabel = String(localized: "Wallet")
         home.addAction(UIAction { [unowned self] _ in
             if !wallet.isHidden && url != nil { showWallet(false) } else { openWallet() }
         }, for: .primaryActionTriggered)
@@ -492,8 +492,8 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
         let words = t.split(whereSeparator: \.isWhitespace).count
         if Self.matches(t, "(0x)?[0-9a-f]{64}") || ([12, 15, 18, 21, 24].contains(words) && Self.matches(t, "[a-z]{3,8}(\\s+[a-z]{3,8})*")) {
             address.text = ""
-            let alert = UIAlertController(title: nil, message: "That looks like a seed phrase or private key. Never type it into a website.", preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            let alert = UIAlertController(title: nil, message: String(localized: "That looks like a seed phrase or private key. Never type it into a website."), preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: String(localized: "OK"), style: .default))
             return present(alert, animated: true)
         }
         // An address, or else a search. Backslashes make URL parsers disagree about what an address means: search.
@@ -592,10 +592,10 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
     }
 
     func enableFingerprint(_ key: String) {
-        authenticate("Turn on \(biometry().name) unlock") { [self] _ in
+        authenticate(String(localized: "Turn on \(biometry().name) unlock")) { [self] _ in
             SecItemDelete(Self.keychain as CFDictionary)
             guard let access = SecAccessControlCreateWithFlags(nil, kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly, .biometryCurrentSet, nil)
-            else { return fingerprint("This iPhone can't keep a key behind \(biometry().name)") }
+            else { return fingerprint(String(localized: "This iPhone can't keep a key behind \(biometry().name)")) }
             var item = Self.keychain
             item[kSecValueData] = Data(key.utf8)
             item[kSecAttrAccessControl] = access
@@ -609,7 +609,7 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
         guard !prompting, !wallet.isHidden, stored() else { return }
         let name = biometry().name
         // The Keychain takes the Face ID you just gave (the Secure Enclave checks it's the enrolled one), without asking again.
-        authenticate("Unlock Plain Wallet") { [self] context in
+        authenticate(String(localized: "Unlock Plain Wallet")) { [self] context in
             var query = Self.keychain
             query[kSecReturnData] = true
             query[kSecUseAuthenticationContext] = context
@@ -621,7 +621,7 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
                 break
             case errSecItemNotFound, errSecAuthFailed:
                 forgetFingerprint()
-                fingerprint("\(name) or the passcode on this iPhone changed, so \(name) unlock is off. Unlock with your password and turn it on again in Settings.")
+                fingerprint(String(localized: "\(name) or the passcode on this iPhone changed, so \(name) unlock is off. Unlock with your password and turn it on again in Settings."))
             case let status:
                 fingerprint(Self.why(status))
             }

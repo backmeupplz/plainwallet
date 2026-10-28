@@ -55,8 +55,10 @@ dialog::backdrop { background: #0008; }
 .dialog-content { display: flex; flex-direction: column; gap: 12px; }
 .row > span { flex: 1; overflow-wrap: anywhere; }
 .mono { font: 12px var(--mono); overflow-wrap: anywhere; }
+/* Addresses, amounts and a site's own text keep their own direction inside a right-to-left page. */
+.mono, dd, pre, input, textarea { unicode-bidi: plaintext; }
 a { color: var(--pen); }
-.error { color: var(--stamp); border-left: 3px solid var(--stamp); padding-left: 8px; }
+.error { color: var(--stamp); border-inline-start: 3px solid var(--stamp); padding-inline-start: 8px; }
 
 /* the thing you are about to sign, as a slip torn off a pad */
 .slip { display: flex; flex-direction: column; gap: 10px; padding: 12px; background: var(--sheet); border: 1px solid var(--rule); border-top: 2px dashed var(--rule); border-radius: 0 0 8px 8px; }
@@ -70,7 +72,7 @@ pre { margin: 0; font: 12px/1.5 var(--mono); white-space: pre-wrap; overflow-wra
 
 .balances { padding: 12px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
 .balances dt { font: 13px var(--mono); color: var(--ink); }
-.balances dd { font-size: 13px; text-align: right; }
+.balances dd { font-size: 13px; text-align: end; }
 dd.skeleton { width: 64px; height: 13px; margin-block: 3px; border-radius: 4px; background: var(--rule); }
 .balances dd.skeleton { justify-self: end; }
 /* checks on a request: one line each, the details folding out under a chevron */
@@ -79,7 +81,7 @@ dd.skeleton { width: 64px; height: 13px; margin-block: 3px; border-radius: 4px; 
 .fold summary::-webkit-details-marker { display: none; }
 .fold summary > span { flex: 1; font: 12px var(--mono); color: var(--ink); overflow-wrap: anywhere; }
 .fold summary > span.skeleton { flex: 0 0 96px; height: 12px; border-radius: 4px; background: var(--rule); }
-.fold summary::after { content: ''; flex: none; width: 6px; height: 6px; margin: 0 2px 3px auto; border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+.fold summary::after { content: ''; flex: none; width: 6px; height: 6px; margin-block: 0 3px; margin-inline: auto 2px; border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
 .fold[open] summary::after { margin-bottom: -3px; transform: rotate(-135deg); }
 .fold[open] summary { margin-bottom: 10px; }
 @media (prefers-reduced-motion: no-preference) { .fold summary::after { transition: transform 0.15s; } }
@@ -90,7 +92,7 @@ dd.skeleton { width: 64px; height: 13px; margin-block: 3px; border-radius: 4px; 
 @media (prefers-reduced-motion: no-preference) { .skeleton, .pending { animation: pulse 1.2s ease-in-out infinite alternate; } }
 @keyframes pulse { to { opacity: 0.4; } }
 
-ol { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 4px; margin: 0; padding: 12px 12px 12px 32px; font: 13px var(--mono); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
+ol { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 4px; margin: 0; padding: 12px; padding-inline-start: 32px; font: 13px var(--mono); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
 li::marker { color: var(--muted); font-size: 11px; }
 
 /* Android app: sites starred in its browser, as launcher tiles above the balances */

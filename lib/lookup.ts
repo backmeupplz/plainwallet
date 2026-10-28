@@ -4,6 +4,7 @@
 import { decodeFunctionData, encodeFunctionData, getAbiItem, parseAbiItem, type Abi } from 'viem'
 import { formatAbiItem } from 'viem/utils'
 import { clean } from './describe'
+import { msg, msgn, type Text } from './i18n.ts'
 
 // ponytail: the default networks' public Blockscout instances only (BNB Chain and Avalanche have none, Gnosis's redirects
 // to Gnosisscan); chains.blockscout.com lists the rest if custom networks need it
@@ -19,12 +20,15 @@ const json = (url: string): Promise<any> =>
   fetch(url, { redirect: 'error', signal: AbortSignal.timeout(10_000) }).then((r) => r.ok ? r.json() : undefined).catch(() => undefined)
 
 export type Level = 'ok' | 'warn' | 'bad'
-/** `about` is what Jev reads; `level` colors it: flagged is bad, unverified or under a month old is a warning. */
-export type Party = { address: string; name: string; about: string; level: Level; abiFrom?: string }
+/** `about` is what Jev reads (in English) and the popup shows (translated); `level` colors it: flagged is bad,
+ * unverified or under a month old is a warning. Names and tags come from Blockscout as they are. */
+export type Party = { address: string; name: Text; about: Text[]; level: Level; abiFrom?: string }
 
 const DAY = 86_400_000
-const ago = (ms: number) => ms < DAY ? `${Math.max(1, Math.round(ms / 3_600_000))} hours` : ms < 60 * DAY ? `${Math.round(ms / DAY)} days`
-  : ms < 730 * DAY ? `${Math.round(ms / (30 * DAY))} months` : `${Math.round(ms / (365 * DAY))} years`
+const ago = (ms: number) => ms < DAY ? msgn(Math.max(1, Math.round(ms / 3_600_000)), 'deployed {n} hour ago', 'deployed {n} hours ago')
+  : ms < 60 * DAY ? msgn(Math.round(ms / DAY), 'deployed {n} day ago', 'deployed {n} days ago')
+  : ms < 730 * DAY ? msgn(Math.round(ms / (30 * DAY)), 'deployed {n} month ago', 'deployed {n} months ago')
+  : msgn(Math.round(ms / (365 * DAY)), 'deployed {n} year ago', 'deployed {n} years ago')
 
 /** `spender`: whoever would get to move the account's assets. That being a regular account is a warning in itself. */
 async function party(api: string, address: string, spender: boolean): Promise<Party | undefined> {
@@ -32,25 +36,27 @@ async function party(api: string, address: string, spender: boolean): Promise<Pa
   if (!a) return
   const flagged = !!a.is_scam || (!!a.reputation && a.reputation !== 'ok')
   const tags: string[] = (a.metadata?.tags ?? []).map((t: any) => clean(t.name, 40))
-  const extra = [...tags, ...(flagged ? ['flagged as a scam by Blockscout'] : [])]
+  const extra: Text[] = [...tags, ...(flagged ? [msg('flagged as a scam by Blockscout')] : [])]
   if (!a.is_contract) {
-    const name = a.ens_domain_name ? clean(a.ens_domain_name, 40) : 'Regular account'
-    return { address, name, about: ['a regular account, not a contract', ...extra].join(', '), level: flagged ? 'bad' : spender ? 'warn' : 'ok' }
+    const name = a.ens_domain_name ? clean(a.ens_domain_name, 40) : msg('Regular account')
+    return { address, name, about: [msg('a regular account, not a contract'), ...extra], level: flagged ? 'bad' : spender ? 'warn' : 'ok' }
   }
   const impl = a.implementations?.[0]
   const created = a.creation_transaction_hash ? await json(`${api}/api/v2/transactions/${a.creation_transaction_hash}`) : undefined
   const age = created?.timestamp ? Date.now() - Date.parse(created.timestamp) : undefined
-  const t = a.token
-  const about = [
-    ...(impl ? ['upgradeable proxy'] : []),
-    a.is_verified ? 'verified source' : 'unverified source',
-    ...(age == null ? [] : [`deployed ${ago(age)} ago`]),
-    ...(t ? [`token ${clean(t.name ?? '?', 40)} (${clean(t.symbol ?? '?', 12)}) with ${Number(t.holders_count ?? 0).toLocaleString('en-US')} holders`] : []),
+  const token = a.token
+  const about: Text[] = [
+    ...(impl ? [msg('upgradeable proxy')] : []),
+    a.is_verified ? msg('verified source') : msg('unverified source'),
+    ...(age == null ? [] : [ago(age)]),
+    ...(token ? [msgn(Number(token.holders_count ?? 0), 'token {name} ({symbol}) with {n} holder', 'token {name} ({symbol}) with {n} holders',
+      { name: clean(token.name ?? '?', 40), symbol: clean(token.symbol ?? '?', 12) })] : []),
     ...extra,
-  ].join(', ')
+  ]
+  const named = token?.name || impl?.name || a.name
   return {
     address, about,
-    name: clean(t?.name || impl?.name || a.name || 'Unnamed contract', 40),
+    name: named ? clean(named, 40) : msg('Unnamed contract'),
     level: flagged ? 'bad' : !a.is_verified || (age ?? Infinity) < 30 * DAY ? 'warn' : 'ok',
     abiFrom: a.is_verified ? impl?.address_hash ?? address : undefined,
   }
@@ -68,19 +74,19 @@ export async function functionName(data: `0x${string}`) {
     try {
       const abi = [parseAbiItem(`function ${name}`)] as const
       const { args } = decodeFunctionData({ abi, data })
-      if (encodeFunctionData({ abi, args } as any) === data.toLowerCase()) return `${clean(name, 200)}, named by a public signature list`
+      if (encodeFunctionData({ abi, args } as any) === data.toLowerCase()) return msg('{function}, named by a public signature list', { function: clean(name, 200) })
     } catch {}
   }
-  return 'No public signature matches the calldata'
+  return msg('No public signature matches the calldata')
 }
 
-export type Lookup = { contract?: Party; spender?: Party; call?: string }
+export type Lookup = { contract?: Party; spender?: Party; call?: Text }
 
 /** Everything at once; any part Blockscout or Sourcify couldn't answer is left out. */
 export async function lookup(chainId: number, { contract, spender, data }: { contract?: string; spender?: string; data?: `0x${string}` }): Promise<Lookup> {
   const api = BLOCKSCOUT[chainId]
   const [c, s] = await Promise.all([api && contract ? party(api, contract, false) : undefined, api && spender ? party(api, spender, true) : undefined])
-  let call: string | undefined
+  let call: Text | undefined
   if (data) {
     // A verified contract's own ABI names the function and its parameters exactly.
     const abi: Abi | undefined = c?.abiFrom ? (await json(`${api}/api/v2/smart-contracts/${c.abiFrom}`))?.abi : undefined

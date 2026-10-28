@@ -66,7 +66,7 @@ const types = { Permit: [{ name: 'spender', type: 'address' }, { name: 'value', 
 const permit = signedView({ types, primaryType: 'Permit', domain: { name: 'T', chainId: 1, evil: 'x' }, message: { spender: SPENDER, value: '1', note: 'free login, nothing is approved' } })
 assert.deepEqual(permit.view.message, { spender: SPENDER, value: '1' }) // the unsigned decoy key is gone
 assert.deepEqual(permit.view.domain, { name: 'T', chainId: 1 })
-assert.match(permit.summary, /move or approve your assets/)
+assert.match(permit.summary.text, /move or approve your assets/)
 const bundle = signedView({ types: { Bundle: [{ name: 'items', type: 'Item[]' }], Item: types.Item }, primaryType: 'Bundle', domain: {}, message: { items: [{ id: '1', decoy: 'x' }], decoy: 'y' } })
 assert.deepEqual(bundle.view.message, { items: [{ id: '1' }] })
 assert.equal(bundle.summary, undefined)
@@ -111,6 +111,7 @@ assert.throws(() => parseAmount('1.5', 0))
 registerHooks({ resolve: (specifier, context, next) => next(specifier === './describe' ? './describe.ts' : specifier, context) })
 const { analyze } = await import('./lib/jev.ts')
 const { functionName } = await import('./lib/lookup.ts')
+const { english } = await import('./lib/i18n.ts')
 // Jev: the site question is only asked for site requests, and anything but the expected answer shape is an error
 const jevAnswers = (answers, status = 200) => async (_url, init) => {
   jevAnswers.sent = JSON.parse(init.body)
@@ -134,9 +135,9 @@ await assert.rejects(analyze('k', 'transaction', {}), /API key/)
 const transferData = encodeFunctionData({ abi: erc20Abi, functionName: 'transfer', args: [ADDRESS, 5n] })
 const signatures = (list) => async () => new Response(JSON.stringify({ result: { function: { '0xa9059cbb': list } } }))
 globalThis.fetch = signatures([{ name: 'many_msg_babbage(bytes1)' }, { name: 'claimAirdrop(address,uint256)' }, { name: 'transfer(address,uint256)', hasVerifiedContract: true }])
-assert.equal(await functionName(transferData), 'transfer(address,uint256), named by a public signature list')
+assert.equal(english(await functionName(transferData)), 'transfer(address,uint256), named by a public signature list')
 globalThis.fetch = signatures([{ name: 'many_msg_babbage(bytes1)' }, { name: 'transfer(bytes4[9],bytes5[6],int48[11])' }])
-assert.equal(await functionName(transferData), 'No public signature matches the calldata')
+assert.equal(english(await functionName(transferData)), 'No public signature matches the calldata')
 globalThis.fetch = async () => { throw new Error('offline') }
 assert.equal(await functionName(transferData), undefined)
 

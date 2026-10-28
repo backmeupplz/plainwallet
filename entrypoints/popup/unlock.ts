@@ -1,3 +1,5 @@
+import { t } from '@/lib/i18n'
+
 // Shared by redraws in this view; never stores a password or changes the vault's lock lifecycle.
 let pending = false
 let current: { form: HTMLFormElement; update: () => void; focus: () => void } | undefined
@@ -23,7 +25,7 @@ export function unlockForm(unlock: (password: string) => Promise<unknown>, done:
   const form = document.createElement('form')
   form.className = 'dialog-content'
   const label = document.createElement('label')
-  label.textContent = 'Password'
+  label.textContent = t('Password')
   const input = document.createElement('input')
   input.type = 'password'
   input.autofocus = true
@@ -38,8 +40,8 @@ export function unlockForm(unlock: (password: string) => Promise<unknown>, done:
   const update = () => {
     form.ariaBusy = String(pending)
     input.disabled = button.disabled = pending
-    button.textContent = pending ? 'Unlocking...' : 'Unlock'
-    status.textContent = pending ? 'Unlocking your wallet…' : failure
+    button.textContent = pending ? t('Unlocking...') : t('Unlock')
+    status.textContent = pending ? t('Unlocking your wallet…') : failure
   }
   current = { form, update, focus: () => input.focus() }
   update()
@@ -62,8 +64,8 @@ export function unlockForm(unlock: (password: string) => Promise<unknown>, done:
       if (stillActive()) await done()
     } catch (e) {
       if (sameView()) {
-        failure = e instanceof Error && e.message === 'Wrong password'
-          ? 'Wrong password. Please try again.' : 'Could not unlock your wallet. Please try again.'
+        failure = e instanceof Error && e.message === 'Wrong password' // unlock() in lib/store.ts throws it untranslated, as a code
+          ? t('Wrong password. Please try again.') : t('Could not unlock your wallet. Please try again.')
       }
     } finally {
       password = ''

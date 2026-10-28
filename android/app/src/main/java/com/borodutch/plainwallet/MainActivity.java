@@ -122,7 +122,7 @@ public class MainActivity extends Activity {
                 || !WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
                 || !WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
             TextView update = new TextView(this);
-            update.setText("Plain Wallet needs Android System WebView " + MIN_WEBVIEW + " or newer. Update it from the Play Store.");
+            update.setText(getString(R.string.webview_too_old, MIN_WEBVIEW));
             setContentView(update);
             return;
         }
@@ -179,7 +179,7 @@ public class MainActivity extends Activity {
         address.setBackground(null);
         address.setSingleLine();
         address.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-        address.setHint("Search or type web address");
+        address.setHint(R.string.address_hint);
         address.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         address.setImeOptions(EditorInfo.IME_ACTION_GO);
         address.setOnEditorActionListener((v, action, event) -> {
@@ -195,7 +195,7 @@ public class MainActivity extends Activity {
         });
         star = new ImageButton(this, null, android.R.attr.borderlessButtonStyle);
         star.setScaleType(ImageButton.ScaleType.CENTER);
-        star.setContentDescription("Favorite this site");
+        star.setContentDescription(getString(R.string.favorite_site));
         star.setOnClickListener(v -> toWallet(json("type", "star")));
         starred(false);
         LinearLayout field = new LinearLayout(this);
@@ -204,21 +204,21 @@ public class MainActivity extends Activity {
         pill.setCornerRadius(dp(22));
         field.setBackground(pill);
         field.setGravity(Gravity.CENTER_VERTICAL);
-        field.setPadding(dp(16), 0, 0, 0);
+        field.setPaddingRelative(dp(16), 0, 0, 0); // relative: Arabic mirrors the bar
         field.addView(address, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         field.addView(star, new LinearLayout.LayoutParams(dp(44), dp(44)));
         ImageButton home = new ImageButton(this, null, android.R.attr.borderlessButtonStyle);
         home.setImageResource(R.mipmap.icon);
         home.setScaleType(ImageButton.ScaleType.FIT_CENTER);
         home.setPadding(dp(8), dp(8), dp(8), dp(8));
-        home.setContentDescription("Wallet");
+        home.setContentDescription(getString(R.string.wallet));
         home.setOnClickListener(v -> {
             if (wallet.getVisibility() == View.VISIBLE && url != null) showWallet(false);
             else openWallet();
         });
         bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(dp(12), dp(6), dp(4), dp(6));
+        bar.setPaddingRelative(dp(12), dp(6), dp(4), dp(6));
         bar.setVisibility(View.GONE);
         bar.addView(field, new LinearLayout.LayoutParams(0, dp(44), 1));
         bar.addView(home, new LinearLayout.LayoutParams(dp(52), dp(52)));
@@ -540,7 +540,7 @@ public class MainActivity extends Activity {
                     .build());
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, generator.generateKey());
-            prompt("Turn on fingerprint unlock", cipher, done -> {
+            prompt(getString(R.string.fingerprint_turn_on), cipher, done -> {
                 byte[] data = done.doFinal(key.getBytes(StandardCharsets.UTF_8));
                 stored().edit().putString("iv", Base64.encodeToString(done.getIV(), Base64.NO_WRAP))
                         .putString("data", Base64.encodeToString(data, Base64.NO_WRAP)).apply();
@@ -561,11 +561,11 @@ public class MainActivity extends Activity {
             if (key == null) throw new KeyPermanentlyInvalidatedException(); // e.g. the screen lock was removed
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(128, Base64.decode(stored().getString("iv", ""), Base64.NO_WRAP)));
-            prompt("Unlock Plain Wallet", cipher, done -> toWallet(json("type", "fingerprint-key",
+            prompt(getString(R.string.fingerprint_unlock), cipher, done -> toWallet(json("type", "fingerprint-key",
                     "key", new String(done.doFinal(Base64.decode(stored().getString("data", ""), Base64.NO_WRAP)), StandardCharsets.UTF_8))));
         } catch (KeyPermanentlyInvalidatedException e) {
             forgetFingerprint();
-            fingerprint("Fingerprints or the screen lock on this phone changed, so fingerprint unlock is off. Unlock with your password and turn it on again in Settings.");
+            fingerprint(getString(R.string.fingerprint_changed));
         } catch (GeneralSecurityException | IOException e) {
             fingerprint(why(e));
         }
@@ -591,7 +591,7 @@ public class MainActivity extends Activity {
         new BiometricPrompt.Builder(this)
                 .setTitle(title)
                 .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                .setNegativeButton("Use password", getMainExecutor(), (dialog, which) -> prompting = false)
+                .setNegativeButton(getString(R.string.use_password), getMainExecutor(), (dialog, which) -> prompting = false)
                 .build()
                 .authenticate(new BiometricPrompt.CryptoObject(cipher), new CancellationSignal(), getMainExecutor(),
                         new BiometricPrompt.AuthenticationCallback() {
@@ -623,7 +623,7 @@ public class MainActivity extends Activity {
         if (t.matches("(?i)(0x)?[0-9a-f]{64}")
                 || (Set.of(12, 15, 18, 21, 24).contains(words.length) && t.matches("(?i)[a-z]{3,8}(\\s+[a-z]{3,8})*"))) {
             address.setText("");
-            Toast.makeText(this, "That looks like a seed phrase or private key. Never type it into a website.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.secret_in_address_bar, Toast.LENGTH_LONG).show();
             return;
         }
         // An address, or else a search. Backslashes make Android and the WebView read an address differently: search.
@@ -638,7 +638,7 @@ public class MainActivity extends Activity {
             try {
                 startActivity(new Intent(Intent.ACTION_SENDTO, Uri.parse(link)));
             } catch (ActivityNotFoundException e) {
-                Toast.makeText(this, "Write to plainwallet@borodutch.com", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, getString(R.string.write_to, "plainwallet@borodutch.com"), Toast.LENGTH_LONG).show();
             }
             return;
         }

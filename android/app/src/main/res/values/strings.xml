@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">Search or type web address</string>
+    <string name="favorite_site">Favorite this site</string>
+    <string name="wallet">Wallet</string>
+    <string name="webview_too_old">Plain Wallet needs Android System WebView %1$d or newer. Update it from the Play Store.</string>
+    <string name="fingerprint_turn_on">Turn on fingerprint unlock</string>
+    <string name="fingerprint_unlock">Unlock Plain Wallet</string>
+    <string name="fingerprint_changed">Fingerprints or the screen lock on this phone changed, so fingerprint unlock is off. Unlock with your password and turn it on again in Settings.</string>
+    <string name="use_password">Use password</string>
+    <string name="secret_in_address_bar">That looks like a seed phrase or private key. Never type it into a website.</string>
+    <string name="write_to">Write to %1$s</string>
+</resources>

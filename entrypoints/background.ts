@@ -1,6 +1,7 @@
 import { formatEther, hexToString, serializeTransaction, toHex } from 'viem'
 import { broadcast, mined, noRedirect, prepare, send, tokenInfo, unsigned } from '@/lib/chain'
-import { clean, describeCall, foreignSignIn, publicRpc, signedView } from '@/lib/describe'
+import { callSummary, clean, foreignSignIn, publicRpc, signedView } from '@/lib/describe'
+import { msg, t, type Msg } from '@/lib/i18n'
 import { checkResponse, requestText, type OfflineRequest } from '@/lib/offline'
 import { keepExported, load, lock, reset, save, signer, watchedAddresses, type Network } from '@/lib/store'
 
@@ -9,9 +10,10 @@ const err = (code: number, message: string) => ({ code, message })
 const big = (v?: string) => (v == null ? undefined : BigInt(v))
 const size = (v: unknown) => { try { return JSON.stringify(v ?? null).length } catch { return Infinity } }
 
-// `title`: the page's own title, only ever context for Jev. `offline`: the request to take to the device with the key,
-// should the account turn out to be watch-only (which takes the unlocked vault to tell).
-export type Pending = { id: string; origin: string; title?: string; method: string; network: Network; account: string; summary?: string; danger?: boolean; detail: any; offline?: string }
+// `summary`: what the wallet makes of the request, translated where it's shown. `title`: the page's own title, only ever
+// context for Jev. `offline`: the request to take to the device with the key, should the account turn out to be
+// watch-only (which takes the unlocked vault to tell).
+export type Pending = { id: string; origin: string; title?: string; method: string; network: Network; account: string; summary?: Msg; danger?: boolean; detail: any; offline?: string }
 const pending = new Map<string, Pending & { resolve: (result: unknown) => void; reject: (e: unknown) => void }>()
 let win: Promise<{ id?: number } | undefined> | undefined
 let generation = 0 // a reset also invalidates requests still preparing their approval
@@ -66,7 +68,7 @@ async function handle(origin: string, method: unknown, rawParams: unknown, title
   // Per account: a site sees only the accounts you connected it to. Locking doesn't disconnect anything (a dapp would
   // drop its session): whatever needs a signature opens the wallet, which asks for the password before the approval.
   const connected = !!address && !!s.connections[origin]?.includes(address)
-  const ask = async (detail: unknown, summary?: string, danger?: boolean, offline?: OfflineRequest) => {
+  const ask = async (detail: unknown, summary?: Msg, danger?: boolean, offline?: OfflineRequest) => {
     if (resetting || started !== generation) throw err(4001, 'Wallet was reset')
     const result = await approve({ origin, title, method, network, account: address!, summary, danger, detail, ...(offline && { offline: requestText(offline) }) })
     // A request that arrived while locked showed unverified state; approving unlocked the wallet, so load() now
@@ -112,7 +114,7 @@ async function handle(origin: string, method: unknown, rawParams: unknown, title
         const added = { id, name: clean(c.chainName, 40), rpc, symbol: clean(c.nativeCurrency?.symbol ?? 'ETH', 10) }
         // A site can call its network anything: point out a name borrowed from one you already have.
         const lookalike = s.networks.find((n) => added.name.toLowerCase().includes(n.name.toLowerCase()))
-        await ask(added, lookalike && `This is not your ${lookalike.name}, which is chain ${lookalike.id}`, !!lookalike)
+        await ask(added, lookalike && msg('This is not your {network}, which is chain {id}', { network: lookalike.name, id: lookalike.id }), !!lookalike)
         await save((now) => ({ networks: [...now.networks.filter((n) => n.id !== id), added], chainId: id }))
         return null
       }
@@ -159,10 +161,10 @@ async function handle(origin: string, method: unknown, rawParams: unknown, title
       // Symbol/decimals only make the summary readable (who gets what comes from the calldata itself): from the
       // wallet's own token list where it has the token, otherwise from the RPC.
       const listed = s.tokens[network.id]?.find((t) => t.address.toLowerCase() === request.to?.toLowerCase())
-      const summary = describeCall(request.data, listed ?? (request.to ? await tokenInfo(network, request.to).catch(() => undefined) : undefined))
+      const summary = callSummary(request.data, listed ?? (request.to ? await tokenInfo(network, request.to).catch(() => undefined) : undefined))
       // ponytail: a watch-only account exports the nonce prepared now, so two queued requests share one; the second fails to broadcast, and the dapp can ask again
       const offline = { from: address!, origin, transaction: serializeTransaction(await unsigned(network, address!, request, false)) }
-      const result = await ask({ to: request.to ?? null, value: formatEther(request.value ?? 0n), fee: formatEther(fee), data: request.data ?? '0x' }, summary, !!summary && /UNLIMITED|ALL your/.test(summary), offline)
+      const result = await ask({ to: request.to ?? null, value: formatEther(request.value ?? 0n), fee: formatEther(fee), data: request.data ?? '0x' }, summary, summary?.danger, offline)
       const signed = await elsewhere(offline, result)
       const hash = signed ? await broadcast(network, signed) : await send(network, await sign(), request)
       mined(network, hash).catch(() => {})
@@ -226,7 +228,7 @@ export default defineBackground(() => {
       if (msg.type === 'pending') respond([...pending.values()].map(({ resolve, reject, ...p }) => p))
       else if (msg.type === 'settle') respond(settle(msg.id, msg.ok, msg.result))
       else if (msg.type === 'reset') {
-        if (resetting) { respond({ error: 'Wallet is already being reset' }); return }
+        if (resetting) { respond({ error: t('Wallet is already being reset') }); return }
         resetting = true
         generation++
         for (const p of pending.values()) p.reject(err(4001, 'Wallet was reset'))

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">Telusuri atau ketik alamat web</string>
+    <string name="favorite_site">Tambahkan ke favorit</string>
+    <string name="wallet">Dompet</string>
+    <string name="webview_too_old">Plain Wallet memerlukan Android System WebView %1$d atau yang lebih baru. Perbarui dari Play Store.</string>
+    <string name="fingerprint_turn_on">Aktifkan buka kunci dengan sidik jari</string>
+    <string name="fingerprint_unlock">Buka kunci Plain Wallet</string>
+    <string name="fingerprint_changed">Sidik jari atau kunci layar di ponsel ini telah berubah, sehingga buka kunci dengan sidik jari dinonaktifkan. Buka kunci dengan kata sandi Anda, lalu aktifkan lagi di Setelan.</string>
+    <string name="use_password">Gunakan kata sandi</string>
+    <string name="secret_in_address_bar">Sepertinya itu frasa pemulihan atau kunci privat. Jangan pernah mengetikkannya di situs web.</string>
+    <string name="write_to">Kirim email ke %1$s</string>
+</resources>

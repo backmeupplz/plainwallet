@@ -1,6 +1,7 @@
 // Turns what a dapp asks you to sign, and what you type to send, into something a person can check. Pure, so
 // `npm test` covers it.
 import { decodeFunctionData, formatUnits, getAddress, getTypesForEIP712Domain, isAddress, parseAbi, parseUnits } from 'viem'
+import { msg, problem, say, t, type Msg } from './i18n.ts'
 
 export const clean = (v: unknown, max: number) => String(v).replace(/\s+/g, ' ').trim().slice(0, max)
 
@@ -13,31 +14,39 @@ const CALLS = parseAbi([
   'function setApprovalForAll(address operator, bool approved)',
 ])
 
-/** One sentence for token-moving calldata. `token` comes from the RPC, so treat symbol/decimals as a hint only. */
-export function describeCall(data?: `0x${string}`, token: { symbol?: string; decimals?: number } = {}): string | undefined {
+/** One sentence for token-moving calldata, to translate where it's shown (lib/i18n.ts). `token` comes from the RPC, so
+ * treat symbol/decimals as a hint only. `danger`: it hands over unlimited amounts or a whole NFT collection. */
+export function callSummary(data?: `0x${string}`, token: { symbol?: string; decimals?: number } = {}): (Msg & { danger: boolean }) | undefined {
   if (!data || data === '0x') return
   let call
   try {
     call = decodeFunctionData({ abi: CALLS, data })
   } catch {
-    return `Contract call ${data.slice(0, 10)} (not decoded)`
+    return { ...msg('Contract call {selector} (not decoded)', { selector: data.slice(0, 10) }), danger: false }
   }
-  const name = token.symbol ? clean(token.symbol, 12) : 'tokens'
+  const name = token.symbol ? clean(token.symbol, 12) : msg('tokens')
   // ponytail: anything >= 2^96-1 reads as unlimited; covers uint96/uint160/uint256 max approvals
+  const unlimited = (v: bigint) => v >= 2n ** 96n - 1n
   const amount = (v: bigint) =>
-    v >= 2n ** 96n - 1n ? 'UNLIMITED' : token.decimals == null ? `${v} (raw units, or NFT #${v})` : formatUnits(v, token.decimals)
+    unlimited(v) ? msg('UNLIMITED') : token.decimals == null ? msg('{n} (raw units, or NFT #{n})', { n: String(v) }) : formatUnits(v, token.decimals)
   const a = call.args as readonly any[]
   switch (call.functionName) {
     case 'approve':
     case 'increaseAllowance':
-      return `Lets ${a[0]} spend ${amount(a[1])} ${name} of yours`
+      return { ...msg('Lets {spender} spend {amount} {token} of yours', { spender: a[0], amount: amount(a[1]), token: name }), danger: unlimited(a[1]) }
     case 'transfer':
-      return `Sends ${amount(a[1])} ${name} to ${a[0]}`
+      return { ...msg('Sends {amount} {token} to {to}', { amount: amount(a[1]), token: name, to: a[0] }), danger: unlimited(a[1]) }
     case 'transferFrom':
-      return `Moves ${amount(a[2])} ${name} from ${a[0]} to ${a[1]}`
+      return { ...msg('Moves {amount} {token} from {from} to {to}', { amount: amount(a[2]), token: name, from: a[0], to: a[1] }), danger: unlimited(a[2]) }
     case 'setApprovalForAll':
-      return a[1] ? `Lets ${a[0]} move ALL your NFTs in this collection` : `Revokes ${a[0]}'s access to this collection`
+      return a[1] ? { ...msg('Lets {operator} move ALL your NFTs in this collection', { operator: a[0] }), danger: true }
+        : { ...msg('Revokes {operator}’s access to this collection', { operator: a[0] }), danger: false }
   }
+}
+/** callSummary, in the wallet's language (or English, for Jev). */
+export function describeCall(data?: `0x${string}`, token?: { symbol?: string; decimals?: number }, show: (m: Msg) => string = say) {
+  const summary = callSummary(data, token)
+  return summary && show(summary)
 }
 
 /** Whoever token-moving calldata would let move the account's assets later: the spender or operator. */
@@ -63,14 +72,14 @@ export function signedView(td: any) {
   const view = { primaryType, domain: walk('EIP712Domain', td.domain), message: primaryType === 'EIP712Domain' ? {} : walk(primaryType, td.message) }
   // Permits, transfer authorizations, marketplace orders, Safe transactions: signatures that hand over assets.
   const risky = /permit|order|transfer|authoriz|approv|safetx|delegat/i.test(primaryType) || /"(spender|operator|offer|consideration)"/.test(JSON.stringify(view.message))
-  return { view, summary: risky ? 'Can move or approve your assets: whoever gets this signature can use it without asking you again' : undefined }
+  return { view, summary: risky ? msg('Can move or approve your assets: whoever gets this signature can use it without asking you again') : undefined }
 }
 
 /** A typed address, checksummed. Mixed case must carry a valid EIP-55 checksum: that is what catches typos. */
-export function parseAddress(text: string) {
-  const t = text.trim()
-  if (isAddress(t)) return getAddress(t)
-  throw new Error(isAddress(t, { strict: false }) ? 'Address checksum does not match; check it for a typo' : 'Enter a valid 0x address')
+export function parseAddress(typed: string) {
+  const text = typed.trim()
+  if (isAddress(text)) return getAddress(text)
+  throw new Error(isAddress(text, { strict: false }) ? t('Address checksum does not match; check it for a typo') : t('Enter a valid 0x address'))
 }
 
 /** EIP-4361 has wallets match a sign-in message's domain to the site asking. Returns the other domain, if it isn't. */
@@ -92,11 +101,11 @@ export function publicRpc(url: unknown) {
 }
 
 /** A typed amount in base units. Refuses extra decimals instead of letting parseUnits round them away. */
-export function parseAmount(text: string, decimals: number) {
-  const t = text.trim()
-  if (!/^\d*\.?\d*$/.test(t) || !/\d/.test(t)) throw new Error('Enter an amount like 1.5')
-  if ((t.split('.')[1] ?? '').length > decimals) throw new Error(`At most ${decimals} decimals`)
-  const value = parseUnits(t, decimals)
-  if (!value) throw new Error('Enter an amount above zero')
+export function parseAmount(typed: string, decimals: number) {
+  const text = typed.trim()
+  if (!/^\d*\.?\d*$/.test(text) || !/\d/.test(text)) throw problem('Enter an amount like 1.5')
+  if ((text.split('.')[1] ?? '').length > decimals) throw problem('At most {n} decimals', { n: decimals })
+  const value = parseUnits(text, decimals)
+  if (!value) throw problem('Enter an amount above zero')
   return value
 }

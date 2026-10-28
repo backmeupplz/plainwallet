@@ -2,6 +2,7 @@
 import { scryptAsync } from '@noble/hashes/scrypt' // viem's own hashing library
 import { validateMnemonic } from '@scure/bip39' // viem doesn't re-export it; same copy viem uses
 import { english, generateMnemonic, mnemonicToAccount, privateKeyToAccount } from 'viem/accounts'
+import { problem, t } from './i18n.ts'
 
 export const newMnemonic = () => generateMnemonic(english)
 
@@ -11,7 +12,7 @@ export function parseSecret(input: string): string {
   if (/^(0x)?[0-9a-fA-F]{64}$/.test(s)) return s.startsWith('0x') ? s : `0x${s}`
   const mnemonic = s.toLowerCase().split(/\s+/).join(' ')
   if (validateMnemonic(mnemonic, english)) return mnemonic
-  throw new Error('Not a valid seed phrase or private key')
+  throw problem('Not a valid seed phrase or private key')
 }
 
 /** Feedback while a seed phrase or private key is being typed; `ok` exactly when parseSecret would accept it.
@@ -22,17 +23,17 @@ export function checkSecret(input: string): { ok: boolean; message: string; bad?
   // Hex, unless it could still be a seed word (a-f only, at most 8 letters: "add", "decade")
   if (/^0x/.test(s) || (/^[0-9a-f]+$/.test(s) && (s.length > 8 || /\d/.test(s)))) {
     const hex = s.replace(/^0x/, '')
-    if (!/^[0-9a-f]*$/.test(hex)) return { ok: false, bad: true, message: 'A private key is only 0-9 and a-f' }
-    return hex.length === 64 ? { ok: true, message: 'Private key' }
-      : { ok: false, bad: hex.length > 64, message: `Private key: ${hex.length} of 64 characters` }
+    if (!/^[0-9a-f]*$/.test(hex)) return { ok: false, bad: true, message: t('A private key is only 0-9 and a-f') }
+    return hex.length === 64 ? { ok: true, message: t('Private key') }
+      : { ok: false, bad: hex.length > 64, message: t('Private key: {n} of 64 characters', { n: hex.length }) }
   }
   const words = s.split(/\s+/)
   const typing = !/\s$/.test(input) // the last word may be half typed
   const unknown = words.find((w, i) => !english.includes(w) && !(typing && i === words.length - 1 && english.some((e) => e.startsWith(w))))
-  if (unknown) return { ok: false, bad: true, message: `“${unknown}” isn’t a seed phrase word` }
-  if (![12, 15, 18, 21, 24].includes(words.length)) return { ok: false, bad: words.length > 24, message: `${words.length} of 12 or 24 words` }
-  if (!validateMnemonic(words.join(' '), english)) return { ok: false, bad: true, message: 'These words don’t form a seed phrase: check their order and spelling' }
-  return { ok: true, message: `Valid ${words.length}-word seed phrase` }
+  if (unknown) return { ok: false, bad: true, message: t('“{word}” isn’t a seed phrase word', { word: unknown }) }
+  if (![12, 15, 18, 21, 24].includes(words.length)) return { ok: false, bad: words.length > 24, message: t('{n} of 12 or 24 words', { n: words.length }) }
+  if (!validateMnemonic(words.join(' '), english)) return { ok: false, bad: true, message: t('These words don’t form a seed phrase: check their order and spelling') }
+  return { ok: true, message: t('Valid {n}-word seed phrase', { n: words.length }) }
 }
 
 // Keep legacy strings readable; derived accounts carry their index inside the encrypted vault. A watch-only account
@@ -43,7 +44,7 @@ export const mnemonicOf = (secret: Secret) =>
   typeof secret === 'string' ? (secret.startsWith('0x') ? undefined : secret) : 'mnemonic' in secret ? secret.mnemonic : undefined
 export function toAccount(secret: Secret) {
   if (typeof secret === 'string') return secret.startsWith('0x') ? privateKeyToAccount(secret as `0x${string}`) : mnemonicToAccount(secret)
-  if ('watch' in secret) throw new Error('This account is watch-only: its key is on another device')
+  if ('watch' in secret) throw problem('This account is watch-only: its key is on another device')
   return mnemonicToAccount(secret.mnemonic, { addressIndex: secret.addressIndex })
 }
 export const addressOf = (secret: Secret) => watched(secret) ?? toAccount(secret).address

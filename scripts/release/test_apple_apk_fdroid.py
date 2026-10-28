@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from urllib.parse import parse_qs, urlparse
 
-from submit import apk, fdroid, appstore, app_store_notes, preflight, APP_STORE_APP
+from submit import apk, fdroid, appstore, app_store_notes, changelogs, preflight, whats_new, APP_STORE_APP
 from test_release import MemoryJournal
 
 META = {"version": "0.5.2", "versionCode": 502, "sha": "a" * 40, "releaseId": 1}
@@ -132,6 +132,26 @@ class AppleApkFdroidTests(unittest.TestCase):
         self.assertNotIn(("upload", "ios"), fake.writes)
         self.assertEqual(app_store_notes({"release": {"body": "Works on Android and Chrome too."}}), "Fixes and improvements.")
         self.assertEqual(app_store_notes({}), "Fixes and improvements.")
+
+    def test_whats_new_per_locale_from_the_changelogs(self):
+        with tempfile.TemporaryDirectory() as root:
+            for language, text in (("en-US", "Faster unlock.\n"), ("de-DE", "Schneller entsperren.\nJetzt auch für Android."), ("ja-JP", "Android 版の修正"), ("zh-CN", "解锁更快。\n修复了安卓版的问题。"), ("ru-RU", "Исправления для Андроид."), ("fr-FR", "  ")):
+                os.makedirs(os.path.join(root, language, "changelogs"))
+                with open(os.path.join(root, language, "changelogs", "502.txt"), "w", encoding="utf-8") as f:
+                    f.write(text)
+            with open(os.path.join(root, "en-US", "changelogs", "501.txt"), "w") as f:
+                f.write("Older.")
+            logs = changelogs(META, Path(root))
+        self.assertEqual(logs, {"de-DE": "Schneller entsperren.\nJetzt auch für Android.", "en-US": "Faster unlock.", "ja-JP": "Android 版の修正", "ru-RU": "Исправления для Андроид.", "zh-CN": "解锁更快。\n修复了安卓版的问题。"})
+        notes = whats_new(EVENT, logs)
+        self.assertEqual(notes("de-DE"), "Schneller entsperren.") # the line naming another platform is left out
+        self.assertEqual(notes("ja"), "Faster unlock.") # nothing left: English
+        self.assertEqual(notes("zh-Hans"), "解锁更快。") # platform names in other scripts too
+        self.assertEqual(notes("ru"), "Faster unlock.")
+        self.assertEqual(notes("fr-FR"), "Faster unlock.")
+        self.assertEqual(notes(None), "Faster unlock.")
+        self.assertEqual(whats_new(EVENT, {})("de-DE"), "Faster unlock and clearer approvals.")
+        self.assertEqual(changelogs(META, Path(root)), {}) # gone with the directory
 
     def test_apk_attaches_both_names_once(self):
         journal = MemoryJournal("apk")

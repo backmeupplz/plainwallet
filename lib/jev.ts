@@ -2,11 +2,12 @@
 // with what the wallet can find out first: a simulation (lib/chain.ts) and public lookups (lib/lookup.ts). Jev
 // classifies, it doesn't simulate, and it reads hex poorly: it only sees text the wallet prepared. A site can still
 // word things to sway it, so its answers only ever sit next to the wallet's own rows, never replace them.
+import { problem, t } from './i18n.ts'
 
 export type Subject = 'transaction' | 'signature'
 
 // Choice keys double as the label shown in the popup.
-const ACTIONS: Record<Subject, Record<string, string>> = {
+export const ACTIONS: Record<Subject, Record<string, string>> = {
   transaction: {
     'Sends coins': 'Sends the native currency in `transaction.value` to an address, with no contract call',
     'Sends tokens': 'Transfers tokens or NFTs to another address',
@@ -84,7 +85,7 @@ export async function analyze(key: string, subject: Subject, fields: Record<stri
     headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
     body: JSON.stringify({ model: 'jev-latest', state: { [subject]: fields }, questions: questions(subject, !!fields.site) }),
   })
-  if (!res.ok) throw new Error(res.status === 401 ? 'Jev rejected the API key' : `Jev answered ${res.status}`)
+  if (!res.ok) throw new Error(res.status === 401 ? t('Jev rejected the API key') : t('Jev answered {status}', { status: res.status }))
   const a = (await res.json())?.answers
   const action = a?.action?.choice
   const probabilities = a?.action?.probabilities ?? {}
@@ -92,6 +93,6 @@ export async function analyze(key: string, subject: Subject, fields: Record<stri
     .filter(([, p]) => typeof p === 'number').toSorted((x, y) => y[1] - x[1])
   const verdict = { action, ranked, scam: a?.scam?.noul, lookalike: a?.lookalike?.noul }
   const numbers = [probabilities[action], verdict.scam, ...(fields.site ? [verdict.lookalike] : [])]
-  if (!Object.hasOwn(ACTIONS[subject], action) || !numbers.every((n) => typeof n === 'number')) throw new Error('Unexpected answer from Jev')
+  if (!Object.hasOwn(ACTIONS[subject], action) || !numbers.every((n) => typeof n === 'number')) throw problem('Unexpected answer from Jev')
   return verdict
 }

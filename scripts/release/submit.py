@@ -392,10 +392,39 @@ def export_upload(platform, key, env):
     return {"uploaded": True}
 
 
+# App Review rejects mentions of other platforms (2.3.10), which release notes often have.
+# Localized notes spell them in their own scripts too.
+OTHER_PLATFORMS = re.compile(r"android|chrome|firefox|google|play store|edge|brave|f-droid"
+                             r"|安卓|谷歌|火狐|アンドロイド|グーグル|クローム|ファイアフォックス|안드로이드|구글|크롬|파이어폭스"
+                             r"|андроид|андроїд|гугл|хром|файрфокс|أندرويد|اندرويد|جوجل|غوغل|كروم|فايرفوكس"
+                             r"|एंड्रॉयड|एंड्रॉइड|गूगल|क्रोम|แอนดรอยด์|กูเกิล|โครม", re.I)
+# Release notes in each store language: fastlane/metadata/android/<Play language>/changelogs/<versionCode>.txt, which
+# F-Droid shows too. The App Store gets them under its own locale codes.
+CHANGELOGS = Path("fastlane/metadata/android")
+APPLE_LOCALES = {"ar": "ar-SA", "de-DE": "de-DE", "en-GB": "en-GB", "en-US": "en-US", "es-419": "es-MX", "es-ES": "es-ES", "fr-FR": "fr-FR",
+                 "hi-IN": "hi", "id": "id", "it-IT": "it", "ja-JP": "ja", "ko-KR": "ko", "nl-NL": "nl-NL", "pl-PL": "pl", "pt-BR": "pt-BR",
+                 "pt-PT": "pt-PT", "ru-RU": "ru", "sv-SE": "sv", "th": "th", "tr-TR": "tr", "uk": "uk", "vi": "vi", "zh-CN": "zh-Hans", "zh-TW": "zh-Hant"}
+
+
 def app_store_notes(event):
-    # App Review rejects mentions of other platforms (2.3.10), which release notes often have.
     text = (event.get("release", {}).get("body") or "").replace("\r", "").strip().split("\n\n")[0][:4000]
-    return text if text and not re.search(r"android|chrome|firefox|google|play store|edge|brave", text, re.I) else "Fixes and improvements."
+    return text if text and not OTHER_PLATFORMS.search(text) else "Fixes and improvements."
+
+
+def changelogs(meta, root=CHANGELOGS):
+    """Play language -> this version's release notes, for the languages that have them."""
+    files = sorted(root.glob("*/changelogs/" + str(meta["versionCode"]) + ".txt")) if root.is_dir() else []
+    return {f.parts[-3]: text for f in files if (text := f.read_text(encoding="utf-8").replace("\r", "").strip())}
+
+
+def whats_new(event, logs):
+    """App Store locale -> What's New: its language's notes without the lines naming another platform, else English's,
+    else the release's own text."""
+    def safe(text):
+        return "\n".join(line for line in text.split("\n") if not OTHER_PLATFORMS.search(line)).strip()[:4000]
+    notes = {APPLE_LOCALES[language]: safe(text) for language, text in logs.items() if language in APPLE_LOCALES}
+    fallback = notes.get("en-US") or app_store_notes(event)
+    return lambda locale: notes.get(locale) or fallback
 
 
 def appstore_platform(meta, journal, platform, api, upload, notes, pause):
@@ -446,7 +475,7 @@ def appstore_platform(meta, journal, platform, api, upload, notes, pause):
     api("appStoreVersions/" + version + "/relationships/build", method="PATCH", body={"data": {"type": "builds", "id": build}})
     if any(state(v) == "READY_FOR_SALE" for v in current):  # a first version can't have What's New
         for localization in api("appStoreVersions/" + version + "/appStoreVersionLocalizations?fields[appStoreVersionLocalizations]=locale")["data"]:
-            api("appStoreVersionLocalizations/" + localization["id"], method="PATCH", body={"data": {"type": "appStoreVersionLocalizations", "id": localization["id"], "attributes": {"whatsNew": notes}}})
+            api("appStoreVersionLocalizations/" + localization["id"], method="PATCH", body={"data": {"type": "appStoreVersionLocalizations", "id": localization["id"], "attributes": {"whatsNew": notes(localization.get("attributes", {}).get("locale"))}}})
     ready = api("reviewSubmissions?filter[app]=" + APP_STORE_APP + "&filter[platform]=" + p + "&filter[state]=READY_FOR_REVIEW")["data"]
     submission = ready[0]["id"] if ready else journal.once("submission-" + platform, lambda: api("reviewSubmissions", method="POST", body={"data": {"type": "reviewSubmissions", "attributes": {"platform": p}, "relationships": {"app": {"data": {"type": "apps", "id": APP_STORE_APP}}}}}), lambda r: {"id": r["data"]["id"]})["id"]
     items = api("reviewSubmissions/" + submission + "/items?include=appStoreVersion")
@@ -464,11 +493,12 @@ def appstore(meta, env, journal, event, api=None, upload=None, pause=time.sleep)
         key.chmod(0o600)
         call = api or (lambda path, **kw: request("https://api.appstoreconnect.apple.com/v1/" + path, asc_token(key, env), **kw))
         send = upload or (lambda platform: export_upload(platform, key, env))
-        results = [appstore_platform(meta, journal, platform, call, send, app_store_notes(event), pause) for platform in PLATFORMS]
+        notes = whats_new(event, changelogs(meta))
+        results = [appstore_platform(meta, journal, platform, call, send, notes, pause) for platform in PLATFORMS]
     return {"store": "appstore", "version": meta["version"], "platforms": results, "state": ", ".join(r["platform"] + ": " + r["state"] for r in results), "publication": "automatic-after-approval"}
 
 
-def play(meta, env, journal, api=request, sign=signed_bundle):
+def play(meta, env, journal, api=request, sign=signed_bundle, logs=None):
     base = "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/com.borodutch.plainwallet/edits"
     token = env["GOOGLE_ACCESS_TOKEN"]
     require(env.get("PLAY_TRACK") == "production", "Play track must be production")
@@ -499,7 +529,11 @@ def play(meta, env, journal, api=request, sign=signed_bundle):
         data = sign(env)
         receipt = journal.once("bundle", lambda: api("https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/com.borodutch.plainwallet/edits/" + edit["id"] + "/bundles?uploadType=media", token, method="POST", body=data, content_type="application/octet-stream"), lambda r: {"versionCode": r["versionCode"], "sha256": r.get("sha256")})
     require(receipt["versionCode"] == meta["versionCode"], "Play uploaded wrong versionCode")
-    track_receipt = journal.once("track", lambda: api(track_url, token, method="PUT", body={"track": env["PLAY_TRACK"], "releases": [{"name": meta["version"], "versionCodes": [str(meta["versionCode"])], "status": "completed"}]}), lambda r: {"track": r["track"]})
+    # Notes go only to the languages the listing has (Play refuses others), up to 500 characters each.
+    listed = {listing.get("language") for listing in api(path + "/listings", token).get("listings", [])}
+    notes = [{"language": language, "text": text[:500]} for language, text in sorted((changelogs(meta) if logs is None else logs).items()) if language in listed]
+    release = {"name": meta["version"], "versionCodes": [str(meta["versionCode"])], "status": "completed", **({"releaseNotes": notes} if notes else {})}
+    track_receipt = journal.once("track", lambda: api(track_url, token, method="PUT", body={"track": env["PLAY_TRACK"], "releases": [release]}), lambda r: {"track": r["track"]})
     require(track_receipt.get("track") == "production", "Play did not confirm production track; no commit")
     journal.once("validate", lambda: api(path + ":validate", token, method="POST"), lambda r: {"valid": True})
     committed = journal.once("commit", lambda: api(path + ":commit?changesNotSentForReview=false&changesInReviewBehavior=CANCEL_IN_REVIEW_AND_SUBMIT", token, method="POST"), lambda r: {"id": r["id"], "track": "production", "managedPublishingDisabledConfirmed": True})

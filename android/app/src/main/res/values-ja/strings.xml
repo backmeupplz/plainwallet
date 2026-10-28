@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">検索またはWebアドレスを入力</string>
+    <string name="favorite_site">お気に入りに追加</string>
+    <string name="wallet">ウォレット</string>
+    <string name="webview_too_old">Plain WalletにはAndroid System WebView %1$d以降が必要です。Play Storeでアップデートしてください。</string>
+    <string name="fingerprint_turn_on">指紋によるロック解除をオンにする</string>
+    <string name="fingerprint_unlock">Plain Walletのロックを解除</string>
+    <string name="fingerprint_changed">このスマートフォンの指紋または画面ロックが変更されたため、指紋によるロック解除はオフになりました。パスワードでロックを解除し、設定でもう一度オンにしてください。</string>
+    <string name="use_password">パスワードを使用</string>
+    <string name="secret_in_address_bar">シードフレーズまたは秘密鍵のようです。Webサイトには絶対に入力しないでください。</string>
+    <string name="write_to">%1$s までご連絡ください</string>
+</resources>

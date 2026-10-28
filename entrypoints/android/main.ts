@@ -2,6 +2,7 @@
 // entrypoints/android-shim.ts provides. The app shows it for the home screen and for approvals.
 import background from '../background'
 import { extras, h, rearm, render } from '../popup/main'
+import { shown, t } from '@/lib/i18n'
 import { isUnlocked, unlock, unlockWithKey } from '@/lib/store'
 
 // Messages to and from the app, beyond what the shim handles itself.
@@ -14,7 +15,7 @@ const mac = (globalThis as any).plainwalletNative.platform === 'macos'
 background.main()
 extras.autolockSetting = mac
 extras.files = false // copy and paste only: a web view has nowhere to save or pick a file
-extras.autolockOff = 'When off, the wallet stays unlocked until you lock it, quit the app, or your Mac sleeps or locks its screen.'
+extras.autolockOff = () => t('When off, the wallet stays unlocked until you lock it, quit the app, or your Mac sleeps or locks its screen.')
 // The phones may then ask for a store rating; they decide when (android/app/src/play/, ios/PlainWallet/RatingPrompt.swift).
 if (!mac) extras.confirmed = () => app.send({ type: 'confirmed' })
 // The app just brought this page up: an approval, or you opened the wallet.
@@ -26,13 +27,13 @@ addEventListener('plainwallet-render', () => {
 // Sites starred in the app's browser, on top of the home screen, with the icons the app got from them. Labeled with
 // the host, which a site can't choose the way it chooses its title.
 if (!mac) extras.home = () => {
-  const nav = h('nav', { className: 'favorites', ariaLabel: 'Favorite sites' })
+  const nav = h('nav', { className: 'favorites', ariaLabel: t('Favorite sites') })
   void browser.storage.local.get('favorites').then(({ favorites = [] }: { favorites?: { url: string; title: string; icon?: string }[] }) =>
     nav.replaceChildren(...(favorites.length ? favorites.map(({ url, title, icon }) => {
       const host = new URL(url).hostname.replace(/^www\./, '')
       return h('button', { title: `${title} · ${url}`, onclick: () => browser.tabs.create({ url }) },
         icon ? h('img', { src: icon, alt: '' }) : h('span', {}, host[0]!.toUpperCase()), h('span', {}, host))
-    }) : [h('p', {}, 'Tap ☆ in the address bar to pin a site here.')])))
+    }) : [h('p', {}, t('Tap ☆ in the address bar to pin a site here.'))])))
   return [nav]
 }
 
@@ -57,7 +58,7 @@ app.listen(async (msg) => {
     if (!(await isUnlocked())) void render()
   } else if (msg.type === 'fingerprint-key') {
     // Unlocking redraws by itself (the session key changes); a key that doesn't fit leaves a note.
-    await unlockWithKey(msg.key).then(() => (note = ''), (e: Error) => { note = e.message; void render() })
+    await unlockWithKey(msg.key).then(() => (note = ''), (e: Error) => { note = shown(e); void render() })
   }
 })
 
@@ -67,7 +68,7 @@ extras.unlock = () => {
     asked = true
     app.send({ type: 'fingerprint-unlock' })
   }
-  return [h('button', { onclick: () => app.send({ type: 'fingerprint-unlock' }) }, `Unlock with ${fingerprint.name}`),
+  return [h('button', { onclick: () => app.send({ type: 'fingerprint-unlock' }) }, fingerprint.name === 'fingerprint' ? t('Unlock with fingerprint') : t('Unlock with {method}', { method: fingerprint.name })),
     ...(note ? [h('p', { className: 'bad' }, note)] : [])]
 }
 
@@ -80,19 +81,20 @@ function settings(open = false) {
       await unlock(pw.value) // checks the password; the key it derives is the one in use
       app.send({ type: 'fingerprint-enable', key: (await browser.storage.session.get('key')).key })
     } catch (e) {
-      failure.textContent = (e as Error).message
+      // unlock() in lib/store.ts throws 'Wrong password' untranslated, as a code (as on the unlock screen)
+      failure.textContent = e instanceof Error && e.message === 'Wrong password' ? t('Wrong password. Please try again.') : shown(e)
     } finally {
       pw.value = ''
     }
   }
   return h('details', { className: 'fold', open },
-    h('summary', {}, `${name[0]!.toUpperCase()}${name.slice(1)} unlock: `, h('span', {}, fingerprint.enabled ? 'on' : 'off')),
+    h('summary', {}, name === 'fingerprint' ? t('Fingerprint unlock:') : t('{method} unlock:', { method: name }), ' ', h('span', {}, fingerprint.enabled ? t('on') : t('off'))),
     h('div', { className: 'dialog-content' },
       h('p', {}, name === 'fingerprint'
-        ? 'Unlock with your fingerprint instead of typing the password, which keeps working. Android keeps the wallet key behind your fingerprint; adding or removing a fingerprint on the phone turns this off.'
-        : `Unlock with ${name} instead of typing the password, which keeps working. The iPhone keeps the wallet key behind ${name}; changing ${name} on the phone turns this off.`),
-      ...(fingerprint.enabled ? [h('button', { onclick: () => app.send({ type: 'fingerprint-disable' }) }, 'Turn off')]
-        : [h('label', {}, 'Your password', pw), h('button', { className: 'primary', onclick: turnOn }, 'Turn on')]),
+        ? t('Unlock with your fingerprint instead of typing the password, which keeps working. Android keeps the wallet key behind your fingerprint; adding or removing a fingerprint on the phone turns this off.')
+        : t('Unlock with {method} instead of typing the password, which keeps working. The iPhone keeps the wallet key behind {method}; changing {method} on the phone turns this off.', { method: name })),
+      ...(fingerprint.enabled ? [h('button', { onclick: () => app.send({ type: 'fingerprint-disable' }) }, t('Turn off'))]
+        : [h('label', {}, t('Your password'), pw), h('button', { className: 'primary', onclick: turnOn }, t('Turn on'))]),
       failure))
 }
 extras.settings = () => (fingerprint.available ? [(section = settings())] : [])

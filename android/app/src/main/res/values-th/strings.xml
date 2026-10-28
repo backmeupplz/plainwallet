@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">ค้นหาหรือพิมพ์ที่อยู่เว็บ</string>
+    <string name="favorite_site">เพิ่มในรายการโปรด</string>
+    <string name="wallet">กระเป๋าเงิน</string>
+    <string name="webview_too_old">Plain Wallet ต้องใช้ Android System WebView เวอร์ชัน %1$d ขึ้นไป โปรดอัปเดตจาก Play Store</string>
+    <string name="fingerprint_turn_on">เปิดการปลดล็อกด้วยลายนิ้วมือ</string>
+    <string name="fingerprint_unlock">ปลดล็อก Plain Wallet</string>
+    <string name="fingerprint_changed">ลายนิ้วมือหรือการล็อกหน้าจอในโทรศัพท์เครื่องนี้มีการเปลี่ยนแปลง การปลดล็อกด้วยลายนิ้วมือจึงถูกปิด ปลดล็อกด้วยรหัสผ่านของคุณ แล้วเปิดอีกครั้งในการตั้งค่า</string>
+    <string name="use_password">ใช้รหัสผ่าน</string>
+    <string name="secret_in_address_bar">ข้อความนี้ดูเหมือนวลีกู้คืนหรือคีย์ส่วนตัว ห้ามพิมพ์ลงในเว็บไซต์ใดๆ เด็ดขาด</string>
+    <string name="write_to">ส่งอีเมลถึง %1$s</string>
+</resources>

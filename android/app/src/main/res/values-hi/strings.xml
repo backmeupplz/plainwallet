@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address_hint">खोजें या वेब पता लिखें</string>
+    <string name="favorite_site">पसंदीदा में जोड़ें</string>
+    <string name="wallet">वॉलेट</string>
+    <string name="webview_too_old">Plain Wallet के लिए Android System WebView %1$d या उससे नया वर्शन ज़रूरी है। इसे Play Store से अपडेट करें।</string>
+    <string name="fingerprint_turn_on">फ़िंगरप्रिंट से अनलॉक करना चालू करें</string>
+    <string name="fingerprint_unlock">Plain Wallet अनलॉक करें</string>
+    <string name="fingerprint_changed">इस फ़ोन पर फ़िंगरप्रिंट या स्क्रीन लॉक बदल गया है, इसलिए फ़िंगरप्रिंट से अनलॉक करना बंद कर दिया गया है। अपने पासवर्ड से अनलॉक करें और सेटिंग में इसे फिर से चालू करें।</string>
+    <string name="use_password">पासवर्ड इस्तेमाल करें</string>
+    <string name="secret_in_address_bar">यह सीड फ़्रेज़ या प्राइवेट की जैसा लगता है। इसे कभी भी किसी वेबसाइट में न लिखें।</string>
+    <string name="write_to">%1$s पर लिखें</string>
+</resources>
