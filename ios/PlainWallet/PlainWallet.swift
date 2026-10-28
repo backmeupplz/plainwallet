@@ -58,7 +58,7 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
     static let maxMessage = 1_000_000
 
     var wallet: WKWebView!, browser: WKWebView!
-    let bar = UIStackView(), address = UITextField(), star = UIButton(type: .system), home = UIButton()
+    let bar = UIStackView(), field = Pill(), address = UITextField(), star = UIButton(type: .system), home = UIButton()
     let views = UIView(), progress = UIProgressView(progressViewStyle: .bar), cover = UIView()
     var edges: [NSLayoutConstraint] = [] // the address bar and pages' top, left, bottom and right, from the screen's (see insets)
     var covering: [CGRect]? // in place of what iOS reports covering the screen: the tests' unfolded iPhone Duo (FoldTests)
@@ -79,9 +79,9 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
         browser = newBrowser()
 
         // A browser's address bar: a rounded field showing whose page it is (all of the address while you edit), the
-        // star inside it; empty on the wallet, which is the new-tab page here.
+        // star inside it; empty on the wallet, which is the new-tab page here. Its text follows Dynamic Type (see textSize).
         address.placeholder = String(localized: "Search or type web address")
-        address.font = .systemFont(ofSize: 16)
+        address.font = addressFont
         address.keyboardType = .webSearch
         address.returnKeyType = .go
         address.autocapitalizationType = .none
@@ -92,11 +92,11 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
         star.accessibilityLabel = String(localized: "Favorite this site")
         star.addAction(UIAction { [unowned self] _ in toWallet(["type": "star"]) }, for: .primaryActionTriggered)
         starred(false)
-        let field = UIStackView(arrangedSubviews: [address, star])
+        field.addArrangedSubview(address)
+        field.addArrangedSubview(star)
         field.backgroundColor = Self.sheet
-        field.layer.cornerRadius = 22
         field.isLayoutMarginsRelativeArrangement = true
-        field.directionalLayoutMargins = .init(top: 0, leading: 16, bottom: 0, trailing: 0)
+        field.directionalLayoutMargins = .init(top: 8, leading: 16, bottom: 8, trailing: 0) // around larger text: it grows past 44
         home.configuration = .plain()
         home.configuration!.image = UIImage(named: "Mark")
         home.configuration!.contentInsets = .init(top: 6, leading: 6, bottom: 6, trailing: 6)
@@ -136,7 +136,8 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
         edges = [column.topAnchor.constraint(equalTo: view.topAnchor), column.leftAnchor.constraint(equalTo: view.leftAnchor),
                  view.bottomAnchor.constraint(equalTo: column.bottomAnchor), view.rightAnchor.constraint(equalTo: column.rightAnchor)]
         NSLayoutConstraint.activate([
-            field.heightAnchor.constraint(equalToConstant: 44),
+            { let c = field.heightAnchor.constraint(equalToConstant: 44); c.priority = .defaultHigh - 1; return c }(), // or the text's
+            addressHeight,
             { let c = bar.heightAnchor.constraint(equalToConstant: 56); c.priority = .required - 1; return c }(), // 0 while hidden
             star.widthAnchor.constraint(equalToConstant: 44),
             home.widthAnchor.constraint(equalToConstant: 48), home.heightAnchor.constraint(equalToConstant: 48),
@@ -150,6 +151,24 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
         showWallet(true)
         // Screen recording and mirroring show the cover rather than the wallet (iOS can't keep it out of screenshots).
         registerForTraitChanges([UITraitSceneCaptureState.self]) { (self: Main, _: UITraitCollection) in self.covered() }
+        registerForTraitChanges([UITraitPreferredContentSizeCategory.self]) { (self: Main, _: UITraitCollection) in self.textSize() }
+    }
+
+    /*
+     Text follows your Dynamic Type setting, scaled as body text is: the address bar's (16 pt at the default setting), and
+     the wallet page's, whose text and the boxes that hold it are sized from its root font (style.css: 14px by default).
+     The page gets its size before its own scripts run (see walletScripts), and again, as it is, when the setting changes.
+     */
+    lazy var addressHeight = address.heightAnchor.constraint(greaterThanOrEqualToConstant: addressFont.lineHeight.rounded(.up))
+    var addressFont: UIFont { UIFontMetrics(forTextStyle: .body).scaledFont(for: .systemFont(ofSize: 16), compatibleWith: traitCollection) }
+    var pageTextSize: String { "\(UIFontMetrics(forTextStyle: .body).scaledValue(for: 14, compatibleWith: traitCollection))px" }
+
+    func textSize() {
+        address.font = addressFont
+        addressHeight.constant = addressFont.lineHeight.rounded(.up)
+        if !address.isFirstResponder { showAddress() } // not what you're typing
+        walletScripts(wallet.configuration.userContentController)
+        wallet.callAsyncJavaScript("document.documentElement.style.fontSize = size", arguments: ["size": pageTextSize], in: nil, in: .page)
     }
 
     override func viewWillLayoutSubviews() {
@@ -217,10 +236,7 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
     func newWallet() -> WKWebView {
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(Assets(), forURLScheme: Self.scheme)
-        // What entrypoints/android-shim.ts talks to; answers come back through its onmessage (see deliver).
-        config.userContentController.addUserScript(WKUserScript(source: """
-            window.plainwalletNative = { platform: 'ios', postMessage: (s) => webkit.messageHandlers.plainwalletNative.postMessage(s) }
-            """, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        walletScripts(config.userContentController)
         config.userContentController.add(self, name: "plainwalletNative")
         let view = WKWebView(frame: .zero, configuration: config)
         setUp(view)
@@ -229,6 +245,18 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
         view.scrollView.contentInsetAdjustmentBehavior = .never
         view.load(URLRequest(url: Self.walletPage))
         return view
+    }
+
+    /**
+     What the wallet page gets before its own scripts: what entrypoints/android-shim.ts talks to (answers come back through
+     its onmessage; see deliver), and its text size.
+     */
+    func walletScripts(_ scripts: WKUserContentController) {
+        scripts.removeAllUserScripts()
+        for source in [
+            "window.plainwalletNative = { platform: 'ios', postMessage: (s) => webkit.messageHandlers.plainwalletNative.postMessage(s) }",
+            "document.documentElement.style.fontSize = '\(pageTextSize)'",
+        ] { scripts.addUserScript(WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true)) }
     }
 
     /** The browser, with a website data store of its own: its own web process and storage, apart from the wallet's. */
@@ -469,6 +497,7 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
     func showAddress() {
         let homeScreen = !wallet.isHidden || url == nil
         star.isHidden = homeScreen
+        field.directionalLayoutMargins.trailing = homeScreen ? 16 : 0 // the placeholder keeps clear of the end, as the star does
         guard let url, !homeScreen else { return address.text = "" }
         if address.isFirstResponder { return address.text = url.absoluteString }
         // Only whose page it is: no user info, path or query, and cut from the left when it doesn't fit, since the end
@@ -666,6 +695,14 @@ final class Main: UIViewController, WKScriptMessageHandler, WKScriptMessageHandl
     }
     static let paper = color(0xF7F8FA, 0x151929), sheet = color(0xE9ECF2, 0x232941), muted = color(0x6A7390, 0x8E97B5)
     static let pen = color(0x2443C4, 0x8FA4FF), walletBlue = color(0x2443C4, 0x2443C4)
+}
+
+/** The address field: a pill, however tall its text makes it. */
+final class Pill: UIStackView {
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        layer.cornerRadius = bounds.height / 2
+    }
 }
 
 /** Serves the wallet page (the web build in the app's bundle) to the wallet web view, and nothing outside it. */

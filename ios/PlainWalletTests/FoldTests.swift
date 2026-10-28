@@ -8,37 +8,17 @@ import XCTest
  lives in the wallet page (the unlocked session, a send form, an approval waiting for you) and in the browser, and only
  survives if nothing reloads or replaces them; and the page has to use a wide screen rather than stretch its column.
  These flip one window between a phone's width and an unfolded one's, and check both.
-
- PLAINWALLET_SCREENSHOTS (passed as TEST_RUNNER_PLAINWALLET_SCREENSHOTS to xcodebuild) names a directory for snapshots
- of the wallet page in each state, on whichever simulator runs the tests.
  */
 @MainActor
-final class FoldTests: XCTestCase {
+final class FoldTests: WalletPageTestCase {
     static let phone = CGSize(width: 390, height: 844), unfolded = CGSize(width: 669, height: 951) // a Duo's inner display
     // What covers the inner display, which no simulator shows: the status pill as on the cover, in its top right corner.
     static let innerPill = CGRect(x: unfolded.width - 84, y: 0, width: 84, height: 174)
 
-    var window: UIWindow!, main: Main!
-
-    override func setUp() async throws {
-        // Each test starts from a wallet page with no wallet, so these never run where they could wipe a real one.
-        #if !targetEnvironment(simulator)
-        throw XCTSkip("These tests reset the wallet: simulators only")
-        #endif
-        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
-        window = try XCTUnwrap(scene.windows.first { $0.rootViewController is Main })
-        main = window.rootViewController as? Main
-        try await until("the wallet page is ready") { self.main.ready }
-        try await js("localStorage.clear()")
-        main.ready = false
-        main.wallet.reload()
-        try await until("the wallet page is ready again") { self.main.ready }
-    }
-
     override func tearDown() async throws {
         main?.covering = nil
         window?.traitOverrides.remove(UITraitHorizontalSizeClass.self)
-        window?.frame = window.windowScene!.coordinateSpace.bounds
+        try await super.tearDown()
     }
 
     func testFoldingMidTransactionKeepsTheUnlockedWalletAndTheSendForm() async throws {
@@ -138,6 +118,15 @@ final class FoldTests: XCTestCase {
         r = try JSONDecoder().decode([[Double]].self, from: Data(try await js(place).utf8))
         XCTAssertLessThan(r[1][2], r[2][0], "right to left, the favorites are to the wallet's left")
         try await js("document.documentElement.dir = ''")
+
+        // At the largest text size the favorites' tiles stay in their column, however narrow it is for them.
+        try await js("document.querySelector('.favorites').append(...[1, 2].map(() => Object.assign(document.createElement('button'), { textContent: 'Example' })))")
+        try await textSize(.accessibilityExtraExtraExtraLarge)
+        let outside = try await js("""
+            const column = document.querySelector('.favorites').getBoundingClientRect(), page = document.documentElement
+            return [...document.querySelectorAll('.favorites button')].filter((b) => b.getBoundingClientRect().right > column.right + 0.5).length + ' ' + (page.scrollWidth - page.clientWidth)
+            """)
+        XCTAssertEqual(outside, "0 0", "favorites outside their column, and how far the page scrolls sideways")
     }
 
     func testTheAddressBarAndThePageKeepClearOfTheStatusPill() async throws {
@@ -200,31 +189,5 @@ final class FoldTests: XCTestCase {
         let width = String(Int(main.wallet.bounds.width))
         XCTAssertEqual(main.wallet.bounds.width, frame.width - main.edges[1].constant - main.edges[3].constant)
         try await until("the wallet page is \(width) wide") { (try? await self.js("return innerWidth")) == width }
-    }
-
-    /** Runs `body` as a function's in the wallet page (whose content security policy rules out eval); what it returns, as text. */
-    @discardableResult
-    func js(_ body: String) async throws -> String {
-        let until = "const until = async (f) => { for (let i = 0; i < 300; i++) { const v = f(); if (v) return v; await new Promise((r) => setTimeout(r, 100)) } throw new Error('timed out') }\n"
-        let result = try await main.wallet.callAsyncJavaScript(until + body, contentWorld: .page)
-        return result.map { "\($0)" } ?? ""
-    }
-
-    func until(_ what: String, _ check: () async -> Bool) async throws {
-        for _ in 0..<100 {
-            if await check() { return }
-            try await Task.sleep(for: .milliseconds(100))
-        }
-        XCTFail("timed out waiting until \(what)")
-        throw CancellationError()
-    }
-
-    func snapshot(_ name: String) throws {
-        guard let dir = ProcessInfo.processInfo.environment["PLAINWALLET_SCREENSHOTS"] else { return }
-        let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
-        let traits = window.traitCollection
-        let variant = [traits.userInterfaceStyle == .dark ? "dark" : "light", traits.preferredContentSizeCategory.isAccessibilityCategory ? "ax" : nil,
-                       traits.layoutDirection == .rightToLeft ? "rtl" : nil].compactMap { $0 }.joined(separator: "-")
-        try XCTUnwrap(image.pngData()).write(to: URL(fileURLWithPath: dir).appendingPathComponent("\(name)-\(variant).png"))
     }
 }
