@@ -1,12 +1,16 @@
 """App Store, APK and F-Droid stores against fakes: no network, credentials or Apple tools."""
+import contextlib
+import io
 import json
 import os
 from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 from urllib.parse import parse_qs, urlparse
 
+import fdroid as fdroid_script
 from submit import apk, fdroid, appstore, app_store_notes, changelogs, preflight, whats_new, APP_STORE_APP, APPLE_LOCALES
 from test_release import MemoryJournal
 
@@ -194,6 +198,25 @@ class AppleApkFdroidTests(unittest.TestCase):
         empty.assets, empty.load = {}, lambda: None
         with self.assertRaisesRegex(ValueError, "Release APK missing"):
             fdroid(META, env, empty, run=run_ok, pause=lambda s: None)
+
+    def test_fdroid_push_failure_reports_git_output_without_the_token(self):
+        metadata = "AutoName: Plain Wallet\nBuilds:\n  - versionName: 0.5.4\n    versionCode: 504\n    commit: " + "b" * 40 + "\nCurrentVersion: 0.5.4\nCurrentVersionCode: 504\n"
+        def urlopen(url):
+            body = json.dumps({"state": "opened", "iid": 123, "web_url": "https://gitlab.com/mr"}) if "merge_requests" in url else metadata
+            return io.BytesIO(body.encode())
+        def run(argv, cwd, **kw):
+            self.assertTrue(kw["capture_output"])
+            if "push" not in argv:
+                if "sparse-checkout" in argv:
+                    os.makedirs(os.path.join(cwd, "metadata"))
+                return subprocess.CompletedProcess(argv, 0, "", "")
+            return subprocess.CompletedProcess(argv, 1, "", "remote: HTTP Basic: Access denied for s3cret-token\nfatal: Authentication failed for 'https://gitlab.com/backmeupplz/fdroiddata.git/'\n")
+        env = {"GITLAB_TOKEN": "s3cret-token", "FDROID_MR": "123", "FDROID_APP_ID": "com.borodutch.plainwallet", "FDROID_FORK": "backmeupplz/fdroiddata", "FDROID_BRANCH": "com.borodutch.plainwallet"}
+        with mock.patch.dict(os.environ, env), mock.patch("sys.argv", ["fdroid.py", "0.5.5", "505", "a" * 40]), \
+                mock.patch("fdroid.urllib.request.urlopen", urlopen), mock.patch("fdroid.subprocess.run", run), \
+                contextlib.redirect_stdout(io.StringIO()), self.assertRaises(SystemExit) as exit:
+            fdroid_script.main()
+        self.assertEqual(exit.exception.code, "git push failed with status 1: remote: HTTP Basic: Access denied for *** | fatal: Authentication failed for 'https://gitlab.com/backmeupplz/fdroiddata.git/'")
 
     def test_new_stores_need_their_configuration(self):
         base = {"GH_TOKEN": "fake", "GITHUB_REPOSITORY": "backmeupplz/plainwallet", "STORE_SETUP_CONFIRMED": "true", "STORE_AUTO_PUBLISH_APPROVED": "true"}

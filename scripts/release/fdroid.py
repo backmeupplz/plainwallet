@@ -37,6 +37,12 @@ def rewrite(metadata, version, code, commit, update_check_mode=None, binaries=No
     return metadata
 
 
+def git_failure(command, status, output, token):
+    """git's output on one line, since submit.py reports only the last line of stderr, with the token masked in case git echoes it."""
+    output = " | ".join(line.strip() for line in output.splitlines() if line.strip()).replace(token, "***")
+    return f"git {command} failed with status {status}: {output or 'no output'}"
+
+
 def main():
     version, code, commit = sys.argv[1:4]
     dry = "--dry-run" in sys.argv
@@ -58,9 +64,11 @@ def main():
     helper = '!f() { echo username=oauth2; echo "password=$GITLAB_TOKEN"; }; f'
     with tempfile.TemporaryDirectory() as clone:
         def git(*args):
-            subprocess.run(["git", "-c", "credential.helper=", "-c", "credential.helper=" + helper, "-c", "user.name=backmeupplz",
-                            "-c", "user.email=backmeupplz@users.noreply.gitlab.com", *args], check=True, cwd=clone,
-                           env=dict(os.environ, GIT_TERMINAL_PROMPT="0"))
+            p = subprocess.run(["git", "-c", "credential.helper=", "-c", "credential.helper=" + helper, "-c", "user.name=backmeupplz",
+                                "-c", "user.email=backmeupplz@users.noreply.gitlab.com", *args], cwd=clone,
+                               env=dict(os.environ, GIT_TERMINAL_PROMPT="0"), capture_output=True, text=True)
+            if p.returncode:
+                sys.exit(git_failure(args[0], p.returncode, p.stdout + p.stderr, os.environ["GITLAB_TOKEN"]))
         git("clone", "-q", "--depth", "1", "--single-branch", "--branch", branch, "--filter=blob:none", "--sparse",
             f"https://gitlab.com/{fork}.git", ".")
         git("sparse-checkout", "set", "--no-cone", "/" + path)
