@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wei to ETH and gwei converter: exact, in your browser</title>
+    <meta name="description" content="Convert wei, gwei and ether in both directions with exact integer math, and check an Ethereum address against its EIP-55 checksum. Nothing you type leaves the page." />
+    <link rel="canonical" href="https://plainwallet.app/tools/eth-units/" />
+    <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#151929" media="(prefers-color-scheme: dark)" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Plain Wallet" />
+    <meta property="og:url" content="https://plainwallet.app/tools/eth-units/" />
+    <meta property="og:title" content="Wei to ETH and gwei converter" />
+    <meta property="og:description" content="Exact wei, gwei and ether conversion and an EIP-55 address checksum check, all in your browser." />
+    <meta property="og:image" content="https://plainwallet.app/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Plain Wallet: a wallet you can read. The extension popup showing token balances, stamped NOT AUDITED." />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Wei to ETH and gwei converter" />
+    <meta name="twitter:description" content="Exact wei, gwei and ether conversion and an EIP-55 address checksum check, all in your browser." />
+    <meta name="twitter:image" content="https://plainwallet.app/og.png" />
+    <meta name="twitter:image:alt" content="Plain Wallet: a wallet you can read. The extension popup showing token balances, stamped NOT AUDITED." />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Wei to ETH and gwei converter","url":"https://plainwallet.app/tools/eth-units/","applicationCategory":"DeveloperApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@type":"Organization","name":"Plain Wallet","url":"https://plainwallet.app/"}}</script>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --paper: light-dark(#f7f8fa, #151929);
+        --sheet: light-dark(#ffffff, #1c2136);
+        --ink: light-dark(#1b2340, #e6e9f5);
+        --muted: light-dark(#5a6382, #a4acc8);
+        --rule: light-dark(#d5d9e3, #2c3350);
+        --pen: light-dark(#2443c4, #8fa4ff);
+        --stamp: light-dark(#b3241a, #ff8c7e);
+        --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font: 16px/1.55 system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: var(--ink); background: var(--paper); }
+      main, header, footer { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+      a { color: var(--pen); text-underline-offset: 3px; }
+      :focus-visible { outline: 2px solid var(--pen); outline-offset: 3px; border-radius: 4px; }
+      header { display: flex; align-items: center; gap: 10px; padding-block: 20px; }
+      header img { width: 28px; height: 28px; }
+      header a { font-weight: 650; text-decoration: none; color: var(--ink); }
+      h1 { margin: 8px 0 12px; font-size: clamp(30px, 6vw, 42px); line-height: 1.1; letter-spacing: -0.03em; }
+      h2 { margin: 40px 0 8px; font-size: 24px; letter-spacing: -0.02em; }
+      .lede { margin: 0 0 24px; color: var(--muted); font-size: 18px; }
+      label { display: block; margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+      .row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+      .row > div { flex: 1 1 200px; }
+      input, select { width: 100%; min-height: 44px; padding: 8px 12px; font: 16px var(--mono); color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
+      table { width: 100%; border-collapse: collapse; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
+      th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--rule); font-size: 15px; }
+      td { font-family: var(--mono); overflow-wrap: anywhere; }
+      tr:last-child th, tr:last-child td { border-bottom: 0; }
+      th { width: 7em; font-weight: 600; }
+      .out { min-height: 1.6em; margin: 8px 0 0; font: 15px var(--mono); overflow-wrap: anywhere; }
+      .bad { color: var(--stamp); }
+      .cta { margin-top: 40px; padding: 20px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; }
+      .cta p { margin: 0 0 8px; }
+      footer { padding-block: 32px 48px; color: var(--muted); font-size: 14px; }
+      @media (max-width: 480px) {
+        th, td { display: block; width: auto; padding: 4px 12px; border: 0; }
+        tr { display: block; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+        tr:last-child { border-bottom: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <img src="/icon.svg" alt="" width="28" height="28" />
+      <a href="/">Plain Wallet</a>
+    </header>
+    <main>
+      <h1>Wei to ETH and gwei converter</h1>
+      <p class="lede">Type an amount in any Ethereum unit and see it in all the others, worked out with integers so no digit is rounded. Nothing you type leaves this page.</p>
+
+      <div class="row">
+        <div>
+          <label for="amount">Amount</label>
+          <input id="amount" inputmode="decimal" autocomplete="off" value="1" />
+        </div>
+        <div>
+          <label for="unit">Unit</label>
+          <select id="unit">
+            <option value="0">wei</option>
+            <option value="3">kwei</option>
+            <option value="6">mwei</option>
+            <option value="9">gwei</option>
+            <option value="12">szabo</option>
+            <option value="15">finney</option>
+            <option value="18" selected>ether (ETH)</option>
+          </select>
+        </div>
+      </div>
+      <p id="error" class="out bad" role="alert"></p>
+      <table>
+        <tbody id="results"></tbody>
+      </table>
+
+      <h2>How the conversion works</h2>
+      <p>Everything on the chain is counted in wei, the smallest unit. One ether is 10<sup>18</sup> wei and one gwei is 10<sup>9</sup> wei, so converting is moving a decimal point. This page reads what you type as a decimal string, turns it into a whole number of wei with BigInt, and prints each unit by placing the point in that whole number. It never uses floating-point numbers, which cannot hold 18 decimal places: in JavaScript, <code>0.1 + 0.2</code> is already <code>0.30000000000000004</code>.</p>
+      <p>An amount with more decimals than its unit allows, such as 0.5 wei, is not a whole number of wei and is refused rather than rounded. Commas, spaces and underscores in the number are ignored.</p>
+      <p>Names: kwei is 10<sup>3</sup> wei (babbage), mwei is 10<sup>6</sup> (lovelace), szabo is 10<sup>12</sup> and finney is 10<sup>15</sup>. Wallets and block explorers mostly show gwei for gas prices and ETH for balances.</p>
+
+      <h2>Check an address checksum</h2>
+      <p>An Ethereum address is 40 hex digits. <a href="https://eips.ethereum.org/EIPS/eip-55">EIP-55</a> spells some of its letters in capitals, chosen by the Keccak-256 hash of the lowercase address, so a mistyped character is very likely to be caught. Paste an address to see its correct form and whether yours matches.</p>
+      <label for="address">Address</label>
+      <input id="address" autocomplete="off" spellcheck="false" placeholder="0x…" />
+      <p id="check" class="out" role="status"></p>
+      <p>An all-lowercase or all-uppercase address carries no checksum, so it is reported as unchecked and the checksummed form is shown for you to copy. The hash runs in your browser too.</p>
+
+      <div class="cta">
+        <p><strong>Plain Wallet</strong> shows amounts like this: an open-source Ethereum wallet for Chrome, Android and Mac in about 2,850 lines of TypeScript you can read.</p>
+        <p><a href="/?utm_source=tool&amp;utm_campaign=eth-units">See Plain Wallet</a></p>
+      </div>
+    </main>
+    <footer>
+      <a href="/">plainwallet.app</a> · MIT · <a href="https://github.com/backmeupplz/plainwallet">GitHub</a>
+    </footer>
+    <script>
+const UNITS = [['wei', 0], ['kwei', 3], ['mwei', 6], ['gwei', 9], ['szabo', 12], ['finney', 15], ['ether', 18]]
+
+// Decimal string to wei, exactly. Returns null when it is not a plain non-negative decimal.
+function toWei(text, decimals) {
+  const m = /^(\d*)(?:\.(\d*))?$/.exec(text.trim().replace(/[,_\s]/g, ''))
+  if (!m || (m[1] === '' && !m[2])) return null
+  const frac = m[2] || ''
+  if (frac.length > decimals && /[1-9]/.test(frac.slice(decimals))) return null
+  return BigInt((m[1] || '0') + frac.slice(0, decimals).padEnd(decimals, '0'))
+}
+
+// Wei to a decimal string in a unit, exactly, without trailing zeros.
+function fromWei(wei, decimals) {
+  const s = wei.toString().padStart(decimals + 1, '0')
+  const whole = s.slice(0, s.length - decimals)
+  const frac = s.slice(s.length - decimals).replace(/0+$/, '')
+  return frac ? whole + '.' + frac : whole
+}
+
+const MASK = (1n << 64n) - 1n
+const RC = [0x1n,0x8082n,0x800000000000808an,0x8000000080008000n,0x808bn,0x80000001n,0x8000000080008081n,0x8000000000008009n,0x8an,0x88n,0x80008009n,0x8000000an,0x8000808bn,0x800000000000008bn,0x8000000000008089n,0x8000000000008003n,0x8000000000008002n,0x8000000000000080n,0x800an,0x800000008000000an,0x8000000080008081n,0x8000000000008080n,0x80000001n,0x8000000080008008n]
+const ROT = [[0,36,3,41,18],[1,44,10,45,2],[62,6,43,15,61],[28,55,25,21,56],[27,20,39,8,14]]
+const rol = (x, n) => n === 0 ? x : ((x << BigInt(n)) | (x >> BigInt(64 - n))) & MASK
+
+function keccak256(bytes) {
+  const rate = 136
+  const padded = new Uint8Array(Math.ceil((bytes.length + 1) / rate) * rate)
+  padded.set(bytes)
+  padded[bytes.length] ^= 0x01
+  padded[padded.length - 1] ^= 0x80
+  const a = Array.from({ length: 5 }, () => Array(5).fill(0n))
+  for (let off = 0; off < padded.length; off += rate) {
+    for (let i = 0; i < rate / 8; i++) {
+      let lane = 0n
+      for (let j = 7; j >= 0; j--) lane = (lane << 8n) | BigInt(padded[off + i * 8 + j])
+      a[i % 5][Math.floor(i / 5)] ^= lane
+    }
+    for (let r = 0; r < 24; r++) {
+      const c = a.map((col) => col[0] ^ col[1] ^ col[2] ^ col[3] ^ col[4])
+      for (let x = 0; x < 5; x++) {
+        const d = c[(x + 4) % 5] ^ rol(c[(x + 1) % 5], 1)
+        for (let y = 0; y < 5; y++) a[x][y] ^= d
+      }
+      const b = Array.from({ length: 5 }, () => Array(5).fill(0n))
+      for (let x = 0; x < 5; x++) for (let y = 0; y < 5; y++) b[y][(2 * x + 3 * y) % 5] = rol(a[x][y], ROT[x][y])
+      for (let x = 0; x < 5; x++) for (let y = 0; y < 5; y++) a[x][y] = b[x][y] ^ (~b[(x + 1) % 5][y] & MASK & b[(x + 2) % 5][y])
+      a[0][0] ^= RC[r]
+    }
+  }
+  const out = new Uint8Array(32)
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 8; j++) out[i * 8 + j] = Number((a[i][0] >> BigInt(8 * j)) & 0xffn)
+  return out
+}
+
+const hex = (u8) => Array.from(u8, (b) => b.toString(16).padStart(2, '0')).join('')
+
+// EIP-55 checksummed form of a 40-hex-digit address.
+function checksum(address) {
+  const lower = address.replace(/^0x/i, '').toLowerCase()
+  const h = hex(keccak256(new TextEncoder().encode(lower)))
+  return '0x' + Array.from(lower, (ch, i) => (parseInt(h[i], 16) >= 8 ? ch.toUpperCase() : ch)).join('')
+}
+
+      const amount = document.getElementById('amount')
+      const unit = document.getElementById('unit')
+      const results = document.getElementById('results')
+      const error = document.getElementById('error')
+      function render() {
+        const wei = toWei(amount.value, Number(unit.value))
+        results.replaceChildren()
+        error.textContent = ''
+        if (wei === null) {
+          error.textContent = amount.value.trim() ? 'Enter a plain number, with no more decimals than the unit has.' : ''
+          return
+        }
+        for (const [name, d] of UNITS) {
+          const tr = results.insertRow()
+          tr.insertCell().outerHTML = '<th scope="row">' + name + '</th>'
+          tr.insertCell().textContent = fromWei(wei, d)
+        }
+      }
+      amount.oninput = unit.onchange = render
+      render()
+
+      const address = document.getElementById('address')
+      const check = document.getElementById('check')
+      address.oninput = () => {
+        const v = address.value.trim()
+        check.className = 'out'
+        if (!v) return (check.textContent = '')
+        if (!/^0x[0-9a-fA-F]{40}$/.test(v)) {
+          check.className = 'out bad'
+          return (check.textContent = 'An address is 0x followed by 40 hex digits.')
+        }
+        const good = checksum(v)
+        const body = v.slice(2)
+        if (body === body.toLowerCase() || body === body.toUpperCase()) check.textContent = 'No checksum in this spelling. Checksummed: ' + good
+        else if (v === good) check.textContent = 'Checksum is valid: ' + good
+        else {
+          check.className = 'out bad'
+          check.textContent = 'Checksum does not match; a character may be mistyped. Correct spelling: ' + good
+        }
+      }
+    </script>
+  </body>
+</html>
