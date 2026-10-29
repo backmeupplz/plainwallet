@@ -17,3 +17,7 @@ Keys stay on the device, in a password-encrypted vault (scrypt, AES-256-GCM) tha
 - [Source code](https://github.com/backmeupplz/plainwallet)
 - Support email: plainwallet@borodutch.com
 - [Questions and bug reports](https://github.com/backmeupplz/plainwallet/issues)
+
+## Tools
+
+- [Wei to ETH and gwei converter](https://plainwallet.app/tools/eth-units/): exact conversion between wei, gwei and ether, and an EIP-55 address checksum check, in the browser
