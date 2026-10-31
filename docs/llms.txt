@@ -21,3 +21,7 @@ Keys stay on the device, in a password-encrypted vault (scrypt, AES-256-GCM) tha
 ## Tools
 
 - [Wei to ETH and gwei converter](https://plainwallet.app/tools/eth-units/): exact conversion between wei, gwei and ether, and an EIP-55 address checksum check, in the browser
+
+## Blog
+
+- [Plain Wallet Notes](https://blog.plainwallet.app/): how the apps are built; start with [how the Android APK went from 3.27 MB to 368 KB](https://blog.plainwallet.app/android-apk-3-mb-to-368-kb-r8/)
