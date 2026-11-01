@@ -25,3 +25,29 @@ Keys stay on the device, in a password-encrypted vault (scrypt, AES-256-GCM) tha
 ## Blog
 
 - [Plain Wallet Notes](https://blog.plainwallet.app/): how the apps are built; start with [how the Android APK went from 3.27 MB to 368 KB](https://blog.plainwallet.app/android-apk-3-mb-to-368-kb-r8/)
+
+## Translations
+
+The site is also available in these languages, each page at its own address:
+
+- [العربية](https://plainwallet.app/ar/): Plain Wallet: محفظة إيثريوم وشبكات EVM; [محوّل Wei إلى ETH وgwei](https://plainwallet.app/ar/tools/eth-units/)
+- [Deutsch](https://plainwallet.app/de/): Plain Wallet: Open-Source-Wallet für Ethereum & EVM; [Wei-in-ETH- und Gwei-Rechner](https://plainwallet.app/de/tools/eth-units/)
+- [Español](https://plainwallet.app/es/): Plain Wallet: cartera cripto mínima para Ethereum y EVM; [Conversor de wei a ETH y gwei](https://plainwallet.app/es/tools/eth-units/)
+- [Français](https://plainwallet.app/fr/): Plain Wallet : portefeuille crypto Ethereum et EVM; [Convertisseur wei en ETH et gwei](https://plainwallet.app/fr/tools/eth-units/)
+- [हिन्दी](https://plainwallet.app/hi/): Plain Wallet: मिनिमल क्रिप्टो वॉलेट, EVM के लिए; [Wei से ETH और gwei कन्वर्टर](https://plainwallet.app/hi/tools/eth-units/)
+- [Bahasa Indonesia](https://plainwallet.app/id/): Plain Wallet: Dompet Kripto Ethereum & EVM Minimalis; [Konverter wei ke ETH dan gwei](https://plainwallet.app/id/tools/eth-units/)
+- [Italiano](https://plainwallet.app/it/): Plain Wallet: portafoglio crypto minimale per EVM; [Convertitore da wei a ETH e gwei](https://plainwallet.app/it/tools/eth-units/)
+- [日本語](https://plainwallet.app/ja/): Plain Wallet:イーサリアム・EVM 対応ウォレット; [Wei から ETH・gwei への換算ツール](https://plainwallet.app/ja/tools/eth-units/)
+- [한국어](https://plainwallet.app/ko/): Plain Wallet: 읽을 수 있는 이더리움·EVM 지갑; [Wei, ETH, gwei 변환기](https://plainwallet.app/ko/tools/eth-units/)
+- [Nederlands](https://plainwallet.app/nl/): Plain Wallet: open-source Ethereum- en EVM-wallet; [Wei naar ETH en gwei omrekenen](https://plainwallet.app/nl/tools/eth-units/)
+- [Polski](https://plainwallet.app/pl/): Plain Wallet: prosty portfel kryptowalut na Ethereum i EVM; [Konwerter wei na ETH i gwei](https://plainwallet.app/pl/tools/eth-units/)
+- [Português (Brasil)](https://plainwallet.app/pt-br/): Plain Wallet: carteira cripto para Ethereum e EVM; [Conversor de wei para ETH e gwei](https://plainwallet.app/pt-br/tools/eth-units/)
+- [Português (Portugal)](https://plainwallet.app/pt-pt/): Plain Wallet: carteira cripto EVM minimalista; [Conversor de wei para ETH e gwei](https://plainwallet.app/pt-pt/tools/eth-units/)
+- [Русский](https://plainwallet.app/ru/): Plain Wallet: криптокошелёк для Ethereum и EVM; [Конвертер wei в ETH и gwei](https://plainwallet.app/ru/tools/eth-units/)
+- [Svenska](https://plainwallet.app/sv/): Plain Wallet: kryptoplånbok för Ethereum och EVM; [Omvandlare från wei till ETH och gwei](https://plainwallet.app/sv/tools/eth-units/)
+- [ไทย](https://plainwallet.app/th/): Plain Wallet: กระเป๋าคริปโต EVM แบบโอเพนซอร์ส; [ตัวแปลง Wei เป็น ETH และ gwei](https://plainwallet.app/th/tools/eth-units/)
+- [Türkçe](https://plainwallet.app/tr/): Plain Wallet: minimal Ethereum ve EVM kripto cüzdanı; [Wei - ETH ve gwei dönüştürücü](https://plainwallet.app/tr/tools/eth-units/)
+- [Українська](https://plainwallet.app/uk/): Plain Wallet: мінімалістичний EVM-криптогаманець; [Конвертер wei в ETH і gwei](https://plainwallet.app/uk/tools/eth-units/)
+- [Tiếng Việt](https://plainwallet.app/vi/): Plain Wallet: ví Ethereum và EVM tối giản, mã nguồn mở; [Công cụ đổi wei sang ETH và gwei](https://plainwallet.app/vi/tools/eth-units/)
+- [简体中文](https://plainwallet.app/zh-hans/): Plain Wallet：极简开源以太坊加密钱包; [Wei 转 ETH 与 gwei 换算器](https://plainwallet.app/zh-hans/tools/eth-units/)
+- [繁體中文](https://plainwallet.app/zh-hant/): Plain Wallet：極簡以太坊與 EVM 錢包; [Wei 轉 ETH 與 gwei 換算器](https://plainwallet.app/zh-hant/tools/eth-units/)
