@@ -252,7 +252,7 @@ export default defineBackground(() => {
     if (size(msg.params) > 512_000) return respond({ error: err(-32602, 'Request too large') })
     handle(origin, msg.method, msg.params, sender.tab?.title && clean(sender.tab.title, 80)).then(
       (result) => respond({ result }),
-      (e) => respond({ error: { code: e?.code ?? -32603, message: e?.shortMessage ?? e?.message ?? String(e) } }),
+      (e) => respond({ error: { code: e?.code ?? -32603, message: e?.details || e?.shortMessage || e?.message || String(e) } }),
     )
     return true
   })
