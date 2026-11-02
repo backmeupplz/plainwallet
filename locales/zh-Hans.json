@@ -374,5 +374,16 @@
   "{n} more characters": {"other": "还差 {n} 个字符"},
   "{n} more requests waiting": {"other": "另有 {n} 个请求在等待"},
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "此账户的另一笔交易正以相同的 nonce 等待中。这笔交易将以更高的手续费取而代之。",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "网络手续费上涨了，网络拒绝了原来的手续费。这是现在的收费。"
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "网络手续费上涨了，网络拒绝了原来的手续费。这是现在的收费。",
+  "Transactions": "交易",
+  "Transactions this wallet sent, kept only on this device.": "此钱包发送的交易，仅保存在这台设备上。",
+  "Cancel transaction": "取消交易",
+  "Speed up": "加速",
+  "Pending": "待处理",
+  "Confirmed": "已确认",
+  "Failed": "失败",
+  "Replaced or dropped": "已被替换或丢弃",
+  "Sent": "发送时间",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "取消：以相同的 nonce 向自己转账 0，并支付更高的手续费。如果它先被打包，原交易就永远不会执行。",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "加速：以相同的 nonce 再次发送同一笔交易，并支付更高的手续费。先被打包的那笔生效。"
 }

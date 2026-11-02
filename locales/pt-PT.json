@@ -374,5 +374,16 @@
   "{n} more characters": {"one": "Falta {n} carácter", "many": "Faltam {n} caracteres", "other": "Faltam {n} caracteres"},
   "{n} more requests waiting": {"one": "Mais {n} pedido em espera", "many": "Mais {n} pedidos em espera", "other": "Mais {n} pedidos em espera"},
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Outra transação desta conta está à espera com o mesmo nonce. Esta substitui-a, com uma taxa mais alta.",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "As taxas da rede subiram e a rede recusou a taxa anterior. Este é o valor cobrado agora."
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "As taxas da rede subiram e a rede recusou a taxa anterior. Este é o valor cobrado agora.",
+  "Transactions": "Transações",
+  "Transactions this wallet sent, kept only on this device.": "Transações enviadas por esta carteira, guardadas apenas neste dispositivo.",
+  "Cancel transaction": "Cancelar transação",
+  "Speed up": "Acelerar",
+  "Pending": "Pendente",
+  "Confirmed": "Confirmada",
+  "Failed": "Falhou",
+  "Replaced or dropped": "Substituída ou descartada",
+  "Sent": "Enviada",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Cancelar: uma transferência de nada para si próprio com o mesmo nonce, com uma taxa mais alta. Se for incluída primeiro, a original nunca acontece.",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Acelerar: a mesma transação outra vez com o seu nonce, com uma taxa mais alta. Conta a que for incluída primeiro."
 }

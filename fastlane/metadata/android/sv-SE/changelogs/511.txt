@@ -1,0 +1,1 @@
+Nytt: en lista Transaktioner med allt den här plånboken skickat, på alla nätverk, sparad bara på den här enheten. En transaktion som fortfarande väntar kan snabbas upp (samma igen mot en högre avgift) eller avbrytas (en överföring av ingenting till dig själv med samma nonce), och du godkänner den nya avgiften först.

@@ -374,5 +374,16 @@
   "{n} more characters": {"other": "あと{n}文字"},
   "{n} more requests waiting": {"other": "ほかに{n}件のリクエストが待機中"},
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "このアカウントの別のトランザクションが同じ nonce で待機中です。こちらがより高い手数料でそれを置き換えます。",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "ネットワーク手数料が上がり、以前の手数料はネットワークに拒否されました。これが現在の手数料です。"
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "ネットワーク手数料が上がり、以前の手数料はネットワークに拒否されました。これが現在の手数料です。",
+  "Transactions": "トランザクション",
+  "Transactions this wallet sent, kept only on this device.": "このウォレットが送信したトランザクション。この端末にのみ保存されます。",
+  "Cancel transaction": "トランザクションをキャンセル",
+  "Speed up": "高速化",
+  "Pending": "保留中",
+  "Confirmed": "承認済み",
+  "Failed": "失敗",
+  "Replaced or dropped": "置き換え済みまたは破棄",
+  "Sent": "送信日時",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "キャンセル：同じ nonce で自分宛てに 0 を送る取引を、より高い手数料で送ります。こちらが先に取り込まれれば、元の取引は実行されません。",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "高速化：同じトランザクションを同じ nonce で、より高い手数料でもう一度送ります。先に取り込まれた方が有効になります。"
 }

@@ -1,0 +1,1 @@
+Nouveau : une liste Transactions de tout ce que ce portefeuille a envoyé, sur chaque réseau, conservée uniquement sur cet appareil. Une transaction encore en attente peut être accélérée (la même à nouveau avec des frais plus élevés) ou annulée (un transfert de rien vers vous-même avec le même nonce), et vous approuvez d’abord les nouveaux frais.

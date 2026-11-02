@@ -1,0 +1,1 @@
+New: a Transactions list of everything this wallet sent, on every network, kept only on this device. A transaction still waiting can be sped up (the same one again for a higher fee) or cancelled (a transfer of nothing to yourself at the same nonce), and you approve the new fee first.

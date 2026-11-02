@@ -374,5 +374,16 @@
   "{n} more characters": {"other": "{n}자 더 필요"},
   "{n} more requests waiting": {"other": "대기 중인 요청 {n}개 더"},
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "이 계정의 다른 트랜잭션이 같은 nonce로 대기 중입니다. 이 트랜잭션이 더 높은 수수료로 그것을 대체합니다.",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "네트워크 수수료가 올라 이전 수수료가 네트워크에서 거부되었습니다. 지금 부과되는 수수료입니다."
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "네트워크 수수료가 올라 이전 수수료가 네트워크에서 거부되었습니다. 지금 부과되는 수수료입니다.",
+  "Transactions": "트랜잭션",
+  "Transactions this wallet sent, kept only on this device.": "이 지갑이 보낸 트랜잭션입니다. 이 기기에만 저장됩니다.",
+  "Cancel transaction": "트랜잭션 취소",
+  "Speed up": "속도 높이기",
+  "Pending": "대기 중",
+  "Confirmed": "확인됨",
+  "Failed": "실패",
+  "Replaced or dropped": "대체 또는 폐기됨",
+  "Sent": "보낸 시각",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "취소: 같은 nonce로 자신에게 0을 보내는 트랜잭션을 더 높은 수수료로 보냅니다. 이것이 먼저 포함되면 원래 트랜잭션은 실행되지 않습니다.",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "속도 높이기: 같은 트랜잭션을 같은 nonce로 더 높은 수수료를 붙여 다시 보냅니다. 먼저 포함되는 쪽이 유효합니다."
 }

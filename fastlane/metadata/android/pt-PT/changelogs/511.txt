@@ -1,0 +1,1 @@
+Novo: uma lista de Transações com tudo o que esta carteira enviou, em todas as redes, guardada apenas neste dispositivo. Uma transação ainda pendente pode ser acelerada (a mesma outra vez com uma taxa mais alta) ou cancelada (uma transferência de nada para si próprio com o mesmo nonce), e aprova a nova taxa primeiro.

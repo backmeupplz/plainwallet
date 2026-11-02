@@ -1,11 +1,11 @@
 // Talking to a network's RPC. Shared by the background (dapp requests) and the popup (balances, sending).
-import { createWalletClient, defineChain, erc20Abi, ethAddress, formatUnits, http, type BaseError, type LocalAccount, type TransactionSerializable } from 'viem'
-import { estimateFeesPerGas, getBalance, getChainId, getTransactionCount, multicall, readContract, simulateCalls, waitForTransactionReceipt } from 'viem/actions'
+import { createWalletClient, defineChain, erc20Abi, ethAddress, formatUnits, http, keccak256, parseTransaction, recoverTransactionAddress, type BaseError, type LocalAccount, type TransactionSerializable } from 'viem'
+import { estimateFeesPerGas, estimateGas, getBalance, getChainId, getTransactionCount, getTransactionReceipt, multicall, readContract, simulateCalls, waitForTransactionReceipt } from 'viem/actions'
 import { estimateL1Fee } from 'viem/op-stack'
 import { browser } from 'wxt/browser'
 import { clean, parseAddress } from './describe'
 import { problem, t } from './i18n.ts'
-import type { Network, Token } from './store'
+import { keepSent, type Network, type Sent, type Token } from './store'
 
 // An RPC may not redirect: a dapp-supplied https URL could otherwise bounce the extension's requests (sent with its
 // own host permissions) to a device on the user's network.
@@ -49,8 +49,9 @@ export async function unsigned(network: Network, from: `0x${string}`, request: P
   return tx as TransactionSerializable
 }
 
-export async function send(network: Network, account: LocalAccount, request: Prepared) {
-  return broadcast(network, await account.signTransaction(await unsigned(network, account.address, request)))
+/** `site`: the origin that asked, for the wallet's list of sent transactions; none for the wallet's own sends. */
+export async function send(network: Network, account: LocalAccount, request: Prepared, site?: string) {
+  return broadcast(network, await account.signTransaction(await unsigned(network, account.address, request)), site)
 }
 
 /** Why a node refused a transaction for its fee, if it did: 'replace' when one already waits at its nonce (an RPC may
@@ -80,9 +81,40 @@ export async function refee(network: Network, prepared: { request: Prepared; fee
   return raise(prepared, now, replace)
 }
 
-/** A signed transaction names its chain itself: an RPC serving another one refuses it. */
-export const broadcast = (network: Network, signed: `0x${string}`) =>
-  client(network).sendRawTransaction({ serializedTransaction: signed as any })
+/** A signed transaction names its chain itself: an RPC serving another one refuses it. Every transaction the wallet
+ * sends goes through here, and lands in its list of sent transactions (store.ts). */
+export async function broadcast(network: Network, signed: `0x${string}`, site?: string) {
+  const hash = await client(network).sendRawTransaction({ serializedTransaction: signed as any })
+  await keepSent({ raw: signed, network: network.name, ...(site && { site }), at: Date.now() }).catch(() => {}) // it's out either way
+  return hash
+}
+
+/** Where a sent transaction stands: its receipt, or without one, whether its nonce is taken (by a replacement, or by
+ * another transaction from the same account) or it's still waiting. */
+export async function sentStatus(network: Network, raw: `0x${string}`): Promise<'pending' | NonNullable<Sent['done']>> {
+  const c = client(network)
+  const receipt = () => getTransactionReceipt(c, { hash: keccak256(raw) }).catch(() => null)
+  let r = await receipt()
+  if (!r) {
+    const used = await getTransactionCount(c, { address: await recoverTransactionAddress({ serializedTransaction: raw as any }), blockTag: 'latest' })
+    if (used <= (parseTransaction(raw).nonce ?? 0)) return 'pending'
+    if (!(r = await receipt())) return 'replaced' // asked again: it may have been included in between
+  }
+  return r.status === 'success' ? 'confirmed' : 'failed'
+}
+
+/** A waiting transaction again at its nonce, for current fees and at least 25% more than it paid (refee): the same
+ * one, or with `cancel` a transfer of nothing to its own sender, which uses the nonce up so the original never runs. */
+export async function replacement(network: Network, raw: `0x${string}`, cancel: boolean) {
+  const from = await recoverTransactionAddress({ serializedTransaction: raw as any })
+  const { r: _, s: __, v: ___, yParity: ____, ...tx } = parseTransaction(raw)
+  const request = cancel
+    // the gas a plain transfer takes, asked rather than assumed: some chains (Arbitrum) count more than 21000
+    ? { ...tx, to: from, value: 0n, data: undefined, accessList: undefined, authorizationList: undefined, gas: await estimateGas(client(network), { account: from, to: from, value: 0n }) }
+    : tx
+  const prepared = await refee(network, { request: request as Prepared, fee: request.gas! * (request.maxFeePerGas ?? request.gasPrice ?? 0n) }, true)
+  return { from, ...prepared, request: prepared.request as TransactionSerializable }
+}
 
 /** Resolves with the receipt once `hash` is in a block. Open wallet views then refetch balances, instead of polling. */
 export async function mined(network: Network, hash: `0x${string}`) {

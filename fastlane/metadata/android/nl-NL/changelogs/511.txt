@@ -1,0 +1,1 @@
+Nieuw: een lijst Transacties met alles wat deze wallet verstuurde, op elk netwerk, alleen op dit apparaat bewaard. Een transactie die nog wacht kun je versnellen (dezelfde opnieuw voor een hogere vergoeding) of annuleren (een overboeking van niets naar jezelf met dezelfde nonce), en je keurt de nieuwe vergoeding eerst goed.

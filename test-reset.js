@@ -296,3 +296,20 @@ const { kdf, ...stripped } = JSON.parse(browser.storage.local.data.vault)
 browser.storage.local.data.vault = JSON.stringify(stripped)
 await assert.rejects(unlock('legacy-password-1'), /Wrong password/)
 console.log('migration ok')
+
+// Sent transactions: kept once each, the last 100, and a settled one stays settled.
+{
+  const { keepSent, sentTxs, settleSent } = await import('./lib/store.ts')
+  const raw = (i) => `0x${i.toString(16).padStart(4, '0')}`
+  for (let i = 0; i < 105; i++) await keepSent({ raw: raw(i), network: 'Base', at: i })
+  await keepSent({ raw: raw(50), network: 'Base', site: 'https://dapp.test', at: 999 })
+  let list = await sentTxs()
+  assert.equal(list.length, 100)
+  assert.equal(list[0].raw, raw(5)) // the oldest went first, and 50 moved to the end rather than being kept twice
+  assert.deepEqual(list.at(-1), { raw: raw(50), network: 'Base', site: 'https://dapp.test', at: 999 })
+  await settleSent(raw(7), 'confirmed')
+  list = await sentTxs()
+  assert.equal(list.find((x) => x.raw === raw(7)).done, 'confirmed')
+  assert.equal(list.filter((x) => x.done).length, 1)
+}
+console.log('sent transactions ok')

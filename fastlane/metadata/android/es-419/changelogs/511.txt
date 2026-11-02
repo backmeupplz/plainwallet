@@ -1,0 +1,1 @@
+Nuevo: una lista de Transacciones con todo lo que envió esta billetera, en cada red, guardada solo en este dispositivo. Una transacción que sigue esperando se puede acelerar (la misma otra vez con una comisión más alta) o cancelar (una transferencia de nada a ti mismo con el mismo nonce), y apruebas la nueva comisión antes.

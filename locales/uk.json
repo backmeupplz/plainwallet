@@ -409,5 +409,16 @@
   "other": "ще {n} запиту очікують"
  },
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Інша транзакція з цього акаунта чекає з тим самим nonce. Ця займе її місце за вищу комісію.",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Комісії в мережі зросли, і мережа відхилила попередню комісію. Ось скільки вона бере зараз."
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Комісії в мережі зросли, і мережа відхилила попередню комісію. Ось скільки вона бере зараз.",
+  "Transactions": "Транзакції",
+  "Transactions this wallet sent, kept only on this device.": "Транзакції, надіслані цим гаманцем. Зберігаються лише на цьому пристрої.",
+  "Cancel transaction": "Скасувати транзакцію",
+  "Speed up": "Пришвидшити",
+  "Pending": "Очікує",
+  "Confirmed": "Підтверджена",
+  "Failed": "Не вдалася",
+  "Replaced or dropped": "Замінена або відкинута",
+  "Sent": "Надіслано",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Скасування: переказ нуля самому собі з тим самим nonce за вищу комісію. Якщо він потрапить у блок першим, початкова транзакція не відбудеться.",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Пришвидшення: та сама транзакція ще раз із тим самим nonce за вищу комісію. Зарахується та, що потрапить у блок першою."
 }

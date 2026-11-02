@@ -1,10 +1,10 @@
-import { encodeFunctionData, erc20Abi, formatEther, formatUnits, getAddress, isAddress, parseEther, parseTransaction, serializeTransaction, zeroAddress } from 'viem'
-import { balances, broadcast, feeRefusal, mined, prepare, refee, send, simulate, tokenInfo, unsigned, type Simulation } from '@/lib/chain'
+import { encodeFunctionData, erc20Abi, formatEther, formatUnits, getAddress, isAddress, keccak256, parseEther, parseTransaction, recoverTransactionAddress, serializeTransaction, zeroAddress } from 'viem'
+import { balances, broadcast, feeRefusal, mined, prepare, refee, replacement, send, sentStatus, simulate, tokenInfo, unsigned, type Simulation } from '@/lib/chain'
 import { describeCall, foreignSignIn, parseAddress, parseAmount, signedView, spenderOf } from '@/lib/describe'
 import { analyze, type Subject, type Verdict } from '@/lib/jev'
 import { lookup, type Level, type Lookup, type Party } from '@/lib/lookup'
 import { checkResponse, parseRequest, requestText } from '@/lib/offline'
-import { accountGroups, addDerivedAccount, addWallet, autolock, exportAccount, exported, isUnlocked, keepExported, load, lock, removeAccount, removeSeedGroup, repair, save, setAutolock, signer, TAMPERED, touch, unlock, watchedAddresses, type Network, type State, type Token } from '@/lib/store'
+import { accountGroups, addDerivedAccount, addWallet, autolock, exportAccount, exported, isUnlocked, keepExported, load, lock, removeAccount, removeSeedGroup, repair, save, sentTxs, setAutolock, settleSent, signer, TAMPERED, touch, unlock, watchedAddresses, type Network, type Sent, type State, type Token } from '@/lib/store'
 import { checkSecret, newMnemonic, parseSecret } from '@/lib/wallet'
 import { english, say, shown, t, tn, useLanguage, type Table } from '@/lib/i18n'
 import type { Pending } from '../background'
@@ -45,6 +45,7 @@ let jevKey = ''
 // Watch-only addresses (the vault's say, read on each unlocked redraw) and the transactions exported from them.
 let watching = new Set<string>()
 let waiting: string[] = []
+let sentCount = 0
 // What the wallet finds out before asking Jev: a simulation (always) and, with a key, public lookups.
 type Checks = { simulation?: Promise<Simulation>; lookup?: Promise<Lookup> }
 const analyses = new Map<string, Checks & { verdict?: Promise<Verdict> }>() // per approval id: redraws don't ask (and bill) again
@@ -520,6 +521,63 @@ function waitingDialog(s: State) {
       } catch { return [] } // only something else writing to storage gets one here: nothing to show
     }))
 }
+/** Every transaction this wallet sent, newest first and on whichever network, with where each stands; one still
+ * waiting can be sped up or cancelled. Kept only on this device. */
+function sentDialog(s: State) {
+  const { content, run } = modal(t('Transactions'))
+  const showList = async () => {
+    const entries = (await Promise.all((await sentTxs()).map(async (e) => {
+      try {
+        const tx = parseTransaction(e.raw)
+        return { e, tx, from: getAddress(await recoverTransactionAddress({ serializedTransaction: e.raw as any })) }
+      } catch { return [] } // only something else writing to storage gets one here: nothing to show
+    }))).flat().toReversed()
+    // a speed-up or cancel shares its nonce with what it replaces: only the newest of them can be replaced again
+    const newest = (x: (typeof entries)[number]) => entries.find((y) => y.tx.chainId === x.tx.chainId && y.from === x.from && y.tx.nonce === x.tx.nonce) === x
+    content.replaceChildren(h('p', {}, t('Transactions this wallet sent, kept only on this device.')), ...entries.map((x) => {
+      const { e, tx, from } = x
+      const network = s.networks.find((n) => n.id === tx.chainId)
+      const { rows, summary } = txRows(s, tx)
+      const status = h('strong', { className: 'skeleton' })
+      const actions = h('div', { className: 'row', hidden: true },
+        h('button', { onclick: run(() => replaceReview(x, true), false) }, t('Cancel transaction')),
+        h('button', { className: 'primary', onclick: run(() => replaceReview(x, false), false) }, t('Speed up')))
+      const label = { pending: t('Pending'), confirmed: t('Confirmed'), failed: t('Failed'), replaced: t('Replaced or dropped') }
+      const show = (st: keyof typeof label) => Object.assign(status, { className: st === 'pending' ? 'pending' : st === 'failed' ? 'stamp' : '', textContent: label[st] })
+      if (e.done) show(e.done)
+      else if (!network) status.hidden = true
+      else void sentStatus(network, e.raw).then((st) => {
+        if (st !== 'pending') return void (show(st), settleSent(e.raw, st))
+        if (!newest(x)) return void show('replaced') // until one of them is included; not kept, since it could still be this one
+        show(st)
+        const index = s.addresses.findIndex((a) => a.toLowerCase() === from.toLowerCase())
+        actions.hidden = index < 0 || watching.has(s.addresses[index]!) // the key is on another device, or the account is gone
+      }, () => Object.assign(status, { className: 'warn', textContent: t('Can’t reach {network}’s RPC.', { network: network.name }) }))
+      return h('div', { className: 'slip' }, status, ...(summary ? [h('strong', {}, summary)] : []),
+        rowList([[t('From'), from], ...rows.filter(([k]) => k !== t('Data')).map(([k, v]): Row => (k === t('Network') && !network ? [k, `${e.network} (${tx.chainId})`] : [k, v])),
+          ...(e.site ? [[t('From site'), e.site] as Row] : []), [t('Sent'), new Date(e.at).toLocaleString()]]),
+        h('button', { onclick: copy(keccak256(e.raw)) }, t('Copy hash')), actions)
+    }))
+  }
+  /** What a speed-up or cancel would sign, at fees that work now; sent only once you approve it. */
+  const replaceReview = async ({ e, from }: { e: Sent; from: `0x${string}` }, cancel: boolean) => {
+    const network = s.networks.find((n) => n.id === parseTransaction(e.raw).chainId)!
+    const { request } = await replacement(network, e.raw, cancel)
+    const { rows, summary } = txRows(s, request as ReturnType<typeof parseTransaction>)
+    content.replaceChildren(
+      h('p', { className: 'warn' }, cancel
+        ? t('Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.')
+        : t('Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.')),
+      h('div', { className: 'slip' }, ...(summary ? [h('strong', {}, summary)] : []), rowList([[t('From'), from], ...rows])),
+      h('div', { className: 'row' }, h('button', { onclick: run(showList, false) }, t('Back')),
+        armed(h('button', { className: 'primary', onclick: run(async () => {
+          const index = s.addresses.findIndex((a) => a.toLowerCase() === from.toLowerCase())
+          const signed = await (await signer(index, s.addresses[index]!)).signTransaction(request)
+          submitted(content, network, from, await broadcast(network, signed, e.site))
+        }, false) }, t('Send')))))
+  }
+  void run(showList, false)()
+}
 /** The other end: this device holds the key, and signs what a watch-only one exported. Nothing is fetched. */
 function signDialog(s: State) {
   const { content, run } = modal(t('Sign a request'))
@@ -969,6 +1027,7 @@ function mainScreen(s: State) {
     ...(watching.has(address) ? [h('p', {}, t('Watch-only: you sign for this account on the device that holds its key.'))] : []),
     list, unreachable,
     ...(waiting.length ? [h('button', { onclick: () => waitingDialog(s) }, t('Waiting for a signature ({n})', { n: waiting.length }))] : []),
+    ...(sentCount ? [h('button', { onclick: () => sentDialog(s) }, t('Transactions'))] : []),
     h('div', { className: 'row' }, h('button', { onclick: () => tokenDialog(network, tokens) }, t('Tokens')),
       h('button', { className: 'primary', onclick: () => sendDialog(s, network, tokens) }, t('Send'))),
   ]
@@ -1008,7 +1067,7 @@ export async function render(stillCurrent = () => true) {
   else {
     touch() // using the wallet pushes the auto-lock back
     jevKey = ((await browser.storage.local.get('jevKey')).jevKey as string | undefined) ?? ''
-    ;[watching, waiting] = [new Set(await watchedAddresses()), await exported()]
+    ;[watching, waiting, sentCount] = [new Set(await watchedAddresses()), await exported(), (await sentTxs()).length]
     screen = pending.length ? approvalScreen(pending[0]!, pending.length - 1) : home(mainScreen(s))
   }
   if (mine !== renderId || viewClosed || !stillCurrent()) return

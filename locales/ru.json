@@ -374,5 +374,16 @@
   "{n} more characters": {"one": "ещё {n} символ", "few": "ещё {n} символа", "many": "ещё {n} символов", "other": "ещё {n} символа"},
   "{n} more requests waiting": {"one": "ещё {n} запрос ожидает", "few": "ещё {n} запроса ожидают", "many": "ещё {n} запросов ожидают", "other": "ещё {n} запроса ожидают"},
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Другая транзакция с этого аккаунта ждёт с тем же nonce. Эта займёт её место за более высокую комиссию.",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Комиссии в сети выросли, и сеть отклонила прежнюю комиссию. Вот сколько она берёт сейчас."
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Комиссии в сети выросли, и сеть отклонила прежнюю комиссию. Вот сколько она берёт сейчас.",
+  "Transactions": "Транзакции",
+  "Transactions this wallet sent, kept only on this device.": "Транзакции, отправленные этим кошельком. Хранятся только на этом устройстве.",
+  "Cancel transaction": "Отменить транзакцию",
+  "Speed up": "Ускорить",
+  "Pending": "В ожидании",
+  "Confirmed": "Подтверждена",
+  "Failed": "Не прошла",
+  "Replaced or dropped": "Заменена или отброшена",
+  "Sent": "Отправлена",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Отмена: перевод нуля самому себе с тем же nonce за более высокую комиссию. Если он попадёт в блок первым, исходная транзакция не выполнится.",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Ускорение: та же транзакция ещё раз с тем же nonce за более высокую комиссию. Засчитается та, что попадёт в блок первой."
 }

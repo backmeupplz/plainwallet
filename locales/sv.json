@@ -374,5 +374,16 @@
   "{n} more characters": { "one": "{n} tecken till", "other": "{n} tecken till" },
   "{n} more requests waiting": { "one": "{n} begäran till väntar", "other": "{n} begäranden till väntar" },
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "En annan transaktion från det här kontot väntar med samma nonce. Den här ersätter den, mot en högre avgift.",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Nätverksavgifterna har stigit och nätverket avvisade den gamla avgiften. Så här mycket tar det nu."
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Nätverksavgifterna har stigit och nätverket avvisade den gamla avgiften. Så här mycket tar det nu.",
+  "Transactions": "Transaktioner",
+  "Transactions this wallet sent, kept only on this device.": "Transaktioner som den här plånboken skickat, sparade bara på den här enheten.",
+  "Cancel transaction": "Avbryt transaktion",
+  "Speed up": "Snabba upp",
+  "Pending": "Väntar",
+  "Confirmed": "Bekräftad",
+  "Failed": "Misslyckad",
+  "Replaced or dropped": "Ersatt eller släppt",
+  "Sent": "Skickad",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Avbryt: en överföring av ingenting till dig själv med samma nonce, mot en högre avgift. Kommer den med först blir den ursprungliga aldrig av.",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Snabba upp: samma transaktion igen med sin nonce, mot en högre avgift. Den som kommer med först gäller."
 }

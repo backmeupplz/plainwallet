@@ -395,5 +395,16 @@
   "other": "{n} istek daha bekliyor"
  },
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Bu hesaptan başka bir işlem aynı nonce ile bekliyor. Bu işlem, daha yüksek bir ücretle onun yerini alır.",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Ağ ücretleri arttı ve ağ eski ücreti reddetti. Şu anda aldığı ücret bu."
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Ağ ücretleri arttı ve ağ eski ücreti reddetti. Şu anda aldığı ücret bu.",
+  "Transactions": "İşlemler",
+  "Transactions this wallet sent, kept only on this device.": "Bu cüzdanın gönderdiği işlemler, yalnızca bu cihazda saklanır.",
+  "Cancel transaction": "İşlemi iptal et",
+  "Speed up": "Hızlandır",
+  "Pending": "Bekliyor",
+  "Confirmed": "Onaylandı",
+  "Failed": "Başarısız",
+  "Replaced or dropped": "Değiştirildi veya düşürüldü",
+  "Sent": "Gönderildi",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "İptal: aynı nonce ile kendine sıfır tutarlı bir transfer, daha yüksek bir ücretle. Önce bu dahil edilirse asıl işlem hiç gerçekleşmez.",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Hızlandır: aynı işlem aynı nonce ile yeniden, daha yüksek bir ücretle. Hangisi önce dahil edilirse o geçerli olur."
 }

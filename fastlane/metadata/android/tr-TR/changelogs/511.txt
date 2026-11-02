@@ -1,0 +1,1 @@
+Yeni: bu cüzdanın her ağda gönderdiği her şeyin listesi İşlemler’de, yalnızca bu cihazda saklanır. Hâlâ bekleyen bir işlem hızlandırılabilir (aynı işlem daha yüksek ücretle yeniden) ya da iptal edilebilir (aynı nonce ile kendine sıfır tutarlı transfer); yeni ücreti önce sen onaylarsın.

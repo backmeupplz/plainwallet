@@ -388,5 +388,16 @@
   "other": "{n} permintaan lain menunggu"
  },
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Transaksi lain dari akun ini sedang menunggu dengan nonce yang sama. Transaksi ini menggantikannya, dengan biaya lebih tinggi.",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Biaya jaringan naik, dan jaringan menolak biaya lama. Ini biaya yang dikenakan sekarang."
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Biaya jaringan naik, dan jaringan menolak biaya lama. Ini biaya yang dikenakan sekarang.",
+  "Transactions": "Transaksi",
+  "Transactions this wallet sent, kept only on this device.": "Transaksi yang dikirim dompet ini, hanya disimpan di perangkat ini.",
+  "Cancel transaction": "Batalkan transaksi",
+  "Speed up": "Percepat",
+  "Pending": "Tertunda",
+  "Confirmed": "Terkonfirmasi",
+  "Failed": "Gagal",
+  "Replaced or dropped": "Diganti atau dibuang",
+  "Sent": "Dikirim",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Batalkan: transfer kosong ke diri sendiri dengan nonce yang sama, dengan biaya lebih tinggi. Jika ini masuk lebih dulu, transaksi asli tidak akan pernah terjadi.",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Percepat: transaksi yang sama lagi dengan nonce-nya, dengan biaya lebih tinggi. Yang masuk lebih dulu yang berlaku."
 }

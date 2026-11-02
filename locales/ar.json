@@ -374,5 +374,16 @@
   "{n} more characters": {"zero": "لا أحرف متبقية", "one": "بقي حرف واحد", "two": "بقي حرفان", "few": "بقي {n} أحرف", "many": "بقي {n} حرفًا", "other": "بقي {n} حرف"},
   "{n} more requests waiting": {"zero": "لا طلبات أخرى بالانتظار", "one": "طلب آخر بالانتظار", "two": "طلبان آخران بالانتظار", "few": "{n} طلبات أخرى بالانتظار", "many": "{n} طلبًا آخر بالانتظار", "other": "{n} طلب آخر بالانتظار"},
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "معاملة أخرى من هذا الحساب تنتظر بنفس الـ nonce. هذه المعاملة تحل محلها مقابل رسوم أعلى.",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "ارتفعت رسوم الشبكة، ورفضت الشبكة الرسوم القديمة. هذه هي الرسوم التي تفرضها الآن."
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "ارتفعت رسوم الشبكة، ورفضت الشبكة الرسوم القديمة. هذه هي الرسوم التي تفرضها الآن.",
+  "Transactions": "المعاملات",
+  "Transactions this wallet sent, kept only on this device.": "المعاملات التي أرسلتها هذه المحفظة، محفوظة على هذا الجهاز فقط.",
+  "Cancel transaction": "إلغاء المعاملة",
+  "Speed up": "تسريع",
+  "Pending": "قيد الانتظار",
+  "Confirmed": "مؤكدة",
+  "Failed": "فشلت",
+  "Replaced or dropped": "مستبدلة أو مُسقطة",
+  "Sent": "أُرسلت",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "إلغاء: تحويل لا شيء إلى نفسك بنفس الـ nonce، برسوم أعلى. إذا أُدرج أولًا فلن تحدث المعاملة الأصلية أبدًا.",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "تسريع: المعاملة نفسها مرة أخرى بنفس الـ nonce، برسوم أعلى. أيهما يُدرج أولًا هو الذي يُحتسب."
 }

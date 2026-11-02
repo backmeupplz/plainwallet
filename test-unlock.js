@@ -222,7 +222,7 @@ assert.ok((await readFile(new URL('./entrypoints/android/main.ts', import.meta.u
 // source-extraction pattern too; the unlock form above is imported directly, not reimplemented here.
 const renderSource = popup.slice(popup.indexOf('export async function render('), popup.indexOf('\nrender()\n')).replace('export ', '').replace(': Pending[]', '').replace(': (Node | string)[]', '').replace('(e: Error)', '(e)').replace('pending[0]!', 'pending[0]').replace(' as string | undefined', '')
 const makeRender = new Function('env',
-  'let { browser, load, isUnlocked, touch, mainScreen, home, approvalScreen, unlockScreen, app, invalidateUnlockView, watchedAddresses, exported } = env; ' +
+  'let { browser, load, isUnlocked, touch, mainScreen, home, approvalScreen, unlockScreen, app, invalidateUnlockView, watchedAddresses, exported, sentTxs } = env; ' +
   "let renderId = 0, viewClosed = false, currentWindowId, seed = '', error = '', jevKey, watching, waiting; " +
   "const TAMPERED = 'tampered', language = Promise.resolve(), t = (text) => text; " + renderSource +
   '; return { render, close() { viewClosed = true; renderId++ } }')
@@ -237,7 +237,7 @@ const env = {
   load: () => { const gate = deferred(); loads.push(gate); return gate.promise },
   isUnlocked: async () => unlocked,
   touch() {},
-  watchedAddresses: async () => [], exported: async () => [],
+  watchedAddresses: async () => [], exported: async () => [], sentTxs: async () => [],
   invalidateUnlockView() { invalidations++ },
   mainScreen: () => ['home'], home: (screen) => screen, approvalScreen: () => ['approval'], unlockScreen: () => ['locked'],
   app: { replaceChildren: (...nodes) => drawn.push(nodes) },

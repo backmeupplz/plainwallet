@@ -1,0 +1,1 @@
+Mới: danh sách Giao dịch gồm mọi thứ ví này đã gửi trên mọi mạng, chỉ lưu trên thiết bị này. Giao dịch còn đang chờ có thể được tăng tốc (gửi lại cùng giao dịch với phí cao hơn) hoặc hủy (chuyển 0 cho chính bạn với cùng nonce), và bạn duyệt mức phí mới trước.

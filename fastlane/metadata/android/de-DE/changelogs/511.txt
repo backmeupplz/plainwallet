@@ -1,0 +1,1 @@
+Neu: eine Liste „Transaktionen“ mit allem, was diese Wallet gesendet hat, in jedem Netzwerk, nur auf diesem Gerät gespeichert. Eine noch wartende Transaktion lässt sich beschleunigen (dieselbe noch einmal mit höherer Gebühr) oder abbrechen (eine Überweisung von nichts an dich selbst mit derselben Nonce); die neue Gebühr bestätigst du vorher.

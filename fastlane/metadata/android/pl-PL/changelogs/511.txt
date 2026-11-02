@@ -1,0 +1,1 @@
+Nowość: lista Transakcji ze wszystkim, co wysłał ten portfel, w każdej sieci, przechowywana tylko na tym urządzeniu. Oczekującą transakcję można przyspieszyć (ta sama ponownie za wyższą opłatą) lub anulować (przelew zera do siebie z tym samym nonce), a nową opłatę najpierw zatwierdzasz.

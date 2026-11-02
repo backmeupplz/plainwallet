@@ -213,6 +213,20 @@ export const keepExported = (request: string, keep: boolean) => navigator.locks.
   await browser.storage.local.set({ offline: keep ? [...rest, request] : rest })
 })
 
+// Transactions this wallet broadcast, oldest first, kept only on this device (storage.local is never synced). Outside the
+// MAC like `offline`: each entry is the signed transaction itself, which names its own chain, nonce and (recovered from
+// the signature) sender, so a tampered one can't get anything else signed. Speeding up or cancelling shows what it signs
+// again, on the network from the wallet's own list. `network` is only the name at the time, for networks since removed.
+export type Sent = { raw: `0x${string}`; network: string; site?: string; at: number; done?: 'confirmed' | 'failed' | 'replaced' }
+export const sentTxs = async () => ((await browser.storage.local.get('sent')).sent as Sent[] | undefined) ?? []
+const editSent = (edit: (list: Sent[]) => Sent[]) => navigator.locks.request('sent', async () => {
+  // ponytail: the last 100 are kept; older ones are on the block explorer
+  await browser.storage.local.set({ sent: edit(await sentTxs()).slice(-100) })
+})
+export const keepSent = (entry: Sent) => editSent((list) => [...list.filter((x) => x.raw !== entry.raw), entry])
+/** Once a transaction's fate is known it stays known, so the list doesn't ask the network about it again. */
+export const settleSent = (raw: string, done: NonNullable<Sent['done']>) => editSent((list) => list.map((x) => (x.raw === raw ? { ...x, done } : x)))
+
 /** Export always authenticates the supplied password, never the cached unlock key. */
 export async function exportAccount(index: number, password: string) {
   const session = await unlockedKey()

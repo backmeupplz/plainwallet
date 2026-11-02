@@ -395,5 +395,16 @@
   "other": "{n} और अनुरोध इंतज़ार में हैं"
  },
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "इस खाते का एक और लेन-देन उसी nonce के साथ प्रतीक्षा में है। यह लेन-देन ज़्यादा शुल्क देकर उसकी जगह लेगा।",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "नेटवर्क शुल्क बढ़ गया है, और नेटवर्क ने पुराना शुल्क अस्वीकार कर दिया। अब यह इतना शुल्क लेता है।"
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "नेटवर्क शुल्क बढ़ गया है, और नेटवर्क ने पुराना शुल्क अस्वीकार कर दिया। अब यह इतना शुल्क लेता है।",
+  "Transactions": "लेन-देन",
+  "Transactions this wallet sent, kept only on this device.": "इस वॉलेट से भेजे गए लेन-देन, केवल इस डिवाइस पर रखे गए।",
+  "Cancel transaction": "लेन-देन रद्द करें",
+  "Speed up": "तेज़ करें",
+  "Pending": "लंबित",
+  "Confirmed": "पुष्ट",
+  "Failed": "विफल",
+  "Replaced or dropped": "बदला गया या हटा",
+  "Sent": "भेजा गया",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "रद्द करें: उसी nonce पर ज़्यादा शुल्क देकर खुद को शून्य राशि भेजना। अगर यह पहले शामिल हुआ, तो मूल लेन-देन कभी नहीं होगा।",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "तेज़ करें: वही लेन-देन उसी nonce पर ज़्यादा शुल्क के साथ दोबारा। जो पहले शामिल होगा, वही मान्य होगा।"
 }

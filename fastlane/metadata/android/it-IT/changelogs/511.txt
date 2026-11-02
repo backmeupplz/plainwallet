@@ -1,0 +1,1 @@
+Novità: un elenco Transazioni con tutto ciò che questo wallet ha inviato, su ogni rete, conservato solo su questo dispositivo. Una transazione ancora in attesa si può accelerare (la stessa di nuovo con una commissione più alta) o annullare (un trasferimento di nulla a te stesso con lo stesso nonce), e approvi prima la nuova commissione.

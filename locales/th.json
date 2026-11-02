@@ -374,5 +374,16 @@
   "{n} more characters": {"other": "อีก {n} ตัวอักษร"},
   "{n} more requests waiting": {"other": "มีคำขอรออีก {n} รายการ"},
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "มีธุรกรรมอื่นจากบัญชีนี้รออยู่ด้วย nonce เดียวกัน ธุรกรรมนี้จะเข้าแทนที่ โดยจ่ายค่าธรรมเนียมสูงขึ้น",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "ค่าธรรมเนียมเครือข่ายสูงขึ้น และเครือข่ายปฏิเสธค่าธรรมเนียมเดิม นี่คือค่าธรรมเนียมที่เรียกเก็บตอนนี้"
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "ค่าธรรมเนียมเครือข่ายสูงขึ้น และเครือข่ายปฏิเสธค่าธรรมเนียมเดิม นี่คือค่าธรรมเนียมที่เรียกเก็บตอนนี้",
+  "Transactions": "ธุรกรรม",
+  "Transactions this wallet sent, kept only on this device.": "ธุรกรรมที่กระเป๋านี้ส่ง เก็บไว้ในอุปกรณ์นี้เท่านั้น",
+  "Cancel transaction": "ยกเลิกธุรกรรม",
+  "Speed up": "เร่ง",
+  "Pending": "รอดำเนินการ",
+  "Confirmed": "ยืนยันแล้ว",
+  "Failed": "ล้มเหลว",
+  "Replaced or dropped": "ถูกแทนที่หรือถูกทิ้ง",
+  "Sent": "ส่งเมื่อ",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "ยกเลิก: โอนศูนย์ให้ตัวเองด้วย nonce เดียวกัน โดยจ่ายค่าธรรมเนียมสูงขึ้น หากรายการนี้ถูกรวมก่อน ธุรกรรมเดิมจะไม่เกิดขึ้นเลย",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "เร่ง: ส่งธุรกรรมเดิมอีกครั้งด้วย nonce เดิม โดยจ่ายค่าธรรมเนียมสูงขึ้น รายการที่ถูกรวมก่อนจะมีผล"
 }

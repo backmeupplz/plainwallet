@@ -1,0 +1,1 @@
+Baru: daftar Transaksi berisi semua yang dikirim dompet ini, di setiap jaringan, hanya disimpan di perangkat ini. Transaksi yang masih menunggu bisa dipercepat (transaksi yang sama lagi dengan biaya lebih tinggi) atau dibatalkan (transfer kosong ke diri sendiri dengan nonce yang sama), dan Anda menyetujui biaya baru lebih dulu.

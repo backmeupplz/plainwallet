@@ -374,5 +374,16 @@
  "{n} more characters": {"one": "jeszcze {n} znak", "few": "jeszcze {n} znaki", "many": "jeszcze {n} znaków", "other": "jeszcze {n} znaku"},
  "{n} more requests waiting": {"one": "czeka jeszcze {n} żądanie", "few": "czekają jeszcze {n} żądania", "many": "czeka jeszcze {n} żądań", "other": "czeka jeszcze {n} żądania"},
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Inna transakcja z tego konta czeka z tym samym nonce. Ta zajmie jej miejsce, za wyższą opłatą.",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Opłaty sieciowe wzrosły i sieć odrzuciła poprzednią opłatę. Tyle sieć pobiera teraz."
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Opłaty sieciowe wzrosły i sieć odrzuciła poprzednią opłatę. Tyle sieć pobiera teraz.",
+  "Transactions": "Transakcje",
+  "Transactions this wallet sent, kept only on this device.": "Transakcje wysłane z tego portfela, przechowywane tylko na tym urządzeniu.",
+  "Cancel transaction": "Anuluj transakcję",
+  "Speed up": "Przyspiesz",
+  "Pending": "Oczekuje",
+  "Confirmed": "Potwierdzona",
+  "Failed": "Nieudana",
+  "Replaced or dropped": "Zastąpiona lub odrzucona",
+  "Sent": "Wysłano",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Anuluj: przelew zera do siebie z tym samym nonce, za wyższą opłatą. Jeśli trafi do bloku pierwszy, pierwotna transakcja nigdy się nie wykona.",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Przyspiesz: ta sama transakcja ponownie z jej nonce, za wyższą opłatą. Liczy się ta, która trafi do bloku pierwsza."
 }

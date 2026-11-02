@@ -374,5 +374,16 @@
   "{n} more characters": {"one": "nog {n} teken", "other": "nog {n} tekens"},
   "{n} more requests waiting": {"one": "nog {n} verzoek wacht", "other": "nog {n} verzoeken wachten"},
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Een andere transactie van dit account wacht met dezelfde nonce. Deze neemt haar plaats in, voor een hogere vergoeding.",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "De netwerkkosten zijn gestegen en het netwerk weigerde de oude vergoeding. Dit is wat het nu rekent."
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "De netwerkkosten zijn gestegen en het netwerk weigerde de oude vergoeding. Dit is wat het nu rekent.",
+  "Transactions": "Transacties",
+  "Transactions this wallet sent, kept only on this device.": "Transacties die deze wallet verstuurde, alleen op dit apparaat bewaard.",
+  "Cancel transaction": "Transactie annuleren",
+  "Speed up": "Versnellen",
+  "Pending": "In behandeling",
+  "Confirmed": "Bevestigd",
+  "Failed": "Mislukt",
+  "Replaced or dropped": "Vervangen of verworpen",
+  "Sent": "Verstuurd",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Annuleren: een overboeking van niets naar jezelf met dezelfde nonce, voor een hogere vergoeding. Wordt die eerst opgenomen, dan gebeurt de oorspronkelijke nooit.",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Versnellen: dezelfde transactie opnieuw met haar nonce, voor een hogere vergoeding. Welke het eerst wordt opgenomen, telt."
 }

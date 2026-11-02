@@ -395,5 +395,16 @@
   "other": "{n} more requests waiting"
  },
   "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.",
-  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Network fees went up, and the network refused the old fee. This is what it charges now."
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Network fees went up, and the network refused the old fee. This is what it charges now.",
+  "Transactions": "Transactions",
+  "Transactions this wallet sent, kept only on this device.": "Transactions this wallet sent, kept only on this device.",
+  "Cancel transaction": "Cancel transaction",
+  "Speed up": "Speed up",
+  "Pending": "Pending",
+  "Confirmed": "Confirmed",
+  "Failed": "Failed",
+  "Replaced or dropped": "Replaced or dropped",
+  "Sent": "Sent",
+  "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.",
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts."
 }
