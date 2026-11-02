@@ -26,8 +26,14 @@ globalThis.browser = {
   windows: { async create() { return { id: 1 } }, async update() {}, async remove() {}, onRemoved: { addListener() {} } },
 }
 globalThis.defineBackground = (fn) => fn
+// The vault's scrypt at a test cost: N = 2^17 takes ~1 s per unlock, 20 times here (test.js keeps the real cost).
+// kdfHold, when set, holds the next derivation until the test lets it go.
+const scrypt = import.meta.resolve('@noble/hashes/scrypt')
+const fastScrypt = `import { scryptAsync as s } from '${scrypt}'
+export const scryptAsync = async (password, salt, options) => { await globalThis.kdfHold?.(); return s(password, salt, { ...options, N: 2 ** 10 }) }`
 registerHooks({
   resolve(specifier, context, next) {
+    if (specifier === '@noble/hashes/scrypt') return { url: 'data:text/javascript,' + encodeURIComponent(fastScrypt), shortCircuit: true }
     if (specifier === 'wxt/browser') return { url: 'data:text/javascript,export const browser = globalThis.browser', shortCircuit: true }
     if (specifier.startsWith('@/')) specifier = new URL(specifier.slice(2) + '.ts', import.meta.url).href
     if (specifier === './wallet' || specifier === './store' || specifier === './describe') specifier += '.ts'
@@ -105,9 +111,13 @@ for (const index of [0, 1, 2, 6, 7]) {
 }
 assert.deepEqual(browser.storage.local.data, beforeExport)
 assert.deepEqual(browser.storage.session.data, sessionBeforeExport)
+// Locking while an export derives its key: the export fails instead of handing out the key.
+let release
+const deriving = new Promise((started) => { globalThis.kdfHold = () => { globalThis.kdfHold = undefined; started(); return new Promise((go) => { release = go }) } })
 const duringLock = assert.rejects(exportAccount(0, 'old-password-123'), /locked/)
-await new Promise((resolve) => setTimeout(resolve, 20))
+await deriving
 await lock()
+release()
 await duringLock
 await assert.rejects(exportAccount(0, 'old-password-123'), /locked/)
 await unlock('old-password-123')

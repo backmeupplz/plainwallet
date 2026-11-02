@@ -105,7 +105,7 @@ class StoreSelectionTests(unittest.TestCase):
         self.assertIn("fail-fast: false", workflow)
         self.assertIn("needs: [build, select-stores, github-release, submit, submit-apple]", workflow)
         # The Apple archives are built in the job that submits them (no artifact from the Mac); the CI-only
-        # build-apple job never runs on releases, and the archives' build step is the same in both.
+        # build-apple job never runs on releases and only compile-checks the apps.
         apple = workflow.split("  submit-apple:\n", 1)[1].split("  report:\n", 1)[0]
         self.assertIn("needs: [build, select-stores, github-release]", apple)
         self.assertNotIn("apple-release", workflow)
@@ -113,7 +113,9 @@ class StoreSelectionTests(unittest.TestCase):
         self.assertIn("if: github.event_name != 'release' && (github.event_name != 'pull_request' || github.event.pull_request.user.login == 'backmeupplz')", build_apple)
         self.assertNotIn("secrets.", build_apple)
         step = "      - name: Credential-free iOS and Mac archives\n"
-        self.assertEqual(build_apple.split(step, 1)[1], apple.split(step, 1)[1].split("      - uses:", 1)[0])
+        self.assertNotIn("build.py apple", build_apple)
+        self.assertIn("build-for-testing", build_apple)
+        self.assertIn("python3 scripts/release/build.py apple", apple.split(step, 1)[1].split("      - uses:", 1)[0])
         self.assertLess(apple.index(step), apple.index("secrets."))
         self.assertIn("if: needs.select-stores.outputs.appstore == 'true'", workflow)
         self.assertIn("pattern: selection-outcomes-*", workflow)

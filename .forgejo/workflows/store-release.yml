@@ -20,16 +20,51 @@ jobs:
     # Our own pushes and PRs run on the Mac runners, where Node, the JDK, the SDK and Gradle's caches persist between
     # runs. Releases (whose artifact the store jobs take) and outsiders' PRs (bridged from GitHub by the `github` user)
     # run on Linux.
-    runs-on: ${{ github.event_name != 'release' && (github.event_name != 'pull_request' || contains(fromJSON('["backmeupplz","renovate","claude"]'), github.event.pull_request.user.login)) && 'macos-latest' || 'ubuntu-24.04' }}
+    runs-on: ${{ github.event_name != 'release' && (github.event_name != 'pull_request' || contains(fromJSON('["backmeupplz","renovate","claude","radiant"]'), github.event.pull_request.user.login)) && 'macos-latest' || 'ubuntu-24.04' }}
     timeout-minutes: 30
     steps:
+      # Releases: the whole history and tags (build.py checks the tag; the Firefox sources zip)
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        if: github.event_name == 'release'
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      # Mac: Homebrew's Node (when it is the pinned version), a per-runner JDK and SDK (Gradle installs the platform and
-      # build tools it needs) and Gradle's own caches in the runner user's home.
+      # Linux: one commit without the store screenshots and share images (~90 MB nothing here reads)
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        if: github.event_name != 'release' && runner.os == 'Linux'
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/appstore/screenshots/
+            !/fastlane/metadata/android/*/images/
+            !/docs/og/
+      # Mac: the commit from a copy of the repository in the runner's tool cache, so a run downloads only its new
+      # objects (a fresh checkout spends 5-20 s fetching files from the busy server). Without the store screenshots and
+      # share images (~90 MB nothing here reads).
+      - name: Checkout
+        if: runner.os == 'macOS'
+        run: |
+          mirror="$RUNNER_TOOL_CACHE/plainwallet.git"
+          [ -d "$mirror" ] || { git init -q --bare "$mirror" && git -C "$mirror" config gc.auto 0; }
+          # A cancelled run can leave a lock behind (one job at a time per runner, so none is live); the server can drop
+          # a busy connection, so the fetch gets three tries like actions/checkout's.
+          for try in 1 2 3; do
+            find "$mirror" -name '*.lock' -delete
+            git -C "$mirror" fetch -q --no-tags --depth=1 "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "+$GITHUB_SHA:refs/ci/head" && break
+            [ $try -lt 3 ] || exit 1
+          done
+          cd "$GITHUB_WORKSPACE" && find . -mindepth 1 -delete && git init -q
+          echo "$mirror/objects" > .git/objects/info/alternates && cp "$mirror/shallow" .git/shallow
+          git config core.sparseCheckout true
+          printf '%s\n' '/*' '!/appstore/screenshots/' '!/fastlane/metadata/android/*/images/' '!/docs/og/' > .git/info/sparse-checkout
+          git -c advice.detachedHead=false checkout -q "$GITHUB_SHA"
+      # Mac: Homebrew's Node (when it is the pinned version), a per-runner SDK (Gradle installs the platform and build
+      # tools it needs), and a JDK and Gradle's own caches in the runner user's home, shared by the runners: one JDK path
+      # lets every runner reuse the same Gradle daemon.
       - id: mac
         name: Mac toolchain
         if: runner.os == 'macOS'
@@ -37,13 +72,15 @@ jobs:
           sdk="${PWD%%/work/*}/android-sdk"
           [ -d "$sdk/licenses" ] || { mkdir -p "$sdk" && cp -R /opt/homebrew/share/android-commandlinetools/licenses "$sdk/"; }
           echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
-          # Temurin, pinned and checked, kept per runner: Homebrew's JDK can't load the user's private freetype.
-          jdk="${PWD%%/work/*}/temurin-21.0.13+9"
+          # Temurin, pinned and checked: Homebrew's JDK can't load the user's private freetype.
+          jdk="$HOME/temurin-21.0.13+9"
           if [ ! -x "$jdk/Contents/Home/bin/java" ]; then
-            rm -rf "$jdk.tmp" && mkdir -p "$jdk.tmp"
-            curl -fsSL -o "$jdk.tmp/jdk.tgz" https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.13_9.tar.gz
-            echo "bf036b35b071bfb2f54f2c0af8ee8d88afa95ee6eb3dce02c0f94cfc2524d04a  $jdk.tmp/jdk.tgz" | shasum -a 256 -c
-            tar -xzf "$jdk.tmp/jdk.tgz" -C "$jdk.tmp" --strip-components 1 && rm "$jdk.tmp/jdk.tgz" && mv "$jdk.tmp" "$jdk"
+            tmp="$jdk.$$" && rm -rf "$tmp" && mkdir -p "$tmp"
+            curl -fsSL -o "$tmp/jdk.tgz" https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.13_9.tar.gz
+            echo "bf036b35b071bfb2f54f2c0af8ee8d88afa95ee6eb3dce02c0f94cfc2524d04a  $tmp/jdk.tgz" | shasum -a 256 -c
+            tar -xzf "$tmp/jdk.tgz" -C "$tmp" --strip-components 1 && rm "$tmp/jdk.tgz"
+            [ -e "$jdk" ] || mv "$tmp" "$jdk" # another runner may have installed it meanwhile
+            rm -rf "$tmp"
           fi
           echo "JAVA_HOME=$jdk/Contents/Home" >> "$GITHUB_ENV"
           if [ "$(/opt/homebrew/bin/node --version)" = v26.8.2 ]; then echo /opt/homebrew/bin >> "$GITHUB_PATH"; echo node=brew >> "$GITHUB_OUTPUT"; fi
@@ -79,7 +116,47 @@ jobs:
         if: steps.sdk.outputs.missing
         with:
           packages: platform-tools
+      # Pull requests and main: every test, and compile checks of the extension (Chrome, Firefox, the Android page),
+      # the types and both Android flavors, side by side. The store builds (R8, AAB, APK) run on releases only.
+      - name: Tests and compile checks
+        if: github.event_name != 'release'
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then
+            # node_modules for this lockfile and Node, kept in the runner's tool cache and linked in (npm ci: ~25 s)
+            modules="$RUNNER_TOOL_CACHE/plainwallet-npm/$(cat package-lock.json .npmrc <(node --version) | shasum -a 256 | cut -c1-16)/node_modules"
+            if [ ! -d "$modules" ]; then
+              npm ci --no-audit --no-fund
+              rm -rf "$RUNNER_TOOL_CACHE/plainwallet-npm" && mkdir -p "${modules%/*}" && mv node_modules "$modules"
+            fi
+            ln -s "$modules" node_modules
+          else
+            npm ci
+          fi
+          # The generated types, written once here so the parallel builds find them current and never rewrite them
+          npm exec -- wxt prepare
+          logs="${RUNNER_TEMP:-/tmp}/checks" && rm -rf "$logs" && mkdir -p "$logs"
+          lanes=()
+          lane() { "${@:2}" > "$logs/$1.log" 2>&1 & lanes+=("$! $1"); }
+          lane js-tests npm test
+          for t in scripts/release/test_*.py; do lane "${t##*/}" python3 -m unittest discover -s scripts/release -p "${t##*/}"; done
+          lane chrome npm run build
+          lane firefox npm exec -- wxt build -b firefox --mv3
+          lane android-page npm run build:android
+          lane types npm exec -- tsc --noEmit
+          # The daemon outlives the job on the Mac (warm: ~3 s instead of ~25 s), but not for hours. Without file system
+          # watching it never trusts what it saw of an earlier job's checkout. The test task always runs, never taken
+          # from the build cache.
+          lane android sh -c 'cd android && exec ./gradlew -Dorg.gradle.daemon.idletimeout=900000 --no-watch-fs --build-cache -PprebuiltWeb --dependency-verification strict testPlayDebugUnitTest --rerun compileFdroidDebugJavaWithJavac'
+          failed=
+          for l in "${lanes[@]}"; do
+            set -- $l
+            if wait "$1"; then echo "::group::$2 ok"; else failed="$failed $2"; echo "::group::$2 FAILED"; fi
+            cat "$logs/$2.log"
+            echo ::endgroup::
+          done
+          test -z "$failed" || { echo "::error::Failed:$failed"; exit 1; }
       - name: Credential-free tests and builds
+        if: github.event_name == 'release'
         run: |
           npm ci
           # The tests only read the sources, so they run alongside the builds.
@@ -92,6 +169,7 @@ jobs:
           ./gradlew --no-daemon --dependency-verification strict bundlePlayRelease assembleFdroidRelease testPlayDebugUnitTest
           wait $tests && cat ../tests.log || { cat ../tests.log; exit 1; }
       - name: Bind package, manifests and AAB to immutable release
+        if: github.event_name == 'release'
         run: python3 scripts/release/build.py ci
       - uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e # v4
         if: github.event_name == 'release' # only the store submissions use it
@@ -100,37 +178,54 @@ jobs:
           path: release-out/
           if-no-files-found: error
           retention-days: 30
-  # CI check of the Apple archives. On a release submit-apple builds them itself: the Mac's uplink is too slow to
-  # upload them as an artifact. Keep its build step identical to this one.
+  # Compile checks of the iOS app with its tests and of the Mac app with its Safari extension. The iOS tests run
+  # locally (simulator runs would hold up the shared Mac); the archives are built on releases only, by submit-apple.
   build-apple:
     if: github.event_name != 'release' && (github.event_name != 'pull_request' || github.event.pull_request.user.login == 'backmeupplz')
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: '26.8.2'
-      # The iOS tests (ios/PlainWalletTests) compile here but run locally: simulator runs would hold up the shared Mac.
-      # Compiling only needs the app's web folder to exist (the next step fills it). xcodebuild gets a clean environment
-      # since it reads every variable as a build setting, except DEVELOPER_DIR, which picks the same Xcode as the archives.
-      - name: iOS tests compile
+      # Mac: the commit from a copy of the repository in the runner's tool cache, so a run downloads only its new
+      # objects (a fresh checkout spends 5-20 s fetching files from the busy server). Without the store screenshots and
+      # share images (~90 MB nothing here reads).
+      - name: Checkout
         run: |
-          mkdir -p ios/web
-          env -i HOME="$HOME" PATH="$PATH" TMPDIR="${TMPDIR:-/tmp}" ${DEVELOPER_DIR:+DEVELOPER_DIR="$DEVELOPER_DIR"} \
-            xcodebuild -quiet -project ios/PlainWallet.xcodeproj \
-            -scheme PlainWallet -destination 'generic/platform=iOS Simulator' -derivedDataPath build-apple/tests \
-            CODE_SIGNING_ALLOWED=NO build-for-testing
-      - name: Credential-free iOS and Mac archives
+          mirror="$RUNNER_TOOL_CACHE/plainwallet.git"
+          [ -d "$mirror" ] || { git init -q --bare "$mirror" && git -C "$mirror" config gc.auto 0; }
+          # A cancelled run can leave a lock behind (one job at a time per runner, so none is live); the server can drop
+          # a busy connection, so the fetch gets three tries like actions/checkout's.
+          for try in 1 2 3; do
+            find "$mirror" -name '*.lock' -delete
+            git -C "$mirror" fetch -q --no-tags --depth=1 "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "+$GITHUB_SHA:refs/ci/head" && break
+            [ $try -lt 3 ] || exit 1
+          done
+          cd "$GITHUB_WORKSPACE" && find . -mindepth 1 -delete && git init -q
+          echo "$mirror/objects" > .git/objects/info/alternates && cp "$mirror/shallow" .git/shallow
+          git config core.sparseCheckout true
+          printf '%s\n' '/*' '!/appstore/screenshots/' '!/fastlane/metadata/android/*/images/' '!/docs/og/' > .git/info/sparse-checkout
+          git -c advice.detachedHead=false checkout -q "$GITHUB_SHA"
+      # Compiling only needs the apps' web folders to exist (the archives fill them). The sources are copied by content
+      # to a fixed folder in the runner's tool cache, next to DerivedData: unchanged files keep their dates, so Xcode
+      # compiles only what changed (~5 s instead of ~60 s). xcodebuild gets a clean environment since it reads every
+      # variable as a build setting, except DEVELOPER_DIR, which picks the same Xcode as the archives.
+      - name: iOS and Mac compile checks
         run: |
-          npm ci
-          npm run build:macos
-          rm -rf ios/web && cp -R .output/android-mv3 ios/web
-          python3 scripts/release/build.py apple
+          cache="$RUNNER_TOOL_CACHE/plainwallet-xcode"
+          mkdir -p ios/web macos/web macos/safari "$cache/src"
+          rsync -rc --delete ios macos "$cache/src/"
+          cd "$cache/src"
+          xcode() {
+            env -i HOME="$HOME" PATH="$PATH" TMPDIR="${TMPDIR:-/tmp}" ${DEVELOPER_DIR:+DEVELOPER_DIR="$DEVELOPER_DIR"} \
+              xcodebuild -quiet -scheme PlainWallet CODE_SIGNING_ALLOWED=NO -derivedDataPath "$cache/$1" \
+              -project "$1/PlainWallet.xcodeproj" "${@:2}" > "$1.log" 2>&1
+          }
+          xcode ios -destination 'generic/platform=iOS Simulator' build-for-testing & ios=$!
+          xcode macos -destination 'generic/platform=macOS' build & mac=$!
+          failed=
+          wait $ios || failed="$failed ios"
+          wait $mac || failed="$failed macos"
+          cat ios.log macos.log
+          test -z "$failed" || { echo "::error::Failed:$failed"; exit 1; }
   select-stores:
     if: github.repository == 'backmeupplz/plainwallet' && github.event_name == 'release' && !github.event.release.prerelease && !github.event.release.draft
     runs-on: ubuntu-24.04

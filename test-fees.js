@@ -32,9 +32,12 @@ assert.equal(validate([3n,1n,seconds-1199n,seconds-1199n,3n]).expiresAt, now + 1
 
 const originalNow = Date.now
 Date.now = () => now
-// Retry pauses (1 s, 2 s) run instantly here; the 5 s timeout and DOM expiry timers keep their own handling below.
+// Retry pauses (1 s, 2 s) run instantly here. The 5 s timeouts never fire by themselves, however slow the machine:
+// the hung-provider test fires them. DOM expiry timers keep their own handling below.
 const realSetTimeout = globalThis.setTimeout
-const fastRetries = (fn,ms,...args) => realSetTimeout(fn, ms === 1000 || ms === 2000 ? 1 : ms, ...args)
+const timeouts = []
+const fastRetries = (fn,ms,...args) => ms === 5000 ? (timeouts.push(() => fn(...args)), 0) : realSetTimeout(fn, ms === 1000 || ms === 2000 ? 1 : ms, ...args)
+const until = async (check) => { for(let i=0;i<100 && !check();i++) await new Promise((r) => realSetTimeout(r,1)); assert.ok(check()) }
 globalThis.setTimeout = fastRetries
 let requests = [], targets = [], scenario = {}
 const roundAbi = parseAbiParameters('uint80, int256, uint256, uint256, uint80')
@@ -96,14 +99,16 @@ const workingFetch = globalThis.fetch
 let resolveHung
 const hung = new Promise((r) => { resolveHung = r })
 globalThis.fetch = async (...args) => { await hung; return workingFetch(...args) }
-globalThis.setTimeout = (fn,ms,...args) => fastRetries(fn, ms === 5000 ? 5 : ms, ...args)
 const timedNetwork = network()
-assert.deepEqual(await Promise.all([nativeUsd(timedNetwork),nativeUsd(timedNetwork)]), [undefined,undefined])
+timeouts.length = 0
+const both = Promise.all([nativeUsd(timedNetwork),nativeUsd(timedNetwork)])
+timeouts.splice(0).forEach((fire) => fire())
+assert.deepEqual(await both, [undefined,undefined])
+const late = requests.length
 resolveHung()
-await new Promise((r) => realSetTimeout(r,10))
+await until(() => requests.length === late + 2) // the late replies (chain id, oracle read) are in
 assert.equal(await nativeUsd(timedNetwork),undefined)
 globalThis.fetch = workingFetch
-globalThis.setTimeout = fastRetries
 
 // An early RPC error must abort siblings already waiting for response bodies, not just return unavailable.
 const stalledBodies = []
@@ -156,14 +161,13 @@ class Element {
 const expiries = []
 globalThis.setTimeout = (fn, ms, ...args) => {
   if (ms > 5000) { expiries.push(fn); return 0 }
-  return realSetTimeout(fn,ms,...args)
+  return fastRetries(fn,ms,...args)
 }
 const events = new Map()
 globalThis.document = {createElement: () => new Element(), addEventListener: (name,fn) => events.set(name,fn), removeEventListener: (name) => events.delete(name)}
 globalThis.addEventListener = document.addEventListener
 globalThis.removeEventListener = document.removeEventListener
 const { feeValue } = await import('./entrypoints/popup/fee.ts')
-const until = async (check) => { for(let i=0;i<100 && !check();i++) await new Promise((r) => setTimeout(r,1)); assert.ok(check()) }
 const originalFetch = globalThis.fetch
 let unblock
 const gate = new Promise((r) => {unblock=r})
@@ -172,14 +176,15 @@ const mutable = network()
 const snapshotted = nativeUsd(mutable)
 mutable.id = 56
 mutable.symbol = 'BNB'
-const stale = feeValue(network(), 123n)
+const staleNetwork = network()
+const stale = feeValue(staleNetwork, 123n)
 assert.match(stale.textContent,/USD loading/)
 stale.isConnected = false
 const current = feeValue(network(100,'xDAI'), '0.123')
 await until(() => current.textContent.includes('unavailable'))
 unblock()
 assert.ok(await snapshotted)
-await new Promise((r) => setTimeout(r,10))
+await nativeUsd(staleNetwork) // the same cached read: the stale review's reply has been handled before this one
 assert.match(stale.textContent,/USD loading/)
 assert.equal(current.textContent,'0.123 xDAI (USD unavailable)')
 globalThis.fetch = originalFetch

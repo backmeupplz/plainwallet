@@ -14,16 +14,20 @@ concurrency:
 jobs:
   check:
     # Our own PRs and pushes run on the Mac runners; outsiders' PRs (bridged from GitHub by the `github` user) on Linux
-    runs-on: ${{ (github.event_name != 'pull_request' || contains(fromJSON('["backmeupplz","renovate","claude"]'), github.event.pull_request.user.login)) && 'macos-latest' || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || contains(fromJSON('["backmeupplz","renovate","claude","radiant"]'), github.event.pull_request.user.login)) && 'macos-latest' || 'ubuntu-24.04' }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+          # the texts, not the screenshots (~90 MB)
+          sparse-checkout-cone-mode: false
           sparse-checkout: |
-            appstore
-            fastlane
-            scripts
+            /appstore/
+            /fastlane/
+            /scripts/
+            !/appstore/screenshots/
+            !/fastlane/metadata/android/*/images/
       - if: runner.os == 'Linux'
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
