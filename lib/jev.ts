@@ -16,9 +16,9 @@ export const ACTIONS: Record<Subject, Record<string, string>> = {
     'Swaps': 'Trades one token or coin for another, e.g. on an exchange',
     'Wraps or unwraps': 'Converts between the native coin and its wrapped token, e.g. ETH and WETH',
     'Buys an NFT': 'Pays for an NFT from a marketplace or a sale',
-    'Mints': 'Mints a new NFT or token',
+    'Mints': 'Mints or collects a new NFT or token, free or paid, which the account receives',
     'Deposits or stakes': 'Puts assets into a protocol: lending, staking, a liquidity pool or a vault',
-    'Withdraws or claims': 'Takes assets out of a protocol, or claims rewards or an airdrop',
+    'Withdraws or claims': 'Takes assets the account had put into a protocol back out, or claims rewards or an airdrop',
     'Bridges': 'Moves assets to another blockchain',
     'Registers a name': 'Registers or renews a name such as ENS or Basenames',
     'Plays a game': 'Makes a move or takes an action in an on-chain game',
@@ -57,8 +57,8 @@ const questions = (subject: Subject, site: boolean) => ({
     type: 'noul',
     instructions: `Is \`${subject}\` a scam, phishing or wallet-drainer ${subject}?`,
     criteria: {
-      true: 'Gives tokens, NFTs or approvals to an unknown party for nothing in return (for example to a regular account, or a new or unverified contract), involves a contract flagged as a scam, comes from a site imitating a known app, or poses as a free reward or airdrop claim',
-      false: 'An ordinary action the account owner would expect to take',
+      true: 'Gives tokens, NFTs or approvals to an unknown party for nothing in return (for example to a regular account, or a new or unverified contract), involves a contract flagged as a scam, comes from a site imitating a known app, or poses as a free reward or airdrop claim that takes coins, tokens or approvals from the account',
+      false: 'An ordinary action the account owner would expect to take. One that only adds assets to the account, sending and approving nothing, drains nothing, even from a new contract',
     },
   },
   ...(site && {
