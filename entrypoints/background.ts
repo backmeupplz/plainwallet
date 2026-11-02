@@ -1,5 +1,5 @@
 import { formatEther, hexToString, serializeTransaction, toHex } from 'viem'
-import { broadcast, bump, mined, noRedirect, prepare, send, tokenInfo, underpriced, unsigned } from '@/lib/chain'
+import { broadcast, feeRefusal, mined, noRedirect, prepare, refee, send, tokenInfo, unsigned } from '@/lib/chain'
 import { callSummary, clean, foreignSignIn, publicRpc, signedView } from '@/lib/describe'
 import { msg, t, type Msg } from '@/lib/i18n'
 import { checkResponse, requestText, type OfflineRequest } from '@/lib/offline'
@@ -7,7 +7,10 @@ import { keepExported, load, lock, reset, save, signer, watchedAddresses, type N
 
 // EIP-1193 / EIP-1474 error shape
 const err = (code: number, message: string) => ({ code, message })
-const REPLACE = msg('Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.')
+const REFEE = {
+  replace: msg('Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.'),
+  fees: msg('Network fees went up, and the network refused the old fee. This is what it charges now.'),
+}
 const big = (v?: string) => (v == null ? undefined : BigInt(v))
 const size = (v: unknown) => { try { return JSON.stringify(v ?? null).length } catch { return Infinity } }
 
@@ -172,10 +175,12 @@ async function handle(origin: string, method: unknown, rawParams: unknown, title
       if (signed) hash = await broadcast(network, signed)
       else for (let p = { request, fee }, tries = 0; ; ) {
         try { hash = await send(network, await sign(), p.request); break } catch (e) {
-          // Something already waits at this nonce: offered again for a higher fee, which you approve (or don't) first.
-          if (!underpriced(e) || ++tries > 3) throw e
-          p = bump(p)
-          await ask(detail(p.request, p.fee), REPLACE)
+          // Refused for its fee (something already waits at this nonce, or fees went up): offered again at fees that work
+          // now, which you approve (or don't) first.
+          const why = feeRefusal(e)
+          if (!why || ++tries > 3) throw e
+          p = await refee(network, p, why === 'replace')
+          await ask(detail(p.request, p.fee), REFEE[why])
         }
       }
       mined(network, hash).catch(() => {})

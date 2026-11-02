@@ -387,5 +387,6 @@
  "{n} more requests waiting": {
   "other": "{n} permintaan lain menunggu"
  },
-  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Transaksi lain dari akun ini sedang menunggu dengan nonce yang sama. Transaksi ini menggantikannya, dengan biaya lebih tinggi."
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Transaksi lain dari akun ini sedang menunggu dengan nonce yang sama. Transaksi ini menggantikannya, dengan biaya lebih tinggi.",
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Biaya jaringan naik, dan jaringan menolak biaya lama. Ini biaya yang dikenakan sekarang."
 }

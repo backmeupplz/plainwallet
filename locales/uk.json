@@ -408,5 +408,6 @@
   "many": "ще {n} запитів очікують",
   "other": "ще {n} запиту очікують"
  },
-  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Інша транзакція з цього акаунта чекає з тим самим nonce. Ця займе її місце за вищу комісію."
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Інша транзакція з цього акаунта чекає з тим самим nonce. Ця займе її місце за вищу комісію.",
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Комісії в мережі зросли, і мережа відхилила попередню комісію. Ось скільки вона бере зараз."
 }

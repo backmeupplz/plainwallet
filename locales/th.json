@@ -373,5 +373,6 @@
   "token {name} ({symbol}) with {n} holders": {"other": "โทเค็น {name} ({symbol}) มีผู้ถือ {n} ราย"},
   "{n} more characters": {"other": "อีก {n} ตัวอักษร"},
   "{n} more requests waiting": {"other": "มีคำขอรออีก {n} รายการ"},
-  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "มีธุรกรรมอื่นจากบัญชีนี้รออยู่ด้วย nonce เดียวกัน ธุรกรรมนี้จะเข้าแทนที่ โดยจ่ายค่าธรรมเนียมสูงขึ้น"
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "มีธุรกรรมอื่นจากบัญชีนี้รออยู่ด้วย nonce เดียวกัน ธุรกรรมนี้จะเข้าแทนที่ โดยจ่ายค่าธรรมเนียมสูงขึ้น",
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "ค่าธรรมเนียมเครือข่ายสูงขึ้น และเครือข่ายปฏิเสธค่าธรรมเนียมเดิม นี่คือค่าธรรมเนียมที่เรียกเก็บตอนนี้"
 }

@@ -373,5 +373,6 @@
   "token {name} ({symbol}) with {n} holders": { "one": "token {name} ({symbol}) med {n} innehavare", "other": "token {name} ({symbol}) med {n} innehavare" },
   "{n} more characters": { "one": "{n} tecken till", "other": "{n} tecken till" },
   "{n} more requests waiting": { "one": "{n} begäran till väntar", "other": "{n} begäranden till väntar" },
-  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "En annan transaktion från det här kontot väntar med samma nonce. Den här ersätter den, mot en högre avgift."
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "En annan transaktion från det här kontot väntar med samma nonce. Den här ersätter den, mot en högre avgift.",
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Nätverksavgifterna har stigit och nätverket avvisade den gamla avgiften. Så här mycket tar det nu."
 }

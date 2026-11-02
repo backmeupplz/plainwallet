@@ -1,0 +1,1 @@
+Quando una rete rifiuta una transazione perché un’altra dell’account è già in attesa con lo stesso nonce, o perché le commissioni sono aumentate, Plain Wallet ora la ripropone con una commissione che funziona e chiede prima di inviarla. I siti ora vedono il motivo reale della rete quando una transazione fallisce. Jev non scambia più i mint gratuiti per claim o probabili truffe.

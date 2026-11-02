@@ -1,5 +1,5 @@
 import { encodeFunctionData, erc20Abi, formatEther, formatUnits, getAddress, isAddress, parseEther, parseTransaction, serializeTransaction, zeroAddress } from 'viem'
-import { balances, broadcast, bump, mined, prepare, send, simulate, tokenInfo, underpriced, unsigned, type Simulation } from '@/lib/chain'
+import { balances, broadcast, feeRefusal, mined, prepare, refee, send, simulate, tokenInfo, unsigned, type Simulation } from '@/lib/chain'
 import { describeCall, foreignSignIn, parseAddress, parseAmount, signedView, spenderOf } from '@/lib/describe'
 import { analyze, type Subject, type Verdict } from '@/lib/jev'
 import { lookup, type Level, type Lookup, type Party } from '@/lib/lookup'
@@ -800,8 +800,8 @@ function sendDialog(s: State, network: Network, tokens: Token[]) {
     show(await prepare(network, from, token
       ? { to: token.address, data: encodeFunctionData({ abi: erc20Abi, functionName: 'transfer', args: [recipient, value] }) }
       : { to: recipient, value }))
-    // `replacing`: the last try met a transaction already waiting at its nonce, so this one pays more to take its place.
-    function show(prepared: Awaited<ReturnType<typeof prepare>>, replacing = false) {
+    // `refused`: why the network turned down the last try's fee, which this one raises to what works now.
+    function show(prepared: Awaited<ReturnType<typeof prepare>>, refused?: 'replace' | 'fees') {
       const { request, fee } = prepared
       const watch = watching.has(from)
       const confirm = armed(h('button', { className: 'primary', onclick: run(async () => {
@@ -813,13 +813,16 @@ function sendDialog(s: State, network: Network, tokens: Token[]) {
         }
         let hash
         try { hash = await send(network, await signer(index, from), request) } catch (e) {
-          if (!underpriced(e)) throw e
-          return show(bump(prepared), true)
+          const why = feeRefusal(e)
+          if (!why) throw e
+          return show(await refee(network, prepared, why === 'replace'), why)
         }
         submitted(content, network, from, hash)
       }, false) }, watch ? t('Export to sign') : t('Send')))
       content.replaceChildren(
-        ...(replacing ? [h('p', { className: 'warn', role: 'alert' }, t('Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.'))] : []),
+        ...(refused ? [h('p', { className: 'warn', role: 'alert' }, refused === 'replace'
+          ? t('Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.')
+          : t('Network fees went up, and the network refused the old fee. This is what it charges now.'))] : []),
         h('div', { className: 'slip' }, rowList([
           [t('Network'), networkLabel(network)], [t('From'), from], [t('To'), recipient],
           [t('Amount'), `${formatUnits(value, decimals)} ${token?.symbol ?? network.symbol}`],

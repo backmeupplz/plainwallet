@@ -62,14 +62,21 @@ await fromApp({ type: 'request', n: 900, origin: 'https://dapp.test', title: '',
 assert.equal(JSON.parse(sent.find((m) => m.type === 'reply' && m.n === 900).data).error.code, -32700)
 // No EIP-3668 offchain lookups: a contract could otherwise make the wallet fetch any URL it names.
 assert.equal((await import('./lib/chain.ts')).client({ id: 1, name: 'x', rpc: 'https://rpc.invalid', symbol: 'ETH' }).ccipRead, false)
-// A transaction already waiting at the nonce: the retry pays 25% more on each fee field (nodes need ≥10%), L1 fee kept.
+// Refused for its fee: the retry pays at least what the network charges now, and to replace a transaction already
+// waiting at the nonce also 25% more on each fee field (nodes need ≥10%). The L1 fee is kept.
 {
-  const { bump, underpriced } = await import('./lib/chain.ts')
-  const b = bump({ request: { gas: 100n, gasPrice: 8n, maxFeePerGas: 8n, maxPriorityFeePerGas: 4n }, fee: 800n + 7n })
-  assert.deepEqual([b.request.maxFeePerGas, b.request.maxPriorityFeePerGas, b.fee], [10n, 5n, 1000n + 7n])
-  assert.deepEqual([bump({ request: { gas: 10n, gasPrice: 100n }, fee: 1000n }).request.gasPrice], [125n])
-  assert.ok(underpriced({ details: 'replacement transaction underpriced', message: 'Missing or invalid parameters.' }))
-  assert.ok(!underpriced(new Error('insufficient funds for gas * price + value')))
+  const { raise, feeRefusal } = await import('./lib/chain.ts')
+  const p = { request: { gas: 100n, gasPrice: 8n, maxFeePerGas: 8n, maxPriorityFeePerGas: 4n }, fee: 800n + 7n }
+  const fields = (x) => [x.request.maxFeePerGas, x.request.maxPriorityFeePerGas, x.fee]
+  assert.deepEqual(fields(raise(p, { maxFeePerGas: 9n, maxPriorityFeePerGas: 1n }, true)), [10n, 5n, 1000n + 7n])
+  assert.deepEqual(fields(raise(p, { maxFeePerGas: 20n, maxPriorityFeePerGas: 6n }, true)), [20n, 6n, 2000n + 7n]) // fees jumped past +25%
+  assert.deepEqual(fields(raise(p, { maxFeePerGas: 12n, maxPriorityFeePerGas: 2n }, false)), [12n, 4n, 1200n + 7n]) // base fee rose
+  assert.deepEqual(fields(raise(p, { maxFeePerGas: 5n, maxPriorityFeePerGas: 2n }, false)), [8n, 4n, 800n + 7n]) // never lower
+  assert.deepEqual([raise({ request: { gas: 10n, gasPrice: 100n }, fee: 1000n }, { gasPrice: 90n }, true).request.gasPrice], [125n])
+  assert.equal(feeRefusal({ details: 'replacement transaction underpriced', message: 'Missing or invalid parameters.' }), 'replace')
+  assert.equal(feeRefusal({ details: 'max fee per gas less than block base fee: address 0x…, maxFeePerGas: 1, baseFee: 2' }), 'fees')
+  assert.equal(feeRefusal({ details: 'transaction underpriced' }), 'fees')
+  assert.equal(feeRefusal(new Error('insufficient funds for gas * price + value')), undefined)
 }
 
 // Asking brings the wallet up; backing out of it (the app's "back") rejects, like closing the approval window.

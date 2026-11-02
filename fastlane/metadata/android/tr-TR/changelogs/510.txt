@@ -1,0 +1,1 @@
+Bir ağ, hesaptan başka bir işlem aynı nonce ile zaten beklediği ya da ücretler arttığı için bir işlemi reddettiğinde, Plain Wallet artık işlemi geçecek bir ücretle yeniden sunuyor ve göndermeden önce soruyor. Bir işlem başarısız olduğunda siteler artık ağın gerçek nedenini görüyor. Jev ücretsiz mint’leri artık talep ya da olası dolandırıcılık sanmıyor.

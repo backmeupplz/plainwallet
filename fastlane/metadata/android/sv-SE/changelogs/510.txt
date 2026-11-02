@@ -1,0 +1,1 @@
+När ett nätverk avvisar en transaktion för att en annan från kontot redan väntar med samma nonce, eller för att avgifterna har stigit, erbjuder Plain Wallet den nu igen med en avgift som fungerar och frågar innan den skickas. Webbplatser ser nu nätverkets verkliga skäl när en transaktion misslyckas. Jev tar inte längre gratis mintar för anspråk eller troliga bedrägerier.

@@ -373,5 +373,6 @@
   "token {name} ({symbol}) with {n} holders": {"zero": "الرمز {name} ({symbol}) بلا حاملين", "one": "الرمز {name} ({symbol}) لدى حامل واحد", "two": "الرمز {name} ({symbol}) لدى حاملَين", "few": "الرمز {name} ({symbol}) لدى {n} حاملين", "many": "الرمز {name} ({symbol}) لدى {n} حاملًا", "other": "الرمز {name} ({symbol}) لدى {n} حامل"},
   "{n} more characters": {"zero": "لا أحرف متبقية", "one": "بقي حرف واحد", "two": "بقي حرفان", "few": "بقي {n} أحرف", "many": "بقي {n} حرفًا", "other": "بقي {n} حرف"},
   "{n} more requests waiting": {"zero": "لا طلبات أخرى بالانتظار", "one": "طلب آخر بالانتظار", "two": "طلبان آخران بالانتظار", "few": "{n} طلبات أخرى بالانتظار", "many": "{n} طلبًا آخر بالانتظار", "other": "{n} طلب آخر بالانتظار"},
-  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "معاملة أخرى من هذا الحساب تنتظر بنفس الـ nonce. هذه المعاملة تحل محلها مقابل رسوم أعلى."
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "معاملة أخرى من هذا الحساب تنتظر بنفس الـ nonce. هذه المعاملة تحل محلها مقابل رسوم أعلى.",
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "ارتفعت رسوم الشبكة، ورفضت الشبكة الرسوم القديمة. هذه هي الرسوم التي تفرضها الآن."
 }

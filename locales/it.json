@@ -373,5 +373,6 @@
 "token {name} ({symbol}) with {n} holders": {"one": "token {name} ({symbol}) con {n} holder", "many": "token {name} ({symbol}) con {n} holder", "other": "token {name} ({symbol}) con {n} holder"},
 "{n} more characters": {"one": "Manca {n} carattere", "many": "Mancano {n} caratteri", "other": "Mancano {n} caratteri"},
 "{n} more requests waiting": {"one": "Ancora {n} richiesta in attesa", "many": "Ancora {n} richieste in attesa", "other": "Ancora {n} richieste in attesa"},
-  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Un’altra transazione di questo account è in attesa con lo stesso nonce. Questa la sostituisce, con una commissione più alta."
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Un’altra transazione di questo account è in attesa con lo stesso nonce. Questa la sostituisce, con una commissione più alta.",
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Le commissioni di rete sono aumentate e la rete ha rifiutato la commissione precedente. Questo è quanto chiede ora."
 }

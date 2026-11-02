@@ -1,6 +1,6 @@
 // Talking to a network's RPC. Shared by the background (dapp requests) and the popup (balances, sending).
 import { createWalletClient, defineChain, erc20Abi, ethAddress, formatUnits, http, type BaseError, type LocalAccount, type TransactionSerializable } from 'viem'
-import { getBalance, getChainId, getTransactionCount, multicall, readContract, simulateCalls, waitForTransactionReceipt } from 'viem/actions'
+import { estimateFeesPerGas, getBalance, getChainId, getTransactionCount, multicall, readContract, simulateCalls, waitForTransactionReceipt } from 'viem/actions'
 import { estimateL1Fee } from 'viem/op-stack'
 import { browser } from 'wxt/browser'
 import { clean, parseAddress } from './describe'
@@ -53,19 +53,31 @@ export async function send(network: Network, account: LocalAccount, request: Pre
   return broadcast(network, await account.signTransaction(await unsigned(network, account.address, request)))
 }
 
-/** A transaction already waiting at this nonce (one the RPC may not even list as pending) refuses this one unless it
- * pays more. */
-export const underpriced = (e: unknown) => /replacement transaction underpriced|replacement fee too low/i
-  .test(`${(e as BaseError)?.details ?? ''} ${(e as Error)?.message ?? ''}`)
+/** Why a node refused a transaction for its fee, if it did: 'replace' when one already waits at its nonce (an RPC may
+ * not even list that one as pending), 'fees' when the network now charges more than it offers. */
+export function feeRefusal(e: unknown): 'replace' | 'fees' | undefined {
+  const text = `${(e as BaseError)?.details ?? ''} ${(e as Error)?.message ?? ''}`
+  if (/replacement transaction underpriced|replacement fee too low/i.test(text)) return 'replace'
+  if (/max fee per gas less than block base fee|fee cap less than block base fee|transaction underpriced|fee too low/i.test(text)) return 'fees'
+}
 
-/** The same transaction for 25% more on every fee field: nodes replace a waiting one for at least 10% more. Asked for
- * again before it's signed, like any fee. */
-export function bump({ request, fee }: { request: Prepared; fee: bigint }) {
-  const up = (v?: bigint) => (v == null ? undefined : (v * 125n) / 100n)
+type Fees = { gasPrice?: bigint; maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint }
+/** `prepared` at fees that work: at least what the network charges `now`, and for a replacement also 25% over the
+ * last try on every fee field (nodes replace a waiting transaction for at least 10% more). */
+export function raise({ request, fee }: { request: Prepared; fee: bigint }, now: Fees, replace: boolean) {
+  const up = (v?: bigint) => (v == null || !replace ? v : (v * 125n) / 100n)
+  const top = (a?: bigint, b?: bigint) => (a == null ? a : b != null && b > a ? b : a)
   // every field there is: viem fills in gasPrice next to the EIP-1559 ones too
-  const next = { ...request, gasPrice: up(request.gasPrice), maxFeePerGas: up(request.maxFeePerGas), maxPriorityFeePerGas: up(request.maxPriorityFeePerGas) } as Prepared
+  const next = { ...request, gasPrice: top(up(request.gasPrice), now.gasPrice ?? now.maxFeePerGas), maxFeePerGas: top(up(request.maxFeePerGas), now.maxFeePerGas),
+    maxPriorityFeePerGas: top(up(request.maxPriorityFeePerGas), now.maxPriorityFeePerGas) } as Prepared
   const per = (r: Prepared) => r.maxFeePerGas ?? r.gasPrice ?? 0n
   return { request: next, fee: fee + request.gas * (per(next) - per(request)) }
+}
+
+/** Asked for again before it's signed, like any fee. */
+export async function refee(network: Network, prepared: { request: Prepared; fee: bigint }, replace: boolean) {
+  const now = await estimateFeesPerGas(client(network), { type: prepared.request.maxFeePerGas != null ? 'eip1559' : 'legacy' })
+  return raise(prepared, now, replace)
 }
 
 /** A signed transaction names its chain itself: an RPC serving another one refuses it. */

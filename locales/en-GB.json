@@ -394,5 +394,6 @@
   "one": "{n} more request waiting",
   "other": "{n} more requests waiting"
  },
-  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee."
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.",
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Network fees went up, and the network refused the old fee. This is what it charges now."
 }

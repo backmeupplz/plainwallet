@@ -1,0 +1,1 @@
+Gdy sieć odrzuca transakcję, bo inna z tego konta czeka już z tym samym nonce albo wzrosły opłaty, Plain Wallet proponuje ją ponownie z opłatą, która przejdzie, i pyta przed wysłaniem. Strony widzą teraz prawdziwy powód podany przez sieć, gdy transakcja się nie uda. Jev nie myli już darmowych mintów z odbiorem nagród ani możliwym oszustwem.

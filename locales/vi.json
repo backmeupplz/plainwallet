@@ -373,5 +373,6 @@
   "token {name} ({symbol}) with {n} holders": {"other": "token {name} ({symbol}) với {n} người nắm giữ"},
   "{n} more characters": {"other": "còn {n} ký tự"},
   "{n} more requests waiting": {"other": "còn {n} yêu cầu khác đang chờ"},
-  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Một giao dịch khác từ tài khoản này đang chờ với cùng nonce. Giao dịch này sẽ thay thế nó, với phí cao hơn."
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Một giao dịch khác từ tài khoản này đang chờ với cùng nonce. Giao dịch này sẽ thay thế nó, với phí cao hơn.",
+  "Network fees went up, and the network refused the old fee. This is what it charges now.": "Phí mạng đã tăng và mạng đã từ chối mức phí cũ. Đây là mức phí hiện tại."
 }

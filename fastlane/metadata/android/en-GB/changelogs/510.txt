@@ -1,0 +1,1 @@
+When a network turns down a transaction because another one from the account is already waiting with the same nonce, or because fees went up, Plain Wallet now offers it again at a fee that works and asks before sending. Sites now see the network's actual reason when a transaction fails. Jev no longer mistakes free mints for claims or likely scams.

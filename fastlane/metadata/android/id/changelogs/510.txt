@@ -1,0 +1,1 @@
+Saat jaringan menolak transaksi karena transaksi lain dari akun ini sudah menunggu dengan nonce yang sama, atau karena biaya naik, Plain Wallet kini menawarkannya lagi dengan biaya yang berhasil dan bertanya sebelum mengirim. Situs kini melihat alasan sebenarnya dari jaringan saat transaksi gagal. Jev tidak lagi mengira mint gratis sebagai klaim atau kemungkinan penipuan.

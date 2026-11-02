@@ -1,0 +1,1 @@
+Khi mạng từ chối một giao dịch vì đã có giao dịch khác của tài khoản đang chờ với cùng nonce, hoặc vì phí đã tăng, Plain Wallet giờ đề xuất lại giao dịch với mức phí phù hợp và hỏi trước khi gửi. Các trang web giờ thấy lý do thực sự từ mạng khi giao dịch thất bại. Jev không còn nhầm mint miễn phí là nhận thưởng hay lừa đảo nữa.

@@ -1,0 +1,1 @@
+Quando uma rede recusa uma transação porque outra da conta já está à espera com o mesmo nonce, ou porque as taxas subiram, a Plain Wallet volta agora a propô-la com uma taxa que funciona e pergunta antes de enviar. Os sites veem agora o motivo real da rede quando uma transação falha. O Jev já não confunde mints gratuitos com resgates ou possíveis burlas.
