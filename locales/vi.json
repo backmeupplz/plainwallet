@@ -385,5 +385,6 @@
   "Replaced or dropped": "Đã bị thay thế hoặc loại bỏ",
   "Sent": "Đã gửi",
   "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Hủy: chuyển 0 cho chính bạn với cùng nonce, với phí cao hơn. Nếu giao dịch này được đưa vào trước, giao dịch gốc sẽ không bao giờ xảy ra.",
-  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Tăng tốc: gửi lại cùng giao dịch với nonce của nó, với phí cao hơn. Giao dịch nào được đưa vào trước sẽ được tính."
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Tăng tốc: gửi lại cùng giao dịch với nonce của nó, với phí cao hơn. Giao dịch nào được đưa vào trước sẽ được tính.",
+  "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.": "Ví này chưa gửi gì. Các giao dịch gửi từ bây giờ sẽ hiện ở đây, chỉ lưu trên thiết bị này."
 }

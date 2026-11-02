@@ -1,0 +1,1 @@
+Transactions is now always on the home screen. A transaction the network already holds ("already known": an earlier try with the same nonce and fee) now counts as sent instead of failing, so it shows up under Transactions, where you can speed it up.

@@ -406,5 +406,6 @@
   "Replaced or dropped": "Değiştirildi veya düşürüldü",
   "Sent": "Gönderildi",
   "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "İptal: aynı nonce ile kendine sıfır tutarlı bir transfer, daha yüksek bir ücretle. Önce bu dahil edilirse asıl işlem hiç gerçekleşmez.",
-  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Hızlandır: aynı işlem aynı nonce ile yeniden, daha yüksek bir ücretle. Hangisi önce dahil edilirse o geçerli olur."
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Hızlandır: aynı işlem aynı nonce ile yeniden, daha yüksek bir ücretle. Hangisi önce dahil edilirse o geçerli olur.",
+  "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.": "Bu cüzdan henüz bir şey göndermedi. Bundan sonra gönderdiği işlemler burada görünür ve yalnızca bu cihazda saklanır."
 }

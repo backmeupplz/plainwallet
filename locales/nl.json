@@ -385,5 +385,6 @@
   "Replaced or dropped": "Vervangen of verworpen",
   "Sent": "Verstuurd",
   "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Annuleren: een overboeking van niets naar jezelf met dezelfde nonce, voor een hogere vergoeding. Wordt die eerst opgenomen, dan gebeurt de oorspronkelijke nooit.",
-  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Versnellen: dezelfde transactie opnieuw met haar nonce, voor een hogere vergoeding. Welke het eerst wordt opgenomen, telt."
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Versnellen: dezelfde transactie opnieuw met haar nonce, voor een hogere vergoeding. Welke het eerst wordt opgenomen, telt.",
+  "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.": "Deze wallet heeft nog niets verstuurd. Transacties die hij vanaf nu verstuurt, verschijnen hier, alleen op dit apparaat bewaard."
 }

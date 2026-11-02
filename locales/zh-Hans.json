@@ -385,5 +385,6 @@
   "Replaced or dropped": "已被替换或丢弃",
   "Sent": "发送时间",
   "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "取消：以相同的 nonce 向自己转账 0，并支付更高的手续费。如果它先被打包，原交易就永远不会执行。",
-  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "加速：以相同的 nonce 再次发送同一笔交易，并支付更高的手续费。先被打包的那笔生效。"
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "加速：以相同的 nonce 再次发送同一笔交易，并支付更高的手续费。先被打包的那笔生效。",
+  "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.": "此钱包还没有发送过任何交易。从现在起发送的交易会显示在这里，仅保存在这台设备上。"
 }

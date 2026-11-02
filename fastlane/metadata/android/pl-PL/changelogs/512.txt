@@ -1,0 +1,1 @@
+Transakcje są teraz zawsze na ekranie głównym. Transakcja, którą sieć już ma ("already known": wcześniejsza próba z tym samym nonce i opłatą), liczy się teraz jako wysłana zamiast błędu, więc pojawia się w Transakcjach, gdzie możesz ją przyspieszyć.

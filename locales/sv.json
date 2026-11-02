@@ -385,5 +385,6 @@
   "Replaced or dropped": "Ersatt eller släppt",
   "Sent": "Skickad",
   "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Avbryt: en överföring av ingenting till dig själv med samma nonce, mot en högre avgift. Kommer den med först blir den ursprungliga aldrig av.",
-  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Snabba upp: samma transaktion igen med sin nonce, mot en högre avgift. Den som kommer med först gäller."
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Snabba upp: samma transaktion igen med sin nonce, mot en högre avgift. Den som kommer med först gäller.",
+  "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.": "Den här plånboken har inte skickat något än. Transaktioner den skickar från och med nu visas här, sparade bara på den här enheten."
 }

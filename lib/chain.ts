@@ -84,7 +84,12 @@ export async function refee(network: Network, prepared: { request: Prepared; fee
 /** A signed transaction names its chain itself: an RPC serving another one refuses it. Every transaction the wallet
  * sends goes through here, and lands in its list of sent transactions (store.ts). */
 export async function broadcast(network: Network, signed: `0x${string}`, site?: string) {
-  const hash = await client(network).sendRawTransaction({ serializedTransaction: signed as any })
+  const hash = await client(network).sendRawTransaction({ serializedTransaction: signed as any }).catch((e) => {
+    // The node already holds these exact bytes (an earlier try at the same nonce and fees signs identically): it's
+    // submitted, just not included yet, so it gets its hash like any other, and can be sped up from the list.
+    if (/already known|known transaction|already imported/i.test(`${(e as BaseError)?.details ?? ''} ${(e as Error)?.message ?? ''}`)) return keccak256(signed)
+    throw e
+  })
   await keepSent({ raw: signed, network: network.name, ...(site && { site }), at: Date.now() }).catch(() => {}) // it's out either way
   return hash
 }

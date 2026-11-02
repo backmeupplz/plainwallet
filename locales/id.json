@@ -399,5 +399,6 @@
   "Replaced or dropped": "Diganti atau dibuang",
   "Sent": "Dikirim",
   "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Batalkan: transfer kosong ke diri sendiri dengan nonce yang sama, dengan biaya lebih tinggi. Jika ini masuk lebih dulu, transaksi asli tidak akan pernah terjadi.",
-  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Percepat: transaksi yang sama lagi dengan nonce-nya, dengan biaya lebih tinggi. Yang masuk lebih dulu yang berlaku."
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Percepat: transaksi yang sama lagi dengan nonce-nya, dengan biaya lebih tinggi. Yang masuk lebih dulu yang berlaku.",
+  "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.": "Dompet ini belum mengirim apa pun. Transaksi yang dikirim mulai sekarang muncul di sini, hanya disimpan di perangkat ini."
 }

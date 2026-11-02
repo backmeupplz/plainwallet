@@ -1,0 +1,1 @@
+Transações agora fica sempre na tela inicial. Uma transação que a rede já tem ("already known": uma tentativa anterior com o mesmo nonce e taxa) agora conta como enviada em vez de falhar, então aparece em Transações, onde você pode acelerá-la.

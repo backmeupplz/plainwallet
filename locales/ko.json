@@ -385,5 +385,6 @@
   "Replaced or dropped": "대체 또는 폐기됨",
   "Sent": "보낸 시각",
   "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "취소: 같은 nonce로 자신에게 0을 보내는 트랜잭션을 더 높은 수수료로 보냅니다. 이것이 먼저 포함되면 원래 트랜잭션은 실행되지 않습니다.",
-  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "속도 높이기: 같은 트랜잭션을 같은 nonce로 더 높은 수수료를 붙여 다시 보냅니다. 먼저 포함되는 쪽이 유효합니다."
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "속도 높이기: 같은 트랜잭션을 같은 nonce로 더 높은 수수료를 붙여 다시 보냅니다. 먼저 포함되는 쪽이 유효합니다.",
+  "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.": "이 지갑에서 아직 보낸 것이 없습니다. 앞으로 보내는 트랜잭션이 여기에 표시되며, 이 기기에만 저장됩니다."
 }

@@ -45,7 +45,6 @@ let jevKey = ''
 // Watch-only addresses (the vault's say, read on each unlocked redraw) and the transactions exported from them.
 let watching = new Set<string>()
 let waiting: string[] = []
-let sentCount = 0
 // What the wallet finds out before asking Jev: a simulation (always) and, with a key, public lookups.
 type Checks = { simulation?: Promise<Simulation>; lookup?: Promise<Lookup> }
 const analyses = new Map<string, Checks & { verdict?: Promise<Verdict> }>() // per approval id: redraws don't ask (and bill) again
@@ -534,7 +533,7 @@ function sentDialog(s: State) {
     }))).flat().toReversed()
     // a speed-up or cancel shares its nonce with what it replaces: only the newest of them can be replaced again
     const newest = (x: (typeof entries)[number]) => entries.find((y) => y.tx.chainId === x.tx.chainId && y.from === x.from && y.tx.nonce === x.tx.nonce) === x
-    content.replaceChildren(h('p', {}, t('Transactions this wallet sent, kept only on this device.')), ...entries.map((x) => {
+    content.replaceChildren(h('p', {}, entries.length ? t('Transactions this wallet sent, kept only on this device.') : t('Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.')), ...entries.map((x) => {
       const { e, tx, from } = x
       const network = s.networks.find((n) => n.id === tx.chainId)
       const { rows, summary } = txRows(s, tx)
@@ -1027,7 +1026,7 @@ function mainScreen(s: State) {
     ...(watching.has(address) ? [h('p', {}, t('Watch-only: you sign for this account on the device that holds its key.'))] : []),
     list, unreachable,
     ...(waiting.length ? [h('button', { onclick: () => waitingDialog(s) }, t('Waiting for a signature ({n})', { n: waiting.length }))] : []),
-    ...(sentCount ? [h('button', { onclick: () => sentDialog(s) }, t('Transactions'))] : []),
+    h('button', { onclick: () => sentDialog(s) }, t('Transactions')),
     h('div', { className: 'row' }, h('button', { onclick: () => tokenDialog(network, tokens) }, t('Tokens')),
       h('button', { className: 'primary', onclick: () => sendDialog(s, network, tokens) }, t('Send'))),
   ]
@@ -1067,7 +1066,7 @@ export async function render(stillCurrent = () => true) {
   else {
     touch() // using the wallet pushes the auto-lock back
     jevKey = ((await browser.storage.local.get('jevKey')).jevKey as string | undefined) ?? ''
-    ;[watching, waiting, sentCount] = [new Set(await watchedAddresses()), await exported(), (await sentTxs()).length]
+    ;[watching, waiting] = [new Set(await watchedAddresses()), await exported()]
     screen = pending.length ? approvalScreen(pending[0]!, pending.length - 1) : home(mainScreen(s))
   }
   if (mine !== renderId || viewClosed || !stillCurrent()) return

@@ -1,0 +1,1 @@
+„Transaktionen“ ist jetzt immer auf dem Startbildschirm. Eine Transaktion, die das Netzwerk schon hat („already known“: ein früherer Versuch mit derselben Nonce und Gebühr), gilt jetzt als gesendet statt als Fehler und erscheint unter „Transaktionen“, wo du sie beschleunigen kannst.

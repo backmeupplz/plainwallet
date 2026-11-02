@@ -420,5 +420,6 @@
   "Replaced or dropped": "Замінена або відкинута",
   "Sent": "Надіслано",
   "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Скасування: переказ нуля самому собі з тим самим nonce за вищу комісію. Якщо він потрапить у блок першим, початкова транзакція не відбудеться.",
-  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Пришвидшення: та сама транзакція ще раз із тим самим nonce за вищу комісію. Зарахується та, що потрапить у блок першою."
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Пришвидшення: та сама транзакція ще раз із тим самим nonce за вищу комісію. Зарахується та, що потрапить у блок першою.",
+  "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.": "Цей гаманець ще нічого не надсилав. Транзакції, надіслані відтепер, з’являться тут і зберігатимуться лише на цьому пристрої."
 }

@@ -1,0 +1,1 @@
+Nút Giao dịch giờ luôn có trên màn hình chính. Giao dịch mà mạng đã có sẵn ("already known": lần thử trước với cùng nonce và phí) giờ được tính là đã gửi thay vì thất bại, nên hiện trong Giao dịch, nơi bạn có thể tăng tốc nó.

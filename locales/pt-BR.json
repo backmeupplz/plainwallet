@@ -385,5 +385,6 @@
   "Replaced or dropped": "Substituída ou descartada",
   "Sent": "Enviada",
   "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Cancelar: uma transferência de nada para você mesmo com o mesmo nonce, com uma taxa maior. Se ela for incluída primeiro, a original nunca acontece.",
-  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Acelerar: a mesma transação de novo com o seu nonce, com uma taxa maior. Vale a que for incluída primeiro."
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Acelerar: a mesma transação de novo com o seu nonce, com uma taxa maior. Vale a que for incluída primeiro.",
+  "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.": "Esta carteira ainda não enviou nada. As transações que ela enviar a partir de agora aparecem aqui, guardadas só neste dispositivo."
 }

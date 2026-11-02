@@ -1,0 +1,1 @@
+Transacties staat nu altijd op het startscherm. Een transactie die het netwerk al heeft ("already known": een eerdere poging met dezelfde nonce en vergoeding) telt nu als verstuurd in plaats van mislukt, dus verschijnt ze onder Transacties, waar je haar kunt versnellen.

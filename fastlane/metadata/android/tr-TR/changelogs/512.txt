@@ -1,0 +1,1 @@
+İşlemler artık ana ekranda hep görünüyor. Ağın zaten elinde olan bir işlem ("already known": aynı nonce ve ücretle yapılmış önceki bir deneme) artık başarısız sayılmak yerine gönderilmiş sayılıyor ve İşlemler’de görünüyor; oradan hızlandırabilirsin.

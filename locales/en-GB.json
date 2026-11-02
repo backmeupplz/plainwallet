@@ -406,5 +406,6 @@
   "Replaced or dropped": "Replaced or dropped",
   "Sent": "Sent",
   "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.",
-  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts."
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.",
+  "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.": "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device."
 }

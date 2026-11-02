@@ -385,5 +385,6 @@
   "Replaced or dropped": "مستبدلة أو مُسقطة",
   "Sent": "أُرسلت",
   "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "إلغاء: تحويل لا شيء إلى نفسك بنفس الـ nonce، برسوم أعلى. إذا أُدرج أولًا فلن تحدث المعاملة الأصلية أبدًا.",
-  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "تسريع: المعاملة نفسها مرة أخرى بنفس الـ nonce، برسوم أعلى. أيهما يُدرج أولًا هو الذي يُحتسب."
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "تسريع: المعاملة نفسها مرة أخرى بنفس الـ nonce، برسوم أعلى. أيهما يُدرج أولًا هو الذي يُحتسب.",
+  "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.": "لم تُرسل هذه المحفظة شيئًا بعد. ستظهر هنا المعاملات التي ترسلها من الآن فصاعدًا، محفوظة على هذا الجهاز فقط."
 }

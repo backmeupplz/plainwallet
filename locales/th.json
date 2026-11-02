@@ -385,5 +385,6 @@
   "Replaced or dropped": "ถูกแทนที่หรือถูกทิ้ง",
   "Sent": "ส่งเมื่อ",
   "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "ยกเลิก: โอนศูนย์ให้ตัวเองด้วย nonce เดียวกัน โดยจ่ายค่าธรรมเนียมสูงขึ้น หากรายการนี้ถูกรวมก่อน ธุรกรรมเดิมจะไม่เกิดขึ้นเลย",
-  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "เร่ง: ส่งธุรกรรมเดิมอีกครั้งด้วย nonce เดิม โดยจ่ายค่าธรรมเนียมสูงขึ้น รายการที่ถูกรวมก่อนจะมีผล"
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "เร่ง: ส่งธุรกรรมเดิมอีกครั้งด้วย nonce เดิม โดยจ่ายค่าธรรมเนียมสูงขึ้น รายการที่ถูกรวมก่อนจะมีผล",
+  "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.": "กระเป๋านี้ยังไม่ได้ส่งอะไร ธุรกรรมที่ส่งนับจากนี้จะแสดงที่นี่ และเก็บไว้ในอุปกรณ์นี้เท่านั้น"
 }

@@ -406,5 +406,6 @@
   "Replaced or dropped": "बदला गया या हटा",
   "Sent": "भेजा गया",
   "Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.": "रद्द करें: उसी nonce पर ज़्यादा शुल्क देकर खुद को शून्य राशि भेजना। अगर यह पहले शामिल हुआ, तो मूल लेन-देन कभी नहीं होगा।",
-  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "तेज़ करें: वही लेन-देन उसी nonce पर ज़्यादा शुल्क के साथ दोबारा। जो पहले शामिल होगा, वही मान्य होगा।"
+  "Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.": "तेज़ करें: वही लेन-देन उसी nonce पर ज़्यादा शुल्क के साथ दोबारा। जो पहले शामिल होगा, वही मान्य होगा।",
+  "Nothing sent from this wallet yet. Transactions it sends from now on show up here, kept only on this device.": "इस वॉलेट से अभी तक कुछ नहीं भेजा गया। अब से भेजे गए लेन-देन यहाँ दिखेंगे, केवल इस डिवाइस पर रखे गए।"
 }

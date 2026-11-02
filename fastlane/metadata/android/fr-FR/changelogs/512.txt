@@ -1,0 +1,1 @@
+Transactions est désormais toujours sur l’écran d’accueil. Une transaction que le réseau a déjà (« already known » : un essai précédent avec le même nonce et les mêmes frais) compte maintenant comme envoyée au lieu d’échouer : elle apparaît dans Transactions, où vous pouvez l’accélérer.

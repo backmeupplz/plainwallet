@@ -1,0 +1,1 @@
+Transacciones está ahora siempre en la pantalla de inicio. Una transacción que la red ya tiene ("already known": un intento anterior con el mismo nonce y comisión) ahora cuenta como enviada en vez de fallar, así que aparece en Transacciones, donde puedes acelerarla.

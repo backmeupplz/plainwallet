@@ -1,0 +1,1 @@
+Transaktioner finns nu alltid på startskärmen. En transaktion som nätverket redan har ("already known": ett tidigare försök med samma nonce och avgift) räknas nu som skickad i stället för att misslyckas, så den visas under Transaktioner, där du kan snabba upp den.

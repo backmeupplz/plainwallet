@@ -1,0 +1,1 @@
+Transaksi kini selalu ada di layar utama. Transaksi yang sudah dipegang jaringan ("already known": percobaan sebelumnya dengan nonce dan biaya yang sama) kini dihitung terkirim alih-alih gagal, jadi muncul di Transaksi, tempat Anda bisa mempercepatnya.
