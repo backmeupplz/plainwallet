@@ -62,6 +62,15 @@ await fromApp({ type: 'request', n: 900, origin: 'https://dapp.test', title: '',
 assert.equal(JSON.parse(sent.find((m) => m.type === 'reply' && m.n === 900).data).error.code, -32700)
 // No EIP-3668 offchain lookups: a contract could otherwise make the wallet fetch any URL it names.
 assert.equal((await import('./lib/chain.ts')).client({ id: 1, name: 'x', rpc: 'https://rpc.invalid', symbol: 'ETH' }).ccipRead, false)
+// A transaction already waiting at the nonce: the retry pays 25% more on each fee field (nodes need ≥10%), L1 fee kept.
+{
+  const { bump, underpriced } = await import('./lib/chain.ts')
+  const b = bump({ request: { gas: 100n, gasPrice: 8n, maxFeePerGas: 8n, maxPriorityFeePerGas: 4n }, fee: 800n + 7n })
+  assert.deepEqual([b.request.maxFeePerGas, b.request.maxPriorityFeePerGas, b.fee], [10n, 5n, 1000n + 7n])
+  assert.deepEqual([bump({ request: { gas: 10n, gasPrice: 100n }, fee: 1000n }).request.gasPrice], [125n])
+  assert.ok(underpriced({ details: 'replacement transaction underpriced', message: 'Missing or invalid parameters.' }))
+  assert.ok(!underpriced(new Error('insufficient funds for gas * price + value')))
+}
 
 // Asking brings the wallet up; backing out of it (the app's "back") rejects, like closing the approval window.
 const asked = request('https://dapp.test', { id: 12, method: 'eth_requestAccounts' })

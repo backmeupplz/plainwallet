@@ -372,5 +372,6 @@
   "deployed {n} years ago": {"other": "{n}년 전 배포"},
   "token {name} ({symbol}) with {n} holders": {"other": "토큰 {name}({symbol}), 보유자 {n}명"},
   "{n} more characters": {"other": "{n}자 더 필요"},
-  "{n} more requests waiting": {"other": "대기 중인 요청 {n}개 더"}
+  "{n} more requests waiting": {"other": "대기 중인 요청 {n}개 더"},
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "이 계정의 다른 트랜잭션이 같은 nonce로 대기 중입니다. 이 트랜잭션이 더 높은 수수료로 그것을 대체합니다."
 }

@@ -393,5 +393,6 @@
  "{n} more requests waiting": {
   "one": "{n} और अनुरोध इंतज़ार में है",
   "other": "{n} और अनुरोध इंतज़ार में हैं"
- }
+ },
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "इस खाते का एक और लेन-देन उसी nonce के साथ प्रतीक्षा में है। यह लेन-देन ज़्यादा शुल्क देकर उसकी जगह लेगा।"
 }

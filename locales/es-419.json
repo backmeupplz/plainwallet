@@ -372,5 +372,6 @@
 "deployed {n} years ago": {"one": "implementado hace {n} año", "many": "implementado hace {n} años", "other": "implementado hace {n} años"},
 "token {name} ({symbol}) with {n} holders": {"one": "token {name} ({symbol}) con {n} titular", "many": "token {name} ({symbol}) con {n} titulares", "other": "token {name} ({symbol}) con {n} titulares"},
 "{n} more characters": {"one": "Falta {n} carácter", "many": "Faltan {n} caracteres", "other": "Faltan {n} caracteres"},
-"{n} more requests waiting": {"one": "{n} solicitud más en espera", "many": "{n} solicitudes más en espera", "other": "{n} solicitudes más en espera"}
+"{n} more requests waiting": {"one": "{n} solicitud más en espera", "many": "{n} solicitudes más en espera", "other": "{n} solicitudes más en espera"},
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Otra transacción de esta cuenta está esperando con el mismo nonce. Esta la reemplaza, con una comisión más alta."
 }

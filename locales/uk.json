@@ -407,5 +407,6 @@
   "few": "ще {n} запити очікують",
   "many": "ще {n} запитів очікують",
   "other": "ще {n} запиту очікують"
- }
+ },
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Інша транзакція з цього акаунта чекає з тим самим nonce. Ця займе її місце за вищу комісію."
 }

@@ -372,5 +372,6 @@
  "deployed {n} years ago": {"one": "wdrożony {n} rok temu", "few": "wdrożony {n} lata temu", "many": "wdrożony {n} lat temu", "other": "wdrożony {n} roku temu"},
  "token {name} ({symbol}) with {n} holders": {"one": "token {name} ({symbol}) z {n} posiadaczem", "few": "token {name} ({symbol}) z {n} posiadaczami", "many": "token {name} ({symbol}) z {n} posiadaczami", "other": "token {name} ({symbol}) z {n} posiadacza"},
  "{n} more characters": {"one": "jeszcze {n} znak", "few": "jeszcze {n} znaki", "many": "jeszcze {n} znaków", "other": "jeszcze {n} znaku"},
- "{n} more requests waiting": {"one": "czeka jeszcze {n} żądanie", "few": "czekają jeszcze {n} żądania", "many": "czeka jeszcze {n} żądań", "other": "czeka jeszcze {n} żądania"}
+ "{n} more requests waiting": {"one": "czeka jeszcze {n} żądanie", "few": "czekają jeszcze {n} żądania", "many": "czeka jeszcze {n} żądań", "other": "czeka jeszcze {n} żądania"},
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Inna transakcja z tego konta czeka z tym samym nonce. Ta zajmie jej miejsce, za wyższą opłatą."
 }

@@ -1,5 +1,5 @@
 import { formatEther, hexToString, serializeTransaction, toHex } from 'viem'
-import { broadcast, mined, noRedirect, prepare, send, tokenInfo, unsigned } from '@/lib/chain'
+import { broadcast, bump, mined, noRedirect, prepare, send, tokenInfo, underpriced, unsigned } from '@/lib/chain'
 import { callSummary, clean, foreignSignIn, publicRpc, signedView } from '@/lib/describe'
 import { msg, t, type Msg } from '@/lib/i18n'
 import { checkResponse, requestText, type OfflineRequest } from '@/lib/offline'
@@ -7,6 +7,7 @@ import { keepExported, load, lock, reset, save, signer, watchedAddresses, type N
 
 // EIP-1193 / EIP-1474 error shape
 const err = (code: number, message: string) => ({ code, message })
+const REPLACE = msg('Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.')
 const big = (v?: string) => (v == null ? undefined : BigInt(v))
 const size = (v: unknown) => { try { return JSON.stringify(v ?? null).length } catch { return Infinity } }
 
@@ -164,9 +165,19 @@ async function handle(origin: string, method: unknown, rawParams: unknown, title
       const summary = callSummary(request.data, listed ?? (request.to ? await tokenInfo(network, request.to).catch(() => undefined) : undefined))
       // ponytail: a watch-only account exports the nonce prepared now, so two queued requests share one; the second fails to broadcast, and the dapp can ask again
       const offline = { from: address!, origin, transaction: serializeTransaction(await unsigned(network, address!, request, false)) }
-      const result = await ask({ to: request.to ?? null, value: formatEther(request.value ?? 0n), fee: formatEther(fee), data: request.data ?? '0x' }, summary, summary?.danger, offline)
+      const detail = (r: typeof request, f: bigint) => ({ to: r.to ?? null, value: formatEther(r.value ?? 0n), fee: formatEther(f), data: r.data ?? '0x' })
+      const result = await ask(detail(request, fee), summary, summary?.danger, offline)
       const signed = await elsewhere(offline, result)
-      const hash = signed ? await broadcast(network, signed) : await send(network, await sign(), request)
+      let hash: `0x${string}`
+      if (signed) hash = await broadcast(network, signed)
+      else for (let p = { request, fee }, tries = 0; ; ) {
+        try { hash = await send(network, await sign(), p.request); break } catch (e) {
+          // Something already waits at this nonce: offered again for a higher fee, which you approve (or don't) first.
+          if (!underpriced(e) || ++tries > 3) throw e
+          p = bump(p)
+          await ask(detail(p.request, p.fee), REPLACE)
+        }
+      }
       mined(network, hash).catch(() => {})
       if (signed) void keepExported(requestText(offline), false) // no longer waiting on the wallet's home screen
       return hash

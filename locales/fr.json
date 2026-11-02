@@ -372,5 +372,6 @@
   "deployed {n} years ago": {"one": "déployé il y a {n} an", "many": "déployé il y a {n} d’années", "other": "déployé il y a {n} ans"},
   "token {name} ({symbol}) with {n} holders": {"one": "jeton {name} ({symbol}) avec {n} détenteur", "many": "jeton {name} ({symbol}) avec {n} de détenteurs", "other": "jeton {name} ({symbol}) avec {n} détenteurs"},
   "{n} more characters": {"one": "encore {n} caractère", "many": "encore {n} de caractères", "other": "encore {n} caractères"},
-  "{n} more requests waiting": {"one": "encore {n} demande en attente", "many": "encore {n} de demandes en attente", "other": "encore {n} demandes en attente"}
+  "{n} more requests waiting": {"one": "encore {n} demande en attente", "many": "encore {n} de demandes en attente", "other": "encore {n} demandes en attente"},
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Une autre transaction de ce compte attend avec le même nonce. Celle-ci la remplace, avec des frais plus élevés."
 }

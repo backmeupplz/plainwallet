@@ -1,5 +1,5 @@
 import { encodeFunctionData, erc20Abi, formatEther, formatUnits, getAddress, isAddress, parseEther, parseTransaction, serializeTransaction, zeroAddress } from 'viem'
-import { balances, broadcast, mined, prepare, send, simulate, tokenInfo, unsigned, type Simulation } from '@/lib/chain'
+import { balances, broadcast, bump, mined, prepare, send, simulate, tokenInfo, underpriced, unsigned, type Simulation } from '@/lib/chain'
 import { describeCall, foreignSignIn, parseAddress, parseAmount, signedView, spenderOf } from '@/lib/describe'
 import { analyze, type Subject, type Verdict } from '@/lib/jev'
 import { lookup, type Level, type Lookup, type Party } from '@/lib/lookup'
@@ -797,32 +797,41 @@ function sendDialog(s: State, network: Network, tokens: Token[]) {
     if (recipient === zeroAddress) throw new Error(t('That is the zero address: anything sent there is burned'))
     if (recipient === token?.address) throw new Error(t('That is the token’s own contract: tokens sent there are almost always lost'))
     const decimals = token?.decimals ?? 18, value = parseAmount(amount.input.value, decimals)
-    const { request, fee } = await prepare(network, from, token
+    show(await prepare(network, from, token
       ? { to: token.address, data: encodeFunctionData({ abi: erc20Abi, functionName: 'transfer', args: [recipient, value] }) }
-      : { to: recipient, value })
-    const watch = watching.has(from)
-    const confirm = armed(h('button', { className: 'primary', onclick: run(async () => {
-      if (watch) {
-        // Kept right away: a toolbar popup closes as soon as you switch to anything else.
-        const text = requestText({ from, transaction: serializeTransaction(await unsigned(network, from, request)) })
-        await keepExported(text, true)
-        return exportedTx(s, content, run, text)
-      }
-      const hash = await send(network, await signer(index, from), request)
-      submitted(content, network, from, hash)
-    }, false) }, watch ? t('Export to sign') : t('Send')))
-    content.replaceChildren(
-      h('div', { className: 'slip' }, rowList([
-        [t('Network'), networkLabel(network)], [t('From'), from], [t('To'), recipient],
-        [t('Amount'), `${formatUnits(value, decimals)} ${token?.symbol ?? network.symbol}`],
-        ...(token ? [[t('Token contract'), token.address] as Row] : []),
-        [t('Estimated max fee'), feeValue(network, fee)],
-      ])),
-      ...secondOpinion('transaction', {
-        network: network.name, to: request.to!, value: `${formatEther(request.value ?? 0n)} ${network.symbol}`,
-        call: describeCall(request.data, token, english) ?? 'none',
-      }, () => txChecks(network, from, request)),
-      h('div', { className: 'row' }, h('button', { onclick: () => content.replaceChildren(...form) }, t('Back')), confirm))
+      : { to: recipient, value }))
+    // `replacing`: the last try met a transaction already waiting at its nonce, so this one pays more to take its place.
+    function show(prepared: Awaited<ReturnType<typeof prepare>>, replacing = false) {
+      const { request, fee } = prepared
+      const watch = watching.has(from)
+      const confirm = armed(h('button', { className: 'primary', onclick: run(async () => {
+        if (watch) {
+          // Kept right away: a toolbar popup closes as soon as you switch to anything else.
+          const text = requestText({ from, transaction: serializeTransaction(await unsigned(network, from, request)) })
+          await keepExported(text, true)
+          return exportedTx(s, content, run, text)
+        }
+        let hash
+        try { hash = await send(network, await signer(index, from), request) } catch (e) {
+          if (!underpriced(e)) throw e
+          return show(bump(prepared), true)
+        }
+        submitted(content, network, from, hash)
+      }, false) }, watch ? t('Export to sign') : t('Send')))
+      content.replaceChildren(
+        ...(replacing ? [h('p', { className: 'warn', role: 'alert' }, t('Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.'))] : []),
+        h('div', { className: 'slip' }, rowList([
+          [t('Network'), networkLabel(network)], [t('From'), from], [t('To'), recipient],
+          [t('Amount'), `${formatUnits(value, decimals)} ${token?.symbol ?? network.symbol}`],
+          ...(token ? [[t('Token contract'), token.address] as Row] : []),
+          [t('Estimated max fee'), feeValue(network, fee)],
+        ])),
+        ...secondOpinion('transaction', {
+          network: network.name, to: request.to!, value: `${formatEther(request.value ?? 0n)} ${network.symbol}`,
+          call: describeCall(request.data, token, english) ?? 'none',
+        }, () => txChecks(network, from, request)),
+        h('div', { className: 'row' }, h('button', { onclick: () => content.replaceChildren(...form) }, t('Back')), confirm))
+    }
   }, false)
   const form = [h('label', {}, t('Asset'), asset), to.el, amount.el, h('button', { className: 'primary', onclick: review }, t('Review'))]
   content.append(...form)

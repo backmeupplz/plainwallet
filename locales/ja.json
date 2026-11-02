@@ -372,5 +372,6 @@
   "deployed {n} years ago": {"other": "{n}年前にデプロイ"},
   "token {name} ({symbol}) with {n} holders": {"other": "トークン {name}（{symbol}）、保有者 {n} 人"},
   "{n} more characters": {"other": "あと{n}文字"},
-  "{n} more requests waiting": {"other": "ほかに{n}件のリクエストが待機中"}
+  "{n} more requests waiting": {"other": "ほかに{n}件のリクエストが待機中"},
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "このアカウントの別のトランザクションが同じ nonce で待機中です。こちらがより高い手数料でそれを置き換えます。"
 }

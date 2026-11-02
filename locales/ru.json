@@ -372,5 +372,6 @@
   "deployed {n} years ago": {"one": "развёрнут {n} год назад", "few": "развёрнут {n} года назад", "many": "развёрнут {n} лет назад", "other": "развёрнут {n} года назад"},
   "token {name} ({symbol}) with {n} holders": {"one": "токен {name} ({symbol}), {n} держатель", "few": "токен {name} ({symbol}), {n} держателя", "many": "токен {name} ({symbol}), {n} держателей", "other": "токен {name} ({symbol}), {n} держателя"},
   "{n} more characters": {"one": "ещё {n} символ", "few": "ещё {n} символа", "many": "ещё {n} символов", "other": "ещё {n} символа"},
-  "{n} more requests waiting": {"one": "ещё {n} запрос ожидает", "few": "ещё {n} запроса ожидают", "many": "ещё {n} запросов ожидают", "other": "ещё {n} запроса ожидают"}
+  "{n} more requests waiting": {"one": "ещё {n} запрос ожидает", "few": "ещё {n} запроса ожидают", "many": "ещё {n} запросов ожидают", "other": "ещё {n} запроса ожидают"},
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Другая транзакция с этого аккаунта ждёт с тем же nonce. Эта займёт её место за более высокую комиссию."
 }

@@ -372,5 +372,6 @@
   "deployed {n} years ago": {"one": "{n} jaar geleden gedeployd", "other": "{n} jaar geleden gedeployd"},
   "token {name} ({symbol}) with {n} holders": {"one": "token {name} ({symbol}) met {n} houder", "other": "token {name} ({symbol}) met {n} houders"},
   "{n} more characters": {"one": "nog {n} teken", "other": "nog {n} tekens"},
-  "{n} more requests waiting": {"one": "nog {n} verzoek wacht", "other": "nog {n} verzoeken wachten"}
+  "{n} more requests waiting": {"one": "nog {n} verzoek wacht", "other": "nog {n} verzoeken wachten"},
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Een andere transactie van dit account wacht met dezelfde nonce. Deze neemt haar plaats in, voor een hogere vergoeding."
 }

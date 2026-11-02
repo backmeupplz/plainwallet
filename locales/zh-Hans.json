@@ -372,5 +372,6 @@
   "deployed {n} years ago": {"other": "{n} 年前部署"},
   "token {name} ({symbol}) with {n} holders": {"other": "代币 {name}（{symbol}），{n} 位持有者"},
   "{n} more characters": {"other": "还差 {n} 个字符"},
-  "{n} more requests waiting": {"other": "另有 {n} 个请求在等待"}
+  "{n} more requests waiting": {"other": "另有 {n} 个请求在等待"},
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "此账户的另一笔交易正以相同的 nonce 等待中。这笔交易将以更高的手续费取而代之。"
 }

@@ -393,5 +393,6 @@
  "{n} more requests waiting": {
   "one": "{n} istek daha bekliyor",
   "other": "{n} istek daha bekliyor"
- }
+ },
+  "Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.": "Bu hesaptan başka bir işlem aynı nonce ile bekliyor. Bu işlem, daha yüksek bir ücretle onun yerini alır."
 }

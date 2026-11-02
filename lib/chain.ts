@@ -53,6 +53,21 @@ export async function send(network: Network, account: LocalAccount, request: Pre
   return broadcast(network, await account.signTransaction(await unsigned(network, account.address, request)))
 }
 
+/** A transaction already waiting at this nonce (one the RPC may not even list as pending) refuses this one unless it
+ * pays more. */
+export const underpriced = (e: unknown) => /replacement transaction underpriced|replacement fee too low/i
+  .test(`${(e as BaseError)?.details ?? ''} ${(e as Error)?.message ?? ''}`)
+
+/** The same transaction for 25% more on every fee field: nodes replace a waiting one for at least 10% more. Asked for
+ * again before it's signed, like any fee. */
+export function bump({ request, fee }: { request: Prepared; fee: bigint }) {
+  const up = (v?: bigint) => (v == null ? undefined : (v * 125n) / 100n)
+  // every field there is: viem fills in gasPrice next to the EIP-1559 ones too
+  const next = { ...request, gasPrice: up(request.gasPrice), maxFeePerGas: up(request.maxFeePerGas), maxPriorityFeePerGas: up(request.maxPriorityFeePerGas) } as Prepared
+  const per = (r: Prepared) => r.maxFeePerGas ?? r.gasPrice ?? 0n
+  return { request: next, fee: fee + request.gas * (per(next) - per(request)) }
+}
+
 /** A signed transaction names its chain itself: an RPC serving another one refuses it. */
 export const broadcast = (network: Network, signed: `0x${string}`) =>
   client(network).sendRawTransaction({ serializedTransaction: signed as any })
