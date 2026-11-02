@@ -224,6 +224,15 @@ def chrome(meta, env, journal, api=request, pause=time.sleep):
         require(pending.get("state") in ("PENDING_REVIEW", "REJECTED", "CANCELLED") and versions and all(older(v, meta["version"]) for v in versions), "Another Chrome submission exists; only an older pending, rejected or cancelled one is replaced")
         if pending["state"] == "PENDING_REVIEW":
             journal.once("cancel", lambda: api(base + ":cancelSubmission", token, method="POST", body={}), lambda r: {"cancelled": versions})
+            # Out of review first, then the new one: published straight after the cancel, Chrome refused 0.5.12 with
+            # "does not meet the requirements to be published" until a rerun an hour later.
+            for _ in range(30):
+                left = api(base + ":fetchStatus", token).get("submittedItemRevisionStatus") or {}
+                if left.get("state") != "PENDING_REVIEW" or not any(c.get("crxVersion") in versions for c in left.get("distributionChannels", [])):
+                    break
+                pause(10)
+            else:
+                raise RuntimeError("Chrome still shows the cancelled older version in review; rerun this job once it's gone")
     require(review is None, "Chrome review receipt disagrees with current status; reconcile in console")
     uploaded = journal.once("upload", lambda: api("https://chromewebstore.googleapis.com/upload/v2/" + name + ":upload", token, method="POST", body=Path("release-out/chrome.zip").read_bytes(), content_type="application/zip"), lambda r: {"uploadState": r.get("uploadState"), "name": r.get("name"), "crxVersion": r.get("crxVersion")})
     require(not uploaded["crxVersion"] or uploaded["crxVersion"] == meta["version"], "Chrome upload version mismatch")

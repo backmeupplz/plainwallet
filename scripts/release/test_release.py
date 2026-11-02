@@ -324,16 +324,26 @@ class ReleaseTests(unittest.TestCase):
         def pending(state, version):
             return {"submittedItemRevisionStatus": {"state": state, "distributionChannels": [{"crxVersion": version}]}}
         journal, writes, remote = MemoryJournal(), [], pending("PENDING_REVIEW", "0.2.2")
+        # the cancel shows up two status checks later: nothing new is uploaded or published before that
+        settles, waits = [pending("PENDING_REVIEW", "0.2.2"), pending("PENDING_REVIEW", "0.2.2"), pending("CANCELLED", "0.2.2")], []
         def api(url, token, **kw):
             if url.endswith(":fetchStatus"):
-                return remote
+                return settles.pop(0) if "cancelSubmission" in writes and settles else remote
             writes.append(url.rsplit(":", 1)[1])
             if url.endswith(":upload"):
                 return {"uploadState": "SUCCEEDED", "crxVersion": META["version"]}
             return {"state": "PENDING_REVIEW"}
-        self.assertEqual(chrome(META, ENV, journal, api)["state"], "PENDING_REVIEW")
+        self.assertEqual(chrome(META, ENV, journal, api, pause=lambda s: waits.append((len(writes), s)))["state"], "PENDING_REVIEW")
         self.assertEqual(writes, ["cancelSubmission", "upload", "publish"])
+        self.assertEqual(waits, [(1, 10), (1, 10)])
         self.assertEqual(journal.read(journal.name("cancel", "receipt")), {"cancelled": ["0.2.2"]})
+        # A cancel that never shows stops before anything new is uploaded; the rerun starts from the cancel's receipt.
+        writes.clear()
+        remote = pending("PENDING_REVIEW", "0.2.2")
+        stuck = MemoryJournal()
+        with self.assertRaisesRegex(RuntimeError, "still shows the cancelled older version"):
+            chrome(META, ENV, stuck, api, pause=lambda s: None)
+        self.assertEqual(writes, ["cancelSubmission"])
         # An older rejected one is replaced without a cancel.
         writes.clear()
         remote = pending("REJECTED", "0.2.2")
