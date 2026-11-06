@@ -1,6 +1,6 @@
 # <img src="assets/icon.svg" width="28" align="top" alt=""> Plain Wallet
 
-Plain Wallet is a very minimal, open-source, non-custodial EVM wallet: a browser extension for Chrome, Firefox and Safari, and apps for Android, iOS and Mac. Your keys stay on your device, and the whole wallet is ~2850 lines of TypeScript with three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt) and released under the MIT license.
+Plain Wallet is a very minimal, open-source, non-custodial EVM wallet: a Chrome extension and an Android app, with Safari, iPhone and Mac versions in App Store review and a Firefox build you can make yourself (see below). Your keys stay on your device, and the whole wallet is ~2850 lines of TypeScript with three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt) and released under the MIT license.
 
 > Not audited. Don't keep funds in it that you can't afford to lose.
 
