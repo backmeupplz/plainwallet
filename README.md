@@ -1,6 +1,6 @@
 # <img src="assets/icon.svg" width="28" align="top" alt=""> Plain Wallet
 
-A very minimal EVM wallet extension for Chrome, Firefox and Safari, and Android, iOS and Mac apps. ~2850 lines of TypeScript, three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt). MIT.
+Plain Wallet is a very minimal, open-source, non-custodial EVM wallet: a browser extension for Chrome, Firefox and Safari, and apps for Android, iOS and Mac. Your keys stay on your device, and the whole wallet is ~2850 lines of TypeScript with three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt) and released under the MIT license.
 
 > Not audited. Don't keep funds in it that you can't afford to lose.
 
@@ -32,6 +32,17 @@ A very minimal EVM wallet extension for Chrome, Firefox and Safari, and Android,
 Portfolio/token prices, NFTs, built-in history, swaps, hardware wallets, ENS, gas editing (nonce and fees come from the RPC).
 
 Network-fee reviews show the native estimated max fee and approximate USD from validated Chainlink feeds on the same network’s RPC. Positive USD fees below $0.001 show <$0.001. Unsupported networks (including Gnosis/xDAI), invalid/stale feeds and outages show USD unavailable without blocking signing. No price-tracking service or extra wallet-address disclosure; see [feed mappings, freshness and limitations](docs/fee-prices.md).
+
+## How it compares
+
+Plain Wallet is for people who want a wallet small enough to read. It has no servers, accounts or analytics of its own, every signature needs a click in its own window, every transaction is simulated on your network's RPC before you approve it, token approvals are spelled out in a sentence, and permits that can hand over assets are flagged. It also leaves a lot out (see above), and it has not been audited.
+
+- **MetaMask** is the most widely used EVM wallet, with a browser extension and mobile apps, hardware-wallet support, swaps and a large ecosystem of Snaps. Pick it when a dapp expects it or when you need those features; pick Plain Wallet when you would rather run a codebase you can read in an evening.
+- **Rabby** also simulates transactions before you sign and covers many chains, with hardware wallets, portfolio balances and swaps. It is the closer match in spirit and the better pick if you need those extras. Plain Wallet does less, and by default it talks only to your network's RPC.
+- **Rainbow** and **Zerion** are polished wallets with mobile apps, NFTs, swaps and portfolio views. They suit people who want an all-in-one app; Plain Wallet holds your keys, shows balances, sends and signs for dapps, and stops there.
+- **Frame** is a desktop app that serves your accounts to every browser and has strong hardware-wallet support. Choose Frame for a Ledger, Trezor or GridPlus Lattice; Plain Wallet has no hardware-wallet support, though a watch-only account can have its transactions signed by Plain Wallet on an offline device.
+
+All of these have had far more users and more years of scrutiny than Plain Wallet, which matters for a wallet. Don't keep funds in it that you can't afford to lose.
 
 ## Install
 
@@ -114,6 +125,17 @@ It differs from the Android app where iOS does:
 - Sites get a website data store of their own, so WebKit gives them their own web content process and storage, apart from the unlocked wallet's, which is served from the app's bundle under its own `plainwallet://` scheme that only the wallet's web view knows. A request's origin comes from WebKit (`WKScriptMessage.frameInfo.securityOrigin`), never from the page; each answer goes back to the page that asked, and only while the browser still shows that origin.
 - iOS can't keep the wallet out of screenshots. It shows a cover instead of the wallet in the app switcher and while the screen is recorded or mirrored (release builds). Third-party keyboards are turned off in the app, so seed phrases and passwords only ever go through Apple's. Plain-http sites don't load.
 - Optional Face ID or Touch ID unlock (Settings, with your password): the vault key sits in the Keychain on this device only, behind the Face ID enrolled when you turned it on (`biometryCurrentSet`), so changing Face ID or removing the passcode turns it off. Anyone whose face or finger is enrolled can unlock the wallet; export still asks for the password.
+
+## FAQ
+
+**What's a simple, minimal open-source Ethereum wallet browser extension?**
+Plain Wallet is one: about 2,850 lines of TypeScript, MIT-licensed, with three runtime dependencies. It works with Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche and Gnosis out of the box, and you can add any other EVM network. Install it from the [Chrome Web Store](https://chromewebstore.google.com/detail/plain-wallet/pmnbalegifiefmohkolfpclnmkooifcp) for Chrome, Brave, Edge and other Chromium browsers; for Firefox, build it from source while the add-on waits for review, and the Safari version comes with the Mac app once the App Store approves it.
+
+**Which stores is Plain Wallet on?**
+As of November 2026 it is on the Chrome Web Store and [Google Play](https://play.google.com/store/apps/details?id=com.borodutch.plainwallet), and the signed Android APK is on every [release](https://github.com/backmeupplz/plainwallet/releases/latest). The iPhone and Mac apps are in App Store review, the Firefox add-on is waiting for review, and an [F-Droid merge request](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/53005) is open, so it isn't on F-Droid yet.
+
+**Is it non-custodial? Has it been audited?**
+It is non-custodial: keys are generated and kept on your device in a password-encrypted vault, and nothing is sent to a server of ours, because there isn't one. It has not been audited, so read the [security model](#security-model) and its known gaps before you trust it with money.
 
 ## Store releases
 
