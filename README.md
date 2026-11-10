@@ -1,6 +1,6 @@
 # <img src="assets/icon.svg" width="28" align="top" alt=""> Plain Wallet
 
-Plain Wallet is a very minimal, open-source, non-custodial EVM wallet: a Chrome extension and an Android app, with Safari, iPhone and Mac versions in App Store review and a Firefox build you can make yourself (see below). Your keys stay on your device, and the whole wallet is ~2850 lines of TypeScript with three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt) and released under the MIT license.
+Plain Wallet is a very minimal, open-source, non-custodial EVM wallet: a Chrome extension, an Android app, an iPhone app and a Mac app with a Safari extension, plus a Firefox build you can make yourself (see below). Your keys stay on your device, and the whole wallet is ~2850 lines of TypeScript with three runtime dependencies ([viem](https://github.com/wevm/viem) and the bip39/hashing libraries it is built on), built with [WXT](https://github.com/wxt-dev/wxt) and released under the MIT license.
 
 > Not audited. Don't keep funds in it that you can't afford to lose.
 
@@ -71,7 +71,7 @@ The build is unsigned, so either load it temporarily from `about:debugging` (rem
 
 ### Safari and the Mac app
 
-Get [Plain Wallet on the Mac App Store](https://apps.apple.com/app/id6817506091) (in review; the link works once Apple approves it). Then open Safari → Settings → Extensions, turn on **Plain Wallet** and allow it on websites. The app's own window is the same wallet.
+Get [Plain Wallet on the Mac App Store](https://apps.apple.com/app/id6817506091). Then open Safari → Settings → Extensions, turn on **Plain Wallet** and allow it on websites. The app's own window is the same wallet.
 
 One Mac app (macOS 14+) holds both: the extension for Safari, and the wallet in a window of its own: the Android app's wallet page without a browser, since dapps go through Safari. Both are the same wallet, kept in a file in the app's app group that the app and the extension's native handler read and write for them (`lib/shared-storage.ts`, `macos/Shared/Storage.swift`); each unlocks on its own. Building needs Xcode, and signing with the team in the app group's name (`ACWP4F58HZ`): without it macOS keeps both out of that file and the wallet shows an error.
 
@@ -111,7 +111,7 @@ The wallet always sits under a blue band across the top of the screen; a website
 
 ### iOS
 
-Get [Plain Wallet on the App Store](https://apps.apple.com/app/id6817506091) (in review; the link works once Apple approves it).
+Get [Plain Wallet on the App Store](https://apps.apple.com/app/id6817506091).
 
 The Android app on iPhone (iOS 18+): the same wallet page and provider in a small Swift wrapper, `ios/PlainWallet/PlainWallet.swift`, with optional Face ID or Touch ID unlock. Building needs a Mac with Xcode; the web half builds anywhere and goes in `ios/web`:
 
@@ -129,10 +129,10 @@ It differs from the Android app where iOS does:
 ## FAQ
 
 **What's a simple, minimal open-source Ethereum wallet browser extension?**
-Plain Wallet is one: about 2,850 lines of TypeScript, MIT-licensed, with three runtime dependencies. It works with Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche and Gnosis out of the box, and you can add any other EVM network. Install it from the [Chrome Web Store](https://chromewebstore.google.com/detail/plain-wallet/pmnbalegifiefmohkolfpclnmkooifcp) for Chrome, Brave, Edge and other Chromium browsers; for Firefox, build it from source while the add-on waits for review, and the Safari version comes with the Mac app once the App Store approves it.
+Plain Wallet is one: about 2,850 lines of TypeScript, MIT-licensed, with three runtime dependencies. It works with Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche and Gnosis out of the box, and you can add any other EVM network. Install it from the [Chrome Web Store](https://chromewebstore.google.com/detail/plain-wallet/pmnbalegifiefmohkolfpclnmkooifcp) for Chrome, Brave, Edge and other Chromium browsers; for Safari, get the [Mac app](https://apps.apple.com/app/id6817506091), which includes the extension; for Firefox, build it from source while the add-on waits for review.
 
 **Which stores is Plain Wallet on?**
-As of November 2026 it is on the Chrome Web Store and [Google Play](https://play.google.com/store/apps/details?id=com.borodutch.plainwallet), and the signed Android APK is on every [release](https://github.com/backmeupplz/plainwallet/releases/latest). The iPhone and Mac apps are in App Store review, the Firefox add-on is waiting for review, and an [F-Droid merge request](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/53005) is open, so it isn't on F-Droid yet.
+As of November 2026 it is on the Chrome Web Store, [Google Play](https://play.google.com/store/apps/details?id=com.borodutch.plainwallet) and the [App Store](https://apps.apple.com/app/id6817506091) (iPhone and Mac), and the signed Android APK is on every [release](https://github.com/backmeupplz/plainwallet/releases/latest). The Firefox add-on is waiting for review, and an [F-Droid merge request](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/53005) is open, so it isn't on F-Droid yet.
 
 **Is it non-custodial? Has it been audited?**
 It is non-custodial: keys are generated and kept on your device in a password-encrypted vault, and nothing is sent to a server of ours, because there isn't one. It has not been audited, so read the [security model](#security-model) and its known gaps before you trust it with money.
