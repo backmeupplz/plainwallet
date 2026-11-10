@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Wei to ETH and gwei converter: exact, in your browser</title>
-    <meta name="description" content="Convert wei, gwei and ether in both directions with exact integer math, and check an Ethereum address against its EIP-55 checksum. Nothing you type leaves the page." />
+    <meta name="description" content="1 ETH is 10^18 wei or 1,000,000,000 gwei. Convert wei, gwei and ether in both directions with exact integer math, with worked examples, and check an address against its EIP-55 checksum." />
     <link rel="canonical" href="https://plainwallet.app/tools/eth-units/" />
 <link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/eth-units/">
 <link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/eth-units/">
@@ -125,7 +125,7 @@
     </header>
     <main>
       <h1>Wei to ETH and gwei converter</h1>
-      <p class="lede">Type an amount in any Ethereum unit and see it in all the others, worked out with integers so no digit is rounded. Nothing you type leaves this page.</p>
+      <p class="lede">One ETH is 1,000,000,000 gwei, which is 1,000,000,000,000,000,000 (10<sup>18</sup>) wei. To turn wei into ETH, move the decimal point 18 places to the left; to turn gwei into ETH, move it 9 places. Type an amount in any Ethereum unit below and see it in all the others, worked out with integers so no digit is rounded. Nothing you type leaves this page.</p>
 
       <div class="row">
         <div>
@@ -155,6 +155,16 @@
       <p>An amount with more decimals than its unit allows, such as 0.5 wei, is not a whole number of wei and is refused rather than rounded. Commas, spaces and underscores in the number are ignored.</p>
       <p>Names: kwei is 10<sup>3</sup> wei (babbage), mwei is 10<sup>6</sup> (lovelace), szabo is 10<sup>12</sup> and finney is 10<sup>15</sup>. Wallets and block explorers mostly show gwei for gas prices and ETH for balances.</p>
 
+      <h2>Worked examples</h2>
+      <p>I ran each of these through this page's own conversion code on November 10, 2026, and you can retype any of them in the box above.</p>
+      <ul>
+        <li><strong>1 gwei in ETH:</strong> 0.000000001 ETH.</li>
+        <li><strong>30 gwei in ETH:</strong> 0.00000003 ETH, a gas price you may see on a busy day.</li>
+        <li><strong>1,500,000,000,000,000 wei in ETH:</strong> 0.0015 ETH, which is 1,500,000 gwei.</li>
+        <li><strong>0.05 ETH in gwei:</strong> 50,000,000 gwei, or 50,000,000,000,000,000 wei.</li>
+        <li><strong>A plain ETH transfer at 30 gwei:</strong> it uses 21,000 gas, and 21,000 × 30 gwei is 630,000 gwei, which is 0.00063 ETH.</li>
+      </ul>
+      <p>The fee example works because gas prices are quoted in gwei per unit of gas: multiply the gas used by the price to get the fee in gwei, then move the decimal point 9 places to get ETH.</p>
       <h2>Check an address checksum</h2>
       <p>An Ethereum address is 40 hex digits. <a href="https://eips.ethereum.org/EIPS/eip-55">EIP-55</a> spells some of its letters in capitals, chosen by the Keccak-256 hash of the lowercase address, so a mistyped character is very likely to be caught. Paste an address to see its correct form and whether yours matches.</p>
       <label for="address">Address</label>
