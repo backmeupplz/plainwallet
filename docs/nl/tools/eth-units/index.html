@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Wei naar ETH en gwei omrekenen: exact, in je browser</title>
-    <meta name="description" content="Reken wei, gwei en ether exact om in beide richtingen en controleer de EIP-55-checksum van een Ethereum-adres. Niets wat je typt verlaat de pagina." />
+    <meta name="description" content="1 ETH is 10^18 wei of 1,000,000,000 gwei. Reken wei, gwei en ether exact om, met uitgewerkte voorbeelden, en controleer de EIP-55-checksum van een adres." />
     <link rel="canonical" href="https://plainwallet.app/nl/tools/eth-units/" />
 <link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/eth-units/">
 <link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/eth-units/">
@@ -78,7 +78,7 @@
  "name": "Wei naar ETH en gwei omrekenen",
  "url": "https://plainwallet.app/nl/tools/eth-units/",
  "inLanguage": "nl",
- "description": "Reken wei, gwei en ether exact om in beide richtingen en controleer de EIP-55-checksum van een Ethereum-adres. Niets wat je typt verlaat de pagina.",
+ "description": "1 ETH is 10^18 wei of 1,000,000,000 gwei. Reken wei, gwei en ether exact om, met uitgewerkte voorbeelden, en controleer de EIP-55-checksum van een adres.",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Any",
  "offers": {
@@ -147,7 +147,7 @@
     </header>
     <main>
       <h1>Wei naar ETH en gwei omrekenen</h1>
-      <p class="lede">Typ een bedrag in een Ethereum-eenheid en zie het in alle andere, uitgerekend met gehele getallen zodat geen enkel cijfer wordt afgerond. Niets wat je typt verlaat deze pagina.</p>
+      <p class="lede">Eén ETH is 1 000 000 000 gwei, oftewel 1 000 000 000 000 000 000 (10<sup>18</sup>) wei. Om wei om te rekenen naar ETH verschuif je het decimaalteken 18 plaatsen naar links; voor gwei naar ETH zijn dat 9 plaatsen. Typ hieronder een bedrag in een Ethereum-eenheid en zie het in alle andere, uitgerekend met gehele getallen zodat geen enkel cijfer wordt afgerond. Niets wat je typt verlaat deze pagina.</p>
 
       <div class="row">
         <div>
@@ -176,6 +176,17 @@
       <p>Alles op de chain wordt geteld in wei, de kleinste eenheid. Eén ether is 10<sup>18</sup> wei en één gwei is 10<sup>9</sup> wei, dus omrekenen is een decimaalteken verschuiven. Deze pagina leest wat je typt als decimale tekenreeks, zet die met BigInt om in een geheel aantal wei en toont elke eenheid door het decimaalteken in dat gehele getal te plaatsen. Er worden nooit floating-point-getallen gebruikt, want die kunnen geen 18 decimalen bevatten: in JavaScript is <code>0.1 + 0.2</code> al <code>0.30000000000000004</code>.</p>
       <p>Een bedrag met meer decimalen dan de eenheid toestaat, zoals 0.5 wei, is geen geheel aantal wei en wordt geweigerd in plaats van afgerond. Komma's, spaties en underscores in het getal worden genegeerd.</p>
       <p>Namen: kwei is 10<sup>3</sup> wei (babbage), mwei is 10<sup>6</sup> (lovelace), szabo is 10<sup>12</sup> en finney is 10<sup>15</sup>. Wallets en blockexplorers tonen meestal gwei voor gasprijzen en ETH voor saldo's.</p>
+
+      <h2>Uitgewerkte voorbeelden</h2>
+      <p>Ik heb elk van deze voorbeelden op 10 november 2026 door de eigen omrekencode van deze pagina gehaald, en je kunt ze allemaal zelf opnieuw intypen in het vak hierboven.</p>
+      <ul>
+        <li><strong>1 gwei in ETH:</strong> 0.000000001 ETH.</li>
+        <li><strong>30 gwei in ETH:</strong> 0.00000003 ETH, een gasprijs die je op een drukke dag kunt zien.</li>
+        <li><strong>1 500 000 000 000 000 wei in ETH:</strong> 0.0015 ETH, oftewel 1 500 000 gwei.</li>
+        <li><strong>0.05 ETH in gwei:</strong> 50 000 000 gwei, oftewel 50 000 000 000 000 000 wei.</li>
+        <li><strong>Een gewone ETH-transactie tegen 30 gwei:</strong> die verbruikt 21 000 gas, en 21 000 × 30 gwei is 630 000 gwei, oftewel 0.00063 ETH.</li>
+      </ul>
+      <p>Het voorbeeld met de kosten werkt doordat gasprijzen in gwei per eenheid gas worden genoemd: vermenigvuldig het verbruikte gas met de prijs om de kosten in gwei te krijgen en verschuif dan het decimaalteken 9 plaatsen om ETH te krijgen.</p>
 
       <h2>Controleer de checksum van een adres</h2>
       <p>Een Ethereum-adres bestaat uit 40 hexadecimale cijfers. <a href="https://eips.ethereum.org/EIPS/eip-55">EIP-55</a> schrijft sommige letters ervan met hoofdletters, gekozen op basis van de Keccak-256-hash van het adres in kleine letters, zodat een verkeerd getypt teken vrijwel zeker wordt opgemerkt. Plak een adres om de juiste schrijfwijze te zien en of die van jou overeenkomt.</p>
