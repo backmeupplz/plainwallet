@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Wei - ETH ve gwei dönüştürücü: tam ve tarayıcınızda</title>
-    <meta name="description" content="Wei, gwei ve ether'i tam sayı hesabıyla iki yönde dönüştürün, Ethereum adresini EIP-55 sağlama toplamına göre denetleyin. Yazdıklarınız sayfadan çıkmaz." />
+    <meta name="description" content="1 ETH, 10^18 wei ya da 1,000,000,000 gwei eder. Wei, gwei ve ether'i tam sayıyla iki yönde dönüştürün, örneklere bakın, adresi EIP-55 ile denetleyin." />
     <link rel="canonical" href="https://plainwallet.app/tr/tools/eth-units/" />
 <link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/eth-units/">
 <link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/eth-units/">
@@ -78,7 +78,7 @@
  "name": "Wei - ETH ve gwei dönüştürücü",
  "url": "https://plainwallet.app/tr/tools/eth-units/",
  "inLanguage": "tr",
- "description": "Wei, gwei ve ether'i tam sayı hesabıyla iki yönde dönüştürün, Ethereum adresini EIP-55 sağlama toplamına göre denetleyin. Yazdıklarınız sayfadan çıkmaz.",
+ "description": "1 ETH, 10^18 wei ya da 1,000,000,000 gwei eder. Wei, gwei ve ether'i tam sayıyla iki yönde dönüştürün, örneklere bakın, adresi EIP-55 ile denetleyin.",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Any",
  "offers": {
@@ -147,7 +147,7 @@
     </header>
     <main>
       <h1>Wei - ETH ve gwei dönüştürücü</h1>
-      <p class="lede">Herhangi bir Ethereum biriminde bir tutar yazın, diğer tüm birimlerdeki karşılığını görün; hesap tam sayılarla yapıldığı için hiçbir basamak yuvarlanmaz. Yazdığınız hiçbir şey bu sayfadan çıkmaz.</p>
+      <p class="lede">Bir ETH, 1 000 000 000 gwei eder; bu da 1 000 000 000 000 000 000 (10<sup>18</sup>) wei demektir. Wei'yi ETH'ye çevirmek için ondalık noktayı 18 basamak sola kaydırın; gwei'yi ETH'ye çevirmek için 9 basamak kaydırın. Aşağıya herhangi bir Ethereum biriminde bir tutar yazın, diğer tüm birimlerdeki karşılığını görün; hesap tam sayılarla yapıldığı için hiçbir basamak yuvarlanmaz. Yazdığınız hiçbir şey bu sayfadan çıkmaz.</p>
 
       <div class="row">
         <div>
@@ -176,6 +176,17 @@
       <p>Zincirdeki her şey en küçük birim olan wei ile sayılır. Bir ether 10<sup>18</sup> wei, bir gwei ise 10<sup>9</sup> wei'dir; yani dönüştürmek, ondalık noktayı kaydırmaktan ibarettir. Bu sayfa yazdığınızı ondalık bir dize olarak okur, BigInt ile tam sayı bir wei değerine çevirir ve her birimi bu tam sayıda noktayı yerleştirerek yazdırır. 18 ondalık basamağı tutamayan kayan noktalı sayıları hiç kullanmaz: JavaScript'te <code>0.1 + 0.2</code> zaten <code>0.30000000000000004</code> eder.</p>
       <p>Birimin izin verdiğinden fazla ondalığı olan bir tutar, örneğin 0.5 wei, tam sayı bir wei değildir ve yuvarlanmak yerine reddedilir. Sayıdaki virgüller, boşluklar ve alt çizgiler yok sayılır.</p>
       <p>Adlar: kwei 10<sup>3</sup> wei'dir (babbage), mwei 10<sup>6</sup> (lovelace), szabo 10<sup>12</sup> ve finney 10<sup>15</sup>. Cüzdanlar ve blok gezginleri gas fiyatları için çoğunlukla gwei, bakiyeler için ETH gösterir.</p>
+
+      <h2>Çözümlü örnekler</h2>
+      <p>Bunların her birini 10 Kasım 2026'da bu sayfanın kendi dönüşüm koduyla çalıştırdım; hangisini isterseniz yukarıdaki kutuya yeniden yazabilirsiniz.</p>
+      <ul>
+        <li><strong>ETH cinsinden 1 gwei:</strong> 0.000000001 ETH.</li>
+        <li><strong>ETH cinsinden 30 gwei:</strong> 0.00000003 ETH; yoğun bir günde görebileceğiniz bir gas fiyatı.</li>
+        <li><strong>ETH cinsinden 1 500 000 000 000 000 wei:</strong> 0.0015 ETH, yani 1 500 000 gwei.</li>
+        <li><strong>gwei cinsinden 0.05 ETH:</strong> 50 000 000 gwei ya da 50 000 000 000 000 000 wei.</li>
+        <li><strong>30 gwei fiyatla düz bir ETH transferi:</strong> 21 000 gas harcar; 21 000 × 30 gwei 630 000 gwei eder, bu da 0.00063 ETH'dir.</li>
+      </ul>
+      <p>Ücret örneği şu yüzden işler: gas fiyatları, gas birimi başına gwei olarak belirtilir. Harcanan gas miktarını fiyatla çarparak ücreti gwei cinsinden bulursunuz, ardından ETH'yi bulmak için ondalık noktayı 9 basamak kaydırırsınız.</p>
 
       <h2>Adres sağlama toplamını denetleyin</h2>
       <p>Bir Ethereum adresi 40 onaltılık basamaktır. <a href="https://eips.ethereum.org/EIPS/eip-55">EIP-55</a>, harflerinin bir kısmını, küçük harfli adresin Keccak-256 hash'ine göre seçilen büyük harflerle yazar; böylece yanlış yazılmış bir karakter büyük olasılıkla yakalanır. Doğru yazımını ve sizin adresinizin eşleşip eşleşmediğini görmek için bir adres yapıştırın.</p>

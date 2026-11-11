@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Wei 轉 ETH 與 gwei 換算器：精確，在瀏覽器中完成</title>
-    <meta name="description" content="以精確的整數運算雙向換算 wei、gwei 與 ether，並用 EIP-55 校驗碼檢查以太坊地址。您輸入的內容不會離開頁面。" />
+    <meta name="description" content="1 ETH 等於 10^18 wei 或 1,000,000,000 gwei。以精確的整數運算雙向換算 wei、gwei 與 ether，附計算範例，並可用 EIP-55 校驗碼檢查地址。" />
     <link rel="canonical" href="https://plainwallet.app/zh-hant/tools/eth-units/" />
 <link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/eth-units/">
 <link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/eth-units/">
@@ -78,7 +78,7 @@
  "name": "Wei 轉 ETH 與 gwei 換算器",
  "url": "https://plainwallet.app/zh-hant/tools/eth-units/",
  "inLanguage": "zh-Hant",
- "description": "以精確的整數運算雙向換算 wei、gwei 與 ether，並用 EIP-55 校驗碼檢查以太坊地址。您輸入的內容不會離開頁面。",
+ "description": "1 ETH 等於 10^18 wei 或 1,000,000,000 gwei。以精確的整數運算雙向換算 wei、gwei 與 ether，附計算範例，並可用 EIP-55 校驗碼檢查地址。",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Any",
  "offers": {
@@ -147,7 +147,7 @@
     </header>
     <main>
       <h1>Wei 轉 ETH 與 gwei 換算器</h1>
-      <p class="lede">輸入任一以太坊單位的數量，就能看到換算成其他所有單位的結果。換算全程以整數運算，不會四捨五入任何一位數字。您輸入的內容不會離開這個頁面。</p>
+      <p class="lede">1 ETH 等於 1,000,000,000 gwei，也就是 1,000,000,000,000,000,000（10<sup>18</sup>）wei。要把 wei 換算成 ETH，請把小數點向左移 18 位；要把 gwei 換算成 ETH，則向左移 9 位。在下方輸入任一以太坊單位的數量，就能看到換算成其他所有單位的結果，全程以整數運算，不會四捨五入任何一位數字。您輸入的內容不會離開這個頁面。</p>
 
       <div class="row">
         <div>
@@ -176,6 +176,17 @@
       <p>鏈上的一切都以最小單位 wei 計算。1 ether 等於 10<sup>18</sup> wei，1 gwei 等於 10<sup>9</sup> wei，所以換算其實就是移動小數點。本頁會把您輸入的內容當作十進位字串讀取，用 BigInt 轉成整數的 wei，再藉由在這個整數中放入小數點，印出每個單位的數值。它從不使用浮點數，因為浮點數無法容納 18 位小數：在 JavaScript 中，<code>0.1 + 0.2</code> 就已經是 <code>0.30000000000000004</code>。</p>
       <p>如果數量的小數位數超過該單位所允許的範圍，例如 0.5 wei，就不是整數的 wei，會被拒絕而不是四捨五入。數字中的逗號、空格與底線會被忽略。</p>
       <p>名稱：kwei 是 10<sup>3</sup> wei（babbage），mwei 是 10<sup>6</sup>（lovelace），szabo 是 10<sup>12</sup>，finney 是 10<sup>15</sup>。錢包與區塊鏈瀏覽器多半以 gwei 顯示 Gas 價格，以 ETH 顯示餘額。</p>
+
+      <h2>計算範例</h2>
+      <p>以下每個例子，我都在 2026 年 11 月 10 日用本頁自己的換算程式碼跑過，您也可以在上方的輸入框中重新輸入其中任何一個。</p>
+      <ul>
+        <li><strong>1 gwei 換算成 ETH：</strong>0.000000001 ETH。</li>
+        <li><strong>30 gwei 換算成 ETH：</strong>0.00000003 ETH，這是網路繁忙時可能看到的 Gas 價格。</li>
+        <li><strong>1,500,000,000,000,000 wei 換算成 ETH：</strong>0.0015 ETH，也就是 1,500,000 gwei。</li>
+        <li><strong>0.05 ETH 換算成 gwei：</strong>50,000,000 gwei，或 50,000,000,000,000,000 wei。</li>
+        <li><strong>以 30 gwei 進行一筆單純的 ETH 轉帳：</strong>會用掉 21,000 Gas，21,000 × 30 gwei 等於 630,000 gwei，也就是 0.00063 ETH。</li>
+      </ul>
+      <p>這個手續費範例之所以成立，是因為 Gas 價格是以每單位 Gas 多少 gwei 來報價：把用掉的 Gas 乘以價格，就得到以 gwei 計的手續費，再把小數點向左移 9 位，就是以 ETH 計的金額。</p>
 
       <h2>檢查地址的校驗碼</h2>
       <p>以太坊地址是 40 個十六進位數字。<a href="https://eips.ethereum.org/EIPS/eip-55">EIP-55</a> 會把其中部分字母寫成大寫，大小寫由小寫地址的 Keccak-256 雜湊值決定，因此輸錯的字元很有可能被發現。貼上地址，就能看到它的正確寫法，以及您的地址是否相符。</p>
