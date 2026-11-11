@@ -1,0 +1,1 @@
+Dompet dengan tampilan baru: akun Anda di atas, saldo Anda di depan pada satu kartu bersama Kirim dan Transaksi, dan token Anda di bawahnya. Akun dan jaringan diganti dari daftar yang jelas, di ponsel dialog muncul dari bawah, tombol lebih besar untuk jempol, dan Setujui serta Tolak tetap di bagian bawah layar.

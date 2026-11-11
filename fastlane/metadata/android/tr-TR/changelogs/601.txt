@@ -1,0 +1,1 @@
+Yeniden tasarlanan cüzdan: hesabınız en üstte, bakiyeniz Gönder ve İşlemler ile birlikte tek bir kartta önde, tokenleriniz altında. Hesap ve ağları net bir listeden değiştirirsiniz, telefonda pencereler aşağıdan kayarak açılır, düğmeler başparmağınız için daha büyük, Onayla ve Reddet ise ekranın altında kalır.

@@ -241,10 +241,10 @@ async def run(lang):
         return
     toggle_wallet(True)
     shot('1', wallet=True)
-    await wallet(f"{VISIBLE}.at(-1).click()")  # Send
-    await wallet(f"(() => {{ const f = [...document.querySelectorAll('dialog input, .sheet input')].filter((i) => i.offsetParent && i.type !== 'hidden'); ({FILL})(f.at(-2), '{RECIPIENT}'); ({FILL})(f.at(-1), '0.25') }})()", 1)
+    await wallet("document.querySelector('.wallet button.primary').click()")  # Send
+    await wallet(f"(() => {{ const f = [...document.querySelectorAll('dialog input')].filter((i) => i.offsetParent && i.type !== 'hidden'); ({FILL})(f.at(-2), '{RECIPIENT}'); ({FILL})(f.at(-1), '0.25') }})()", 1)
     shot('4', wallet=True)
-    await wallet(f"{VISIBLE}.at(-1).click()")  # close
+    await wallet("document.querySelector('dialog[open]').close()")
     toggle_wallet(False)  # back to the browser
     await visit(DAPP)
     await js('test-dapp', "document.querySelector('#connectButton').click()")
@@ -271,6 +271,10 @@ async def main():
     adb('shell', 'settings', 'put', 'global', 'sysui_demo_allowed', '1')
     for d in [['exit'], ['enter'], *DEMO]:  # from scratch: repeated network commands add icons
         adb('shell', 'am', 'broadcast', '-a', 'com.android.systemui.demo', '-e', 'command', *d)
+    # Android 16 keeps the icons of the system's own notifications (Set a screen lock, a keyboard tutorial) in demo
+    # mode: snoozed for a day, they leave the status bar; the ongoing ones can't be snoozed and show no icon anyway
+    for key in set(re.findall(r'key=(\d+\|[^|\s]+\|\d+\|[^|\s]*\|\d+)', adb('shell', 'dumpsys', 'notification', '--noredact'))):
+        subprocess.run(ADB + ['shell', 'cmd', 'notification', 'snooze', '--for', '86400000', f"'{key}'"], capture_output=True)
     adb('shell', 'wm', 'size', SIZE or 'reset')  # an interrupted run may have left another size
     adb('shell', 'wm', 'density', DENSITY or 'reset')
     failed = []

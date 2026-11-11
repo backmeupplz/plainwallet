@@ -1,0 +1,1 @@
+Uma carteira redesenhada: sua conta no topo, seu saldo em destaque em um cartão com Enviar e Transações, e seus tokens logo abaixo. Contas e redes mudam por uma lista clara, no celular as janelas sobem de baixo, os botões são maiores para o polegar e Aprovar e Rejeitar ficam na parte de baixo da tela.

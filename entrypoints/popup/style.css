@@ -1,28 +1,36 @@
-/* Calm and roomy: soft cards on a tinted page, one blue for what you do, stamp red only for what can cost you. Typed
-   values (addresses, amounts, data) stay in mono. Sized for a thumb on a phone (48px targets on touch screens, 16px
-   inputs so phones don't zoom in on them), a bit denser for a mouse. */
+/* Calm and roomy: boxes on a tinted page, one blue for what you do, stamp red only for what can cost you. Typed values
+   (addresses, amounts, data) are mono. Sized for a thumb on a phone (48px targets on touch screens, 16px inputs so
+   phones don't zoom in on them), a bit denser for a mouse.
+
+   A few parts, used the same way everywhere: a box (.card, .slip, .list, .fold, .balances), a list of rows (.list >
+   .item), buttons (plain, .primary, .danger, .quiet, .icon, .pill, .chip), a muted .note, a tinted .callout, and a
+   small uppercase .label over a group. */
 :root {
   color-scheme: light dark;
   --paper: light-dark(#f2f4f8, #0e1120);
   --sheet: light-dark(#ffffff, #181c30);
+  --box: var(--sheet); /* a box's fill: the sheet on the page, the page's tone inside a dialog (which is a sheet) */
   --field: light-dark(#eef0f5, #0f1324);
   --ink: light-dark(#141a31, #e8ebf7);
   --muted: light-dark(#5f6886, #9099b9);
   --rule: light-dark(#e2e5ee, #272d47);
   --pen: light-dark(#2443c4, #8fa4ff);
   --pen-soft: light-dark(#e7ebfb, #212a4f);
-  --on-pen: light-dark(#ffffff, #0e1120);
+  --accent: light-dark(#2443c4, #4a63e8); /* a filled button: in the dark the pen's light blue would look disabled */
   --stamp: light-dark(#c4281c, #ff7a6b);
   --stamp-soft: light-dark(#fdeceb, #3a1c22);
   --warn: light-dark(#9a6200, #f2c14e);
   --ok: light-dark(#1d7a3e, #6fd08c);
   --shade: light-dark(#141a3114, #00000066);
+  --radius: 16px; /* boxes */
+  --round: 12px; /* buttons and fields */
   --tap: 40px; /* the smallest a button gets */
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   -webkit-text-size-adjust: 100%;
 }
 @media (pointer: coarse) { :root { --tap: 48px; } }
+dialog { --box: var(--paper); }
 /* Text is sized in rem, from that 14px, and so are the boxes made to hold it. The iOS app sets the root's size from your
    Dynamic Type setting (ios/PlainWallet: textSize); larger text gets the narrow layout at the end. */
 body { margin: 0; padding: 16px 16px max(16px, env(safe-area-inset-bottom)); min-width: 348px; box-sizing: border-box; background: var(--paper); color: var(--ink); -webkit-tap-highlight-color: transparent; }
@@ -33,54 +41,136 @@ body.app #app { min-height: calc(100dvh - 32px - env(safe-area-inset-bottom)); }
 /* The apps' page, which their window sizes (an extension popup sizes itself to what's in it, which this would rule out),
    and its dialogs, which have a width of their own */
 body.app :is(#app, dialog) { container: app / inline-size; }
-header { display: flex; align-items: center; gap: 2px; }
-header img { width: 28px; height: 28px; margin-inline-end: 8px; border-radius: 8px; }
-header h1 { flex: 1; }
+[hidden] { display: none !important; }
+
+/* Text. Words wrap between words; only typed values (an address, a hash, a site's text) may break anywhere, and they
+   are never cut short with an ellipsis: what you check has to be there in full. */
 h1 { margin: 0; font-size: calc(19rem / 14); font-weight: 700; letter-spacing: -0.02em; }
 h2 { margin: 0; font-size: calc(17rem / 14); font-weight: 700; letter-spacing: -0.01em; }
 h3 { margin: 0; font-size: 1rem; font-weight: 650; }
+h3.label { margin-block: 4px -4px; padding-inline: 4px; font-size: calc(12rem / 14); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
 p { margin: 0; color: var(--muted); }
+.note { font-size: calc(13rem / 14); }
+.lead { text-align: center; }
+.mono, dd, pre { font-family: var(--mono); overflow-wrap: anywhere; }
+.mono { font-size: calc(12rem / 14); }
+/* Addresses, amounts and a site's own text keep their own direction inside a right-to-left page. */
+.mono, dd, pre, input, textarea, .hero { unicode-bidi: plaintext; }
+a { color: var(--pen); }
+.ok { color: var(--ok); }
+.warn { color: var(--warn); }
+.bad, .stamp { color: var(--stamp); }
+.callout { padding: 10px 14px; border-radius: var(--round); background: color-mix(in srgb, currentColor 10%, transparent); }
+.error { padding: 10px 14px; border-radius: var(--round); color: var(--stamp); background: var(--stamp-soft); }
+@media (prefers-reduced-motion: no-preference) { .skeleton, .pending { animation: pulse 1.2s ease-in-out infinite alternate; } }
+@keyframes pulse { to { opacity: 0.4; } }
+.skeleton { border-radius: 4px; background: var(--rule); }
 
+/* Fields */
 label { display: flex; flex-direction: column; gap: 6px; font-size: calc(13rem / 14); font-weight: 500; color: var(--muted); }
-input, select, textarea { width: 100%; box-sizing: border-box; min-height: var(--tap); font: calc(14rem / 14) var(--mono); color: var(--ink); background: var(--field); border: 1px solid transparent; border-radius: 12px; padding: 8px 12px; }
+input, select, textarea { width: 100%; box-sizing: border-box; min-height: var(--tap); padding: 8px 12px; font: calc(14rem / 14) var(--mono); color: var(--ink); background: var(--field); border: 1px solid transparent; border-radius: var(--round); }
 @media (pointer: coarse) { input, select, textarea { font-size: max(16px, 1rem); } }
-select { appearance: none; padding-inline-end: 36px; font-family: inherit; font-weight: 500; text-overflow: ellipsis; cursor: pointer;
+select { appearance: none; padding-inline-end: 36px; font-family: inherit; font-weight: 500; cursor: pointer;
   background: var(--field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a93ad' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 16px; }
 select:dir(rtl) { background-position: left 12px center; }
+textarea { resize: vertical; padding-block: 10px; }
 input[type="password"] { letter-spacing: 0.2em; }
-input[type="checkbox"] { width: 20px; height: 20px; min-height: 0; padding: 0; accent-color: var(--pen); }
-textarea { resize: vertical; padding: 10px 12px; }
+input[type="number"] { appearance: textfield; }
+input::-webkit-inner-spin-button, input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="checkbox"] { flex: none; width: 20px; height: 20px; min-height: 0; margin: 0; padding: 0; accent-color: var(--accent); }
 ::placeholder { color: var(--muted); opacity: 0.7; }
 :focus-visible { outline: 2px solid var(--pen); outline-offset: 2px; }
 :is(input, select, textarea):focus-visible { outline: 0; border-color: var(--pen); box-shadow: 0 0 0 3px var(--pen-soft); }
+.acknowledgment { flex-direction: row; align-items: flex-start; gap: 10px; color: var(--ink); font-weight: 400; }
+/* an on/off switch, in a list row */
+input.switch { appearance: none; position: relative; width: 44px; height: 26px; border-radius: 999px; background: var(--rule); cursor: pointer; }
+input.switch::before { content: ''; position: absolute; inset-block-start: 3px; inset-inline-start: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px #0003; }
+input.switch:checked { background: var(--accent); }
+input.switch:checked::before { inset-inline-start: 21px; }
 
-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: var(--tap); box-sizing: border-box; font: inherit; font-weight: 600; text-align: center; padding: 8px 16px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
-button.primary { color: var(--on-pen); background: var(--pen); border-color: var(--pen); }
+/* Buttons: plain (a choice), .primary (the one thing to do), .danger (what removes something), .quiet (text only, for
+   Back and the actions at a row's end), .icon, and on the home card .pill and .chip */
+button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: var(--tap); box-sizing: border-box; padding: 8px 16px; font: inherit; font-weight: 600; text-align: center; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--round); cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+dialog button:not(.primary, .danger, .quiet, .icon) { background: var(--box); }
+button.primary { color: #fff; background: var(--accent); border-color: var(--accent); }
 button.danger { color: var(--stamp); border-color: color-mix(in srgb, var(--stamp) 45%, transparent); }
-/* a text button: Back, Remove, Forgot password? */
-button.quiet { width: auto; flex: none; padding: 6px 12px; color: var(--pen); background: none; border-color: transparent; font-size: calc(13rem / 14); }
+button.quiet { width: auto; flex: none; padding: 6px 12px; font-size: calc(13rem / 14); color: var(--pen); background: none; border-color: transparent; }
+button.quiet.danger { color: var(--stamp); }
 button.back { align-self: flex-start; margin-inline-start: -12px; }
-button.back::before { content: ''; width: 7px; height: 7px; border: solid currentColor; border-width: 0 0 2px 2px; transform: rotate(45deg); }
-button.back:dir(rtl)::before { transform: rotate(-135deg); }
+button.back::before, .chevron { content: ''; flex: none; width: 6px; height: 6px; border: solid currentColor; border-width: 0 2px 2px 0; }
+button.back::before { transform: rotate(135deg); }
+button.back:dir(rtl)::before { transform: rotate(-45deg); }
 button.icon { flex: none; width: var(--tap); height: var(--tap); padding: 0; color: var(--muted); background: none; border-color: transparent; border-radius: 50%; }
+button svg { flex: none; width: 18px; height: 18px; }
 button.icon svg { width: 20px; height: 20px; }
 button:disabled, button[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+button:active:not(:disabled, [aria-disabled="true"]) { transform: scale(0.97); }
 @media (hover: hover) {
   button:hover:not(:disabled, [aria-disabled="true"]) { border-color: var(--pen); }
-  button:is(.primary, .quiet, .icon):hover:not(:disabled, [aria-disabled="true"]) { border-color: transparent; }
+  button:is(.primary, .quiet, .icon, .pill, .chip, .account):hover:not(:disabled, [aria-disabled="true"]) { border-color: transparent; }
   button.primary:hover:not(:disabled, [aria-disabled="true"]) { filter: brightness(1.1); }
-  button:is(.icon, .quiet):hover:not(:disabled, [aria-disabled="true"]) { color: var(--pen); background: var(--pen-soft); }
+  button:is(.quiet, .icon, .pill, .chip, .account):hover:not(:disabled, [aria-disabled="true"]) { color: var(--pen); background: var(--pen-soft); }
+  button.quiet.danger:hover:not(:disabled, [aria-disabled="true"]) { color: var(--stamp); background: var(--stamp-soft); }
 }
-button:active:not(:disabled, [aria-disabled="true"]) { transform: scale(0.97); }
-@media (prefers-reduced-motion: no-preference) { button { transition: border-color 0.12s, background-color 0.12s, filter 0.12s, opacity 0.2s, transform 0.1s; } }
+@media (prefers-reduced-motion: no-preference) { button, input.switch, input.switch::before { transition: border-color 0.12s, background-color 0.12s, filter 0.12s, opacity 0.2s, transform 0.1s, inset-inline-start 0.15s; } }
+
+/* Layout */
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.row > button:not(.quiet, .icon) { flex: 1 1 0; } /* side by side while their labels fit, else one under the other */
+.row > select { flex: 1; min-width: 0; width: 0; } /* a long label stays inside, not widening the page */
+.dialog-content { display: flex; flex-direction: column; gap: 12px; }
+header { display: flex; align-items: center; gap: 4px; }
+header img { width: 28px; height: 28px; margin-inline-end: 8px; border-radius: 8px; }
+header h1 { flex: 1; }
+/* An approval's Reject and Approve: kept in view at the bottom while you scroll through what you're approving */
+.bar { position: sticky; bottom: 0; z-index: 1; margin-top: auto; flex-wrap: nowrap; padding-block: 16px max(4px, env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 14px); }
+
+/* Boxes */
+:is(.card, .slip, .list, .fold, .balances) { box-sizing: border-box; background: var(--box); border: 1px solid var(--rule); border-radius: var(--radius); }
+.slip { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; }
+.slip strong { font-size: calc(15rem / 14); line-height: 1.35; overflow-wrap: anywhere; }
+.slip :is(pre, .note) { padding-top: 10px; border-top: 1px solid var(--rule); } /* the wallet's rows above, the rest below */
+dl { display: grid; grid-template-columns: fit-content(42%) 1fr; gap: 8px 12px; margin: 0; }
+dt { font-size: calc(12rem / 14); color: var(--muted); overflow-wrap: anywhere; }
+dd { margin: 0; font-size: calc(12rem / 14); max-height: calc(110rem / 14); overflow: auto; }
+pre { margin: 0; font-size: calc(12rem / 14); line-height: 1.5; white-space: pre-wrap; max-height: calc(260rem / 14); overflow: auto; }
+
+/* A list: rows split by rules. A row is a title over a muted line, the whole row a button when it picks or opens
+   something (the picked one checked, one that opens a page with a chevron), with maybe its own button at the end. */
+.list { display: flex; flex-direction: column; overflow: hidden; }
+.list > * + * { border-top: 1px solid var(--rule); }
+.list > .note { padding: 14px 16px; }
+.item { display: flex; align-items: center; }
+.item > .main { display: flex; flex: 1; align-items: center; justify-content: flex-start; gap: 12px; min-width: 0; min-height: calc(var(--tap) + 8px); padding: 10px 16px; text-align: start; font-weight: 600; background: none; border: 0; border-radius: 0; }
+.item > :not(.main) { margin-inline-end: 6px; }
+.text { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.text strong { overflow-wrap: anywhere; }
+.text strong.mono { font-size: calc(13rem / 14); }
+.text > span { font-size: calc(12rem / 14); font-weight: 400; color: var(--muted); overflow-wrap: anywhere; }
+.item > .main > svg { color: var(--pen); }
+.item > .main[aria-pressed="true"] strong { color: var(--pen); }
+.main.nav::after { content: ''; flex: none; width: 7px; height: 7px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(-45deg); }
+.main.nav:dir(rtl)::after { transform: rotate(135deg); }
+@media (hover: hover) { .item:has(> button.main:hover) { background: var(--pen-soft); } }
+.item.toggle { flex-direction: row; justify-content: space-between; gap: 12px; min-height: calc(var(--tap) + 8px); padding: 6px 16px; box-sizing: border-box; font-size: 1rem; color: var(--ink); cursor: pointer; }
+
+/* Checks on a request: one line each, the details folding out under a chevron */
+.fold { padding: 10px 14px; font-size: calc(13rem / 14); }
+.fold summary { display: flex; align-items: center; gap: 6px; min-height: 28px; list-style: none; cursor: pointer; color: var(--muted); }
+.fold summary::-webkit-details-marker { display: none; }
+.fold summary > span { flex: 1; font: calc(12rem / 14) var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+.fold summary > span.skeleton { flex: 0 0 calc(96rem / 14); height: calc(12rem / 14); }
+.fold summary::after { content: ''; flex: none; width: 7px; height: 7px; margin-block: 0 3px; margin-inline: auto 2px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.fold[open] summary::after { margin-bottom: -3px; transform: rotate(-135deg); }
+.fold[open] summary { margin-bottom: 10px; }
+@media (prefers-reduced-motion: no-preference) { .fold summary::after { transition: transform 0.15s; } }
 
 /* Dialogs: a card in the middle on a wide screen, a sheet up from the bottom on a phone (or in the toolbar popup) */
 dialog { box-sizing: border-box; width: 420px; max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); padding: 0 20px 20px; color: var(--ink); background: var(--sheet); border: 0; border-radius: 20px; box-shadow: 0 24px 64px var(--shade); overscroll-behavior: contain; }
 dialog[open] { display: flex; flex-direction: column; gap: 14px; }
 dialog::backdrop { background: #0a0d1a8c; }
 /* the title and its close button, staying put while the rest scrolls */
-.sheet-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; margin-inline: -20px; padding: 14px 10px 6px 20px; background: var(--sheet); }
-.sheet-head:dir(rtl) { padding: 14px 20px 6px 10px; }
+.sheet-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; margin-inline: -20px; padding-block: 14px 6px; padding-inline: 20px 10px; background: var(--sheet); }
 .sheet-head h2 { flex: 1; }
 @media (max-width: 560px) {
   dialog { width: 100%; max-width: 100%; margin: auto 0 0; max-height: calc(100dvh - max(24px, env(safe-area-inset-top))); padding-bottom: max(20px, env(safe-area-inset-bottom)); border-radius: 20px 20px 0 0; }
@@ -89,99 +179,58 @@ dialog::backdrop { background: #0a0d1a8c; }
     @starting-style { dialog[open] { transform: translateY(40%); } }
   }
 }
-.acknowledgment { flex-direction: row; align-items: flex-start; gap: 10px; color: var(--ink); font-weight: 400; }
-.acknowledgment input { flex: none; margin: 0; }
 
-[hidden] { display: none !important; }
-.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.row > button:not(.quiet, .icon) { flex: 1 1 0; } /* side by side while their labels fit, else one under the other */
-.row > select { flex: 1; min-width: 0; width: 0; } /* a long label stays inside, not widening the page */
-.dialog-content { display: flex; flex-direction: column; gap: 12px; }
-.row > span { flex: 1; overflow-wrap: anywhere; }
-.mono { font: calc(12rem / 14) var(--mono); overflow-wrap: anywhere; }
-/* Addresses, amounts and a site's own text keep their own direction inside a right-to-left page. */
-.mono, dd, pre, input, textarea, .hero { unicode-bidi: plaintext; }
-a { color: var(--pen); }
-.error { color: var(--stamp); background: var(--stamp-soft); border-radius: 12px; padding: 10px 14px; }
+/* Before the wallet is open: its mark and name, then what to do */
+.brand { display: flex; flex-direction: column; align-items: center; gap: 12px; padding-block: 28px 8px; }
+.brand img { width: 64px; height: 64px; border-radius: 16px; box-shadow: 0 8px 24px var(--shade); }
+.brand h1 { font-size: calc(22rem / 14); }
+/* a seed phrase: numbered words, three to a row */
+ol { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; padding: 0; list-style-position: inside; font: calc(14rem / 14) var(--mono); }
+li { padding: 8px 10px; background: var(--box); border: 1px solid var(--rule); border-radius: 10px; overflow-wrap: anywhere; }
+li::marker { color: var(--muted); font-size: calc(11rem / 14); }
 
-/* An approval's Reject and Approve: kept in view at the bottom while you scroll through what you're approving */
-.bar { position: sticky; bottom: 0; z-index: 1; margin-top: auto; flex-wrap: nowrap; padding-block: 16px max(4px, env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 14px); }
-
-/* the home screen: the account, its coin and what you can do with it */
-.card { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 20px; box-shadow: 0 1px 2px var(--shade); }
-/* as wide as the chosen name, so the chevron and the edit button sit right after it */
-.row > select:is(.pill, .title) { flex: 0 1 auto; width: auto; field-sizing: content; }
-.row > select.pill { min-height: 34px; padding: 4px 32px 4px 12px; font-size: calc(13rem / 14); font-weight: 600; color: var(--pen); background-color: var(--pen-soft); border-radius: 999px; }
-.row > select.pill:dir(rtl) { padding: 4px 12px 4px 32px; }
-@media (pointer: coarse) { .row > select.pill { min-height: 40px; } }
-.row > select.title { padding-inline-start: 0; font-size: calc(17rem / 14); font-weight: 700; background-color: transparent; }
-.card .address { gap: 0; margin-top: -8px; }
-.card .address .mono { flex: 1; color: var(--muted); font-size: calc(13rem / 14); }
-.hero { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-block: 2px 6px; font-size: calc(34rem / 14); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.hero > :last-child { font-size: calc(17rem / 14); font-weight: 600; letter-spacing: 0; color: var(--muted); }
-.hero .skeleton { width: calc(140rem / 14); height: calc(32rem / 14); border-radius: 8px; background: var(--rule); }
-.actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 4px; }
-.actions button { flex-direction: column; gap: 6px; min-height: 0; padding: 4px 2px; font-size: calc(12rem / 14); color: var(--ink); background: none; border: 0; }
-.actions button.primary { color: var(--ink); background: none; filter: none; }
-.actions svg { box-sizing: border-box; width: 48px; height: 48px; padding: 13px; border-radius: 50%; color: var(--pen); background: var(--pen-soft); }
-.actions .primary svg { color: var(--on-pen); background: var(--pen); }
-@media (hover: hover) { .actions button:hover:not(:disabled) svg { filter: brightness(1.08); } }
-
-/* a list of buttons that open something (Settings): one card, a row each */
-.menu { display: flex; flex-direction: column; border: 1px solid var(--rule); border-radius: 14px; overflow: hidden; }
-.menu button { justify-content: space-between; min-height: calc(var(--tap) + 4px); text-align: start; border: 0; border-radius: 0; background: none; font-weight: 500; }
-.menu button + button { border-top: 1px solid var(--rule); }
-.menu button::after { content: ''; flex: none; width: 7px; height: 7px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(-45deg); }
-.menu button:dir(rtl)::after { transform: rotate(135deg); }
-@media (hover: hover) { .menu button:hover:not(:disabled) { background: var(--pen-soft); } }
-
-/* the thing you are about to sign */
-.slip { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 16px; }
-dialog .slip { background: var(--paper); border-color: transparent; }
-.slip strong { font-size: calc(15rem / 14); line-height: 1.35; overflow-wrap: anywhere; }
-.stamp { color: var(--stamp); }
-dl { display: grid; grid-template-columns: fit-content(42%) 1fr; gap: 8px 12px; margin: 0; }
-dt { font-size: calc(12rem / 14); color: var(--muted); overflow-wrap: anywhere; }
-dd { margin: 0; font: calc(12rem / 14) var(--mono); overflow-wrap: anywhere; max-height: calc(110rem / 14); overflow: auto; }
-.slip pre { border-top: 1px solid var(--rule); padding-top: 10px; } /* wallet's rows above, the dapp's text below */
-pre { margin: 0; font: calc(12rem / 14)/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; max-height: calc(260rem / 14); overflow: auto; }
-
-.balances { grid-template-columns: 1fr auto; row-gap: 16px; padding: 16px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 20px; }
+/* Home, top to bottom: the account and the wallet's own buttons; the network, the balance on it, the address and what
+   to do with them, centered on one card; the tokens under it */
+button.account { flex: 1; justify-content: flex-start; width: auto; min-width: 0; gap: 8px; margin-inline-start: -12px; padding: 4px 12px; font-size: calc(17rem / 14); font-weight: 700; background: none; border-color: transparent; border-radius: 999px; }
+button.account strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } /* your own nickname; the address is in its title */
+.chevron { margin-block-end: 3px; transform: rotate(45deg); opacity: 0.6; }
+.tag { flex: none; padding: 2px 8px; font-size: calc(11rem / 14); font-weight: 600; color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); border-radius: 999px; }
+.card { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 16px 16px; text-align: center; border-radius: 24px; box-shadow: 0 1px 2px var(--shade), 0 12px 32px -16px var(--shade); }
+button:is(.pill, .chip) { width: auto; max-width: 100%; min-height: 32px; gap: 8px; padding: 4px 14px; font-size: calc(13rem / 14); white-space: nowrap; border: 0; border-radius: 999px; }
+@media (pointer: coarse) { button:is(.pill, .chip) { min-height: 40px; } }
+button.pill { color: var(--pen); background: var(--pen-soft); }
+button.chip { font-weight: 500; color: var(--muted); background: var(--paper); }
+.chip .mono { overflow-wrap: normal; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+/* the card's whole width, so it isn't shrunk to fit (Firefox would then break the symbol between letters); only a
+   number too long for the line breaks, never the symbol */
+.hero { display: flex; align-self: stretch; justify-content: center; align-items: baseline; gap: 8px; margin-top: 6px; font-size: calc(36rem / 14); font-weight: 700; line-height: 1.1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.hero > :first-child { min-width: 0; overflow-wrap: anywhere; }
+.hero > :last-child { flex: none; white-space: nowrap; font-size: calc(18rem / 14); font-weight: 600; letter-spacing: 0; color: var(--muted); }
+.hero .skeleton { width: calc(150rem / 14); height: calc(36rem / 14); border-radius: 10px; }
+.card .actions { align-self: stretch; margin-top: 8px; flex-wrap: nowrap; }
+.tokens { display: flex; flex-direction: column; gap: 8px; }
+.section-head { display: flex; align-items: center; justify-content: space-between; margin-block-end: -6px; }
+.section-head h3.label { margin: 0; }
+.tokens > .note { padding: 16px; text-align: center; border: 1px dashed var(--rule); border-radius: var(--radius); }
+.balances { grid-template-columns: 1fr auto; align-items: center; row-gap: 14px; padding: 14px 16px; }
 .balances dt { font-size: calc(14rem / 14); font-weight: 600; color: var(--ink); }
 /* at the row's far end in either direction: a number's own (plaintext) direction would put text-align: end on the
    right in Arabic too, beside its symbol */
-.balances dd { font-size: calc(14rem / 14); text-align: end; justify-self: end; font-variant-numeric: tabular-nums; }
-dd.skeleton { width: calc(64rem / 14); height: calc(13rem / 14); margin-block: calc(3rem / 14); border-radius: 4px; background: var(--rule); }
-/* checks on a request: one line each, the details folding out under a chevron */
-.fold { padding: 10px 14px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 14px; font-size: calc(13rem / 14); }
-dialog .fold { background: none; }
-.fold summary { display: flex; align-items: center; gap: 6px; min-height: 28px; list-style: none; cursor: pointer; color: var(--muted); }
-.fold summary::-webkit-details-marker { display: none; }
-.fold summary > span { flex: 1; font: calc(12rem / 14) var(--mono); color: var(--ink); overflow-wrap: anywhere; }
-.fold summary > span.skeleton { flex: 0 0 calc(96rem / 14); height: calc(12rem / 14); border-radius: 4px; background: var(--rule); }
-.fold summary::after { content: ''; flex: none; width: 7px; height: 7px; margin-block: 0 3px; margin-inline: auto 2px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(45deg); }
-.fold[open] summary::after { margin-bottom: -3px; transform: rotate(-135deg); }
-.fold[open] summary { margin-bottom: 10px; }
-@media (prefers-reduced-motion: no-preference) { .fold summary::after { transition: transform 0.15s; } }
-/* how likely the bad thing is */
-.ok { color: var(--ok); }
-.warn { color: var(--warn); }
-.bad { color: var(--stamp); }
-@media (prefers-reduced-motion: no-preference) { .skeleton, .pending { animation: pulse 1.2s ease-in-out infinite alternate; } }
-@keyframes pulse { to { opacity: 0.4; } }
-
-/* a seed phrase: numbered words, three to a row */
-ol { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; padding: 0; list-style-position: inside; font: calc(14rem / 14) var(--mono); }
-li { padding: 8px 10px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; overflow-wrap: anywhere; }
-dialog li { background: var(--paper); }
-li::marker { color: var(--muted); font-size: calc(11rem / 14); }
+.balances dd { justify-self: end; font-size: calc(14rem / 14); text-align: end; font-variant-numeric: tabular-nums; }
+dd.skeleton { width: calc(64rem / 14); height: calc(13rem / 14); margin-block: calc(3rem / 14); }
+/* who is asking, over an approval */
+.site { align-self: flex-start; max-width: 100%; box-sizing: border-box; padding: 6px 14px; font-size: calc(13rem / 14); color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius); }
+/* Settings' last line: each part kept whole, the parts wrapping as a whole */
+.about { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 14px; font-size: calc(13rem / 14); }
+.about > * { white-space: nowrap; }
 
 /* Android app: sites starred in its browser, as launcher tiles above the balances */
 .favorites { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
 .favorites button { flex-direction: column; gap: 6px; min-width: 0; min-height: 0; padding: 8px 4px; font-size: calc(12rem / 14); font-weight: 500; background: none; border-color: transparent; }
 .favorites button > span:first-child { display: grid; place-items: center; width: calc(44rem / 14); height: calc(44rem / 14); border-radius: 14px; color: var(--pen); background: var(--pen-soft); font-size: calc(17rem / 14); font-weight: 700; }
 .favorites button > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.favorites p { grid-column: 1 / -1; padding: 12px; text-align: center; border: 1px dashed var(--rule); border-radius: 14px; }
+.favorites p { grid-column: 1 / -1; padding: 12px; text-align: center; border: 1px dashed var(--rule); border-radius: var(--radius); }
 .favorites img { width: calc(44rem / 14); height: calc(44rem / 14); border-radius: 14px; }
 
 /* The home screen's wallet (main.ts: home): just the next rows on a narrow screen. On a wide one (a tablet, an

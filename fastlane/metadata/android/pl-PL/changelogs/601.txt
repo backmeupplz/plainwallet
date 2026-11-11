@@ -1,0 +1,1 @@
+Portfel w nowym wyglądzie: konto na górze, saldo na pierwszym planie na jednej karcie z Wyślij i Transakcje, a tokeny pod spodem. Konta i sieci zmieniasz z przejrzystej listy, na telefonie okna wysuwają się od dołu, przyciski są większe pod kciuk, a Zatwierdź i Odrzuć zostają na dole ekranu.

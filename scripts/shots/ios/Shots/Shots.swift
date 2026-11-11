@@ -118,9 +118,8 @@ final class Shots: XCTestCase {
         XCTAssert(starred.allSatisfy(favorite), "favorites")
         save("1")
 
-        // Sending
-        let buttons = web.buttons
-        buttons.element(boundBy: buttons.count - 1).tap()
+        // Sending (Send and Close by their labels in this language, from ios.sh)
+        wait(web.buttons[env["SHOTS_SEND"]!].firstMatch, "Send").tap()
         sleep(2)
         save("4-empty")
         let fields = web.textFields
@@ -132,7 +131,7 @@ final class Shots: XCTestCase {
             web.staticTexts.firstMatch.tap()
         }
         save("4")
-        web.buttons.allElementsBoundByIndex.max { $0.frame.minY < $1.frame.minY }!.tap() // close: the sheet's lowest button
+        wait(web.buttons[env["SHOTS_CLOSE"]!].firstMatch, "Close").tap()
         sleep(1)
 
         // A permit a site asks for

@@ -32,8 +32,12 @@ const groups = [
 ]
 const source = await readFile(new URL('./entrypoints/popup/main.ts', import.meta.url), 'utf8')
 const code = stripTypeScriptTypes(source.slice(source.indexOf('async function accountDialog('), source.indexOf('function nicknameDialog(')))
-const accountDialog = new Function('h', 'modal', 'accountGroups', 'isUnlocked', 'newMnemonic', 'addWallet', 'addDerivedAccount', 'removeAccount', 'removeSeedGroup', 'secretBox', 'parseSecret', 'parseAddress', 'watchNote', 't', 'tn', code + '; return accountDialog')(
-  h, modal, async () => groups, async () => unlocked,
+// The list helpers, as main.ts draws them: a row's title (a button when it does something), its detail and end button.
+const item = ({ title, sub = [], onclick, end }) => h('div', {}, onclick ? h('button', { onclick }, title) : h('span', {}, title, ...sub), ...(end ? [end] : []))
+const list = (...items) => h('div', {}, ...items)
+const menu = (...entries) => list(...entries.map(([title, onclick]) => item({ title, onclick })))
+const accountDialog = new Function('h', 'list', 'item', 'menu', 'modal', 'accountGroups', 'isUnlocked', 'newMnemonic', 'addWallet', 'addDerivedAccount', 'removeAccount', 'removeSeedGroup', 'secretBox', 'parseSecret', 'parseAddress', 'watchNote', 't', 'tn', code + '; return accountDialog')(
+  h, list, item, menu, modal, async () => groups, async () => unlocked,
   () => { generation++; return Array(12).fill('synthetic').join(' ') },
   async (s) => calls.push(['add', s]), async (...args) => calls.push(['derive', ...args]),
   async (...args) => calls.push(['remove', ...args]), async (...args) => calls.push(['group', ...args]),

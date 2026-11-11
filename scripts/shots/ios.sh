@@ -24,6 +24,8 @@ xcrun simctl boot "$sim" 2>/dev/null
 xcrun simctl bootstatus "$sim" -b >/dev/null
 xcrun simctl spawn "$sim" defaults write -g AppleKeyboards -array 'en_US@sw=QWERTY;hw=Automatic'  # see Shots.swift
 xcrun simctl status_bar "$sim" override --time 9:41 --batteryState charged --batteryLevel 100 --cellularMode active --cellularBars 4 --wifiBars 3 --dataNetwork wifi
+# word <language> <English>: the app's own words in that language (locales/), English where it has no table
+word() { python3 -c 'import json, os, sys; p = f"locales/{sys.argv[1]}.json"; print((json.load(open(p)) if os.path.exists(p) else {}).get(sys.argv[2], sys.argv[2]))' "$1" "$2"; }
 failed=()
 for lang in "${langs[@]}"; do
   out="$raw/$target/$lang"
@@ -32,11 +34,13 @@ for lang in "${langs[@]}"; do
   for attempt in 1 2; do
     xcrun simctl uninstall "$sim" com.borodutch.plainwallet 2>/dev/null
     xcrun simctl install "$sim" "$app"
-    if TEST_RUNNER_SHOTS_LANG=$lang TEST_RUNNER_SHOTS_DIR=$(cd "$out" && pwd) TEST_RUNNER_SHOTS_ONLY=${SHOTS_ONLY:-} xcodebuild test -project scripts/shots/ios/Shots.xcodeproj -scheme Shots \
+    # Send and Close by their labels in this language: the test can't see the page's classes
+    if TEST_RUNNER_SHOTS_LANG=$lang TEST_RUNNER_SHOTS_DIR=$(cd "$out" && pwd) TEST_RUNNER_SHOTS_ONLY=${SHOTS_ONLY:-} \
+        TEST_RUNNER_SHOTS_SEND="$(word "$lang" Send)" TEST_RUNNER_SHOTS_CLOSE="$(word "$lang" Close)" xcodebuild test -project scripts/shots/ios/Shots.xcodeproj -scheme Shots \
         -destination "id=$sim" -derivedDataPath "$build/ui-$sim" -collect-test-diagnostics never > "$out/test.log" 2>&1; then
       # the app was in this language: the test tapped the button with its translation of "Generate seed phrase" (which
       # tells the two Chinese apart, though not en/en-GB, es/es-419 or pt-BR/pt-PT)
-      button=$(python3 -c 'import json, os, sys; p = f"locales/{sys.argv[1]}.json"; print((json.load(open(p)) if os.path.exists(p) else {}).get("Generate seed phrase", "Generate seed phrase"))' "$lang")
+      button=$(word "$lang" "Generate seed phrase")
       grep -qF "\"$button\" Button" "$out/test.log" && { ok=1; break; }
       echo "$lang: attempt $attempt failed: the app isn't in $lang (no \"$button\" button)"
       continue

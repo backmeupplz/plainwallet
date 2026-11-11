@@ -1,0 +1,1 @@
+Un portefeuille repensé : votre compte en haut, votre solde en avant sur une carte avec Envoyer et Transactions, et vos jetons en dessous. Comptes et réseaux se changent depuis une liste claire, sur téléphone les fenêtres glissent depuis le bas, les boutons sont plus grands pour le pouce, et Approuver et Refuser restent en bas de l’écran.

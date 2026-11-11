@@ -1,0 +1,1 @@
+Ví được thiết kế lại: tài khoản ở trên cùng, số dư nổi bật trên một thẻ cùng Gửi và Giao dịch, và token của bạn ở bên dưới. Đổi tài khoản và mạng từ một danh sách rõ ràng, trên điện thoại hộp thoại trượt lên từ dưới, nút to hơn cho ngón cái, còn Phê duyệt và Từ chối luôn ở cuối màn hình.

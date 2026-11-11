@@ -1,0 +1,1 @@
+A redesigned wallet: your account at the top, your balance up front on one card with Send and Transactions, and your tokens listed below it. Accounts and networks switch from a clear list, dialogs slide up from the bottom on phones, buttons are bigger for your thumb, and Approve and Reject stay at the bottom of the screen.

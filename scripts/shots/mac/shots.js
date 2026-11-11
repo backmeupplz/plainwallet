@@ -52,7 +52,7 @@
     ;(await primary('create button')).click()
     await until('balances', () => document.querySelector('dl.balances[aria-busy=false]'))
     await shot('1')
-    visible().at(-1).click() // Send
+    document.querySelector('.wallet button.primary').click() // Send
     const f = await until('send form', () => { const f = [...document.querySelectorAll('dialog input')].filter((i) => i.offsetParent); return f.length >= 2 && f })
     fill(f.at(-2), '0x8ba1f109551bD432803012645Ac136ddd64DBA72')
     fill(f.at(-1), '0.25')

@@ -59,6 +59,29 @@ const field = (label: string, props: Record<string, unknown> = {}) => {
   const input = h('input', props)
   return { input, el: h('label', {}, label, input) }
 }
+/** A box for keys, codes and signatures: no spellcheck (browsers' cloud spellcheck would upload it), autocorrect or capitals. */
+function codeBox(props: Record<string, unknown> = {}) {
+  const box = h('textarea', { rows: 3, spellcheck: false, autocomplete: 'off', autocapitalize: 'off', ...props })
+  box.setAttribute('autocorrect', 'off') // not a property: phone keyboards read the attribute
+  return box
+}
+/** A row of a list (accounts, networks, settings, tokens, sites): a title over a line of detail, and maybe a button of
+ * its own at the end. With `onclick` the row is a button: `chosen` marks the picked one, `nav` that it opens a page. */
+function item({ title, sub = [], mono = false, onclick, chosen, nav = false, end }:
+  { title: string; sub?: (string | Node)[]; mono?: boolean; onclick?: () => unknown; chosen?: boolean; nav?: boolean; end?: Node }) {
+  const text = h('span', { className: 'text' }, h('strong', { className: mono ? 'mono' : '' }, title), ...(sub.length ? [h('span', {}, ...sub)] : []))
+  const main = onclick
+    ? h('button', { className: nav ? 'main nav' : 'main', onclick, ...(chosen !== undefined && { ariaPressed: String(chosen) }) }, text, ...(chosen ? [icon(icons.check)] : []))
+    : h('div', { className: 'main' }, text)
+  return h('div', { className: 'item' }, main, ...(end ? [end] : []))
+}
+const list = (...items: Node[]) => h('div', { className: 'list' }, ...items)
+/** A list of pages to open (Settings, the ways to add a wallet), each row with a chevron. */
+const menu = (...entries: [label: string, open: () => unknown][]) => list(...entries.map(([title, onclick]) => item({ title, onclick, nav: true })))
+/** A consent button (Approve, Send, Sign…), armed against stray taps. */
+const consent = (label: string, onclick: () => unknown) => armed(h('button', { className: 'primary', onclick }, label))
+/** A decision: going back (or rejecting) at the start, going ahead at the end. */
+const decide = (label: string, back: () => unknown, ahead: Node) => h('div', { className: 'row' }, h('button', { onclick: back }, label), ahead)
 /** Runs a UI action, surfaces its error, redraws. */
 const act = (fn: () => unknown) => async () => {
   error = ''
@@ -85,7 +108,6 @@ const icons = {
   history: 'M12 7v5l3 2 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
   close: 'M6 6l12 12 M18 6L6 18',
   send: 'M12 19V5 M5 12l7-7 7 7',
-  tokens: 'M9 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z M15.5 9.5a6 6 0 1 1-6 12.3',
   transactions: 'M7 20V4 M3 8l4-4 4 4 M17 4v16 M21 16l-4 4-4-4',
 }
 function icon(path: string) {
@@ -101,23 +123,26 @@ function iconButton(label: string, path: string, open: () => unknown) {
     try { await open() } catch (e) { error = shown(e); await render() }
   } }, icon(path))
 }
-const header = (...actions: Node[]) => h('header', {},
-  h('img', { src: '/icon/32.png', width: 22, height: 22, alt: '' }), h('h1', {}, 'Plain Wallet'),
-  ...(view !== 'sidebar' && (sidebar || browser.sidePanel?.open) ? [iconButton(t('Open in sidebar'), 'M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z M9 3v18', async () => {
+/** The extension's other places to show the wallet: the browser's sidebar and a tab (the apps are a page already). */
+const elsewhere = (): [label: string, open: () => unknown][] => document.body.classList.contains('app') ? [] : [
+  ...(view !== 'sidebar' && (sidebar || browser.sidePanel?.open) ? [[t('Open in sidebar'), async () => {
     // Call directly from the click handler: opening a sidebar requires a user gesture.
     await (sidebar ? sidebar.open() : browser.sidePanel.open({ windowId: currentWindowId! }))
     closePopup()
-  })] : []),
-  ...(view !== 'tab' ? [iconButton(t('Open in tab'), 'M14 3h7v7 M21 3l-10 10 M10 3H4a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-6',
-    () => openTab(browser.runtime.getURL('/popup.html') + '?view=tab'))] : []),
-  ...actions)
-/** Copies and says so on the button itself. */
-const copy = (text: string) => (e: Event) => {
-  const button = e.currentTarget as HTMLElement
-  const label = button.textContent
-  navigator.clipboard.writeText(text)
-  button.textContent = t('Copied')
-  setTimeout(() => (button.textContent = label), 1200)
+  }] as [string, () => unknown]] : []),
+  ...(view !== 'tab' ? [[t('Open in tab'), () => openTab(browser.runtime.getURL('/popup.html') + '?view=tab')] as [string, () => unknown]] : []),
+]
+const header = (...actions: Node[]) => h('header', {},
+  h('img', { src: '/icon/32.png', width: 22, height: 22, alt: '' }), h('h1', {}, 'Plain Wallet'), ...actions)
+/** The wallet's name and mark, large, over the screens before it is open. */
+const brand = () => h('div', { className: 'brand' }, h('img', { src: '/icon/128.png', width: 64, height: 64, alt: '' }), h('h1', {}, 'Plain Wallet'))
+/** Copies and says so on the button itself, or on `label` inside it. */
+const copy = (text: string, label?: HTMLElement) => (e: Event) => {
+  const said = label ?? (e.currentTarget as HTMLElement)
+  const before = said.textContent
+  void navigator.clipboard.writeText(text)
+  said.textContent = t('Copied')
+  setTimeout(() => (said.textContent = before), 1200)
 }
 const saveFile = (text: string, name: string) => {
   const a = h('a', { href: URL.createObjectURL(new Blob([text], { type: 'text/plain' })), download: name })
@@ -157,9 +182,7 @@ const armed = (button: HTMLButtonElement) => {
 
 /** A seed phrase / private key box that lowercases what you type and says, as you go, what's missing or wrong. */
 function secretBox(changed: () => void = () => {}) {
-  // spellcheck off: browsers' cloud ("enhanced") spellcheck would otherwise upload whatever is typed here
-  const input = h('textarea', { rows: 3, placeholder: t('Seed phrase or private key'), spellcheck: false, autocomplete: 'off', autocapitalize: 'off' })
-  input.setAttribute('autocorrect', 'off') // not a property: phone keyboards read the attribute
+  const input = codeBox({ placeholder: t('Seed phrase or private key') })
   const note = h('p', { ariaLive: 'polite' })
   let ok = false
   input.oninput = () => {
@@ -179,7 +202,7 @@ function secretBox(changed: () => void = () => {}) {
 
 function walletForm(first: boolean) {
   if (!walletMode) return [
-    h('p', {}, first ? t('How would you like to get started?') : t('How would you like to add a wallet?')),
+    h('p', { className: 'lead' }, first ? t('How would you like to get started?') : t('How would you like to add a wallet?')),
     h('button', { className: 'primary', onclick: act(() => (walletMode = 'generate')) }, t('Generate new wallet')),
     h('button', { onclick: act(() => (walletMode = 'import')) }, t('Enter seed phrase or private key')),
     h('button', { onclick: act(() => (walletMode = 'watch')) }, t('Watch an address, sign on another device')),
@@ -238,7 +261,7 @@ const seedScreen = () => [
 /** `waiting`: the site whose request opened this window, so it's clear why the password is needed. */
 function unlockScreen(waiting?: Pending) {
   const { section, form } = unlockForm(unlock, async () => { error = ''; await render(() => form.isConnected) })
-  return [header(), ...(waiting ? [h('p', {}, t('{site} is waiting for your approval. Unlock to review it.', { site: waiting.origin }))] : []),
+  return [brand(), ...(waiting ? [h('p', { className: 'lead' }, t('{site} is waiting for your approval. Unlock to review it.', { site: waiting.origin }))] : []),
     section, ...extras.unlock(),
     h('button', { className: 'quiet', onclick: resetDialog }, t('Forgot password?'))]
 }
@@ -257,7 +280,7 @@ function resetDialog() {
   acknowledgment.onchange = confirmation.input.oninput = () => (remove.disabled = !acknowledgment.checked || confirmation.input.value !== 'RESET')
   dialog.setAttribute('aria-describedby', warning.id)
   content.append(warning,
-    h('p', { className: 'stamp' }, t('Resetting permanently deletes all wallets, seed phrases and private keys stored in Plain Wallet on this device, as well as connected sites and network settings. This cannot be undone.')),
+    h('p', { className: 'callout stamp' }, t('Resetting permanently deletes all wallets, seed phrases and private keys stored in Plain Wallet on this device, as well as connected sites and network settings. This cannot be undone.')),
     h('p', {}, t('You can only restore your wallets with seed phrases or private keys you backed up elsewhere.')),
     h('label', { className: 'acknowledgment' }, acknowledgment, t('I understand that all stored wallets will be permanently deleted and may be lost forever without a backup.')),
     confirmation.el, remove)
@@ -265,6 +288,9 @@ function resetDialog() {
 
 type Row = [label: string, value: string | Node]
 const rowList = (rows: Row[]) => h('dl', {}, ...rows.flatMap(([label, value]) => [h('dt', {}, label), h('dd', {}, value)]))
+/** What is about to be signed or sent: a line saying what it does, then its rows, then anything more. */
+const slip = (lead: string | Node | undefined, rows: Row[], ...more: Node[]) =>
+  h('div', { className: 'slip' }, ...(lead ? [typeof lead === 'string' ? h('strong', {}, lead) : lead] : []), rowList(rows), ...more)
 // Nested data as dotted rows. The prefix keeps dapp-chosen field names from posing as the wallet's own rows.
 const flatten = (value: unknown, path: string): Row[] =>
   value !== null && typeof value === 'object' ? Object.entries(value).flatMap(([k, v]) => flatten(v, `${path}.${k}`)) : [[path, String(value)]]
@@ -274,7 +300,7 @@ const percent = (n: number) => `${Math.round(n * 100)}%`
 const WARN = 0.3
 const risk = (label: string, p: number) => h('span', { className: p >= 0.5 ? 'bad' : p >= WARN ? 'warn' : 'ok' }, `${label} ${percent(p)}`)
 
-type Fold = { summary: (Node | string)[]; rows: [string, Node | string][]; note?: string }
+type Fold = { summary: (Node | string)[]; rows: Row[]; note?: string }
 /** One line that folds out into rows: filled in when `content` arrives, dropped if there turns out to be nothing to say. */
 function foldLine(label: string, content: Promise<Fold | undefined>) {
   const result = h('span', { className: 'skeleton' })
@@ -283,8 +309,8 @@ function foldLine(label: string, content: Promise<Fold | undefined>) {
   void content.then((c) => {
     if (!c) return line.remove()
     result.replaceWith(h('span', {}, ...c.summary))
-    if (c.rows.length) more.append(h('dl', {}, ...c.rows.flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)])))
-    if (c.note) more.append(h('p', {}, c.note))
+    if (c.rows.length) more.append(rowList(c.rows))
+    if (c.note) more.append(h('p', { className: 'note' }, c.note))
     line.ariaBusy = 'false'
   }, () => line.remove())
   return line
@@ -380,19 +406,20 @@ function sitePanel(p: Pending) {
 }
 
 /** What the slip says: labelled rows for structured requests, free text for messages. */
-function describe(p: Pending): { title: string; rows?: Row[]; text?: string } {
+/** `text`: the site's own words, shown as they are; `note`: the wallet's, about what approving means. */
+function describe(p: Pending): { title: string; rows?: Row[]; text?: string; note?: string } {
   const d = p.detail
   try {
     switch (p.method) {
       case 'eth_requestAccounts':
-        return { title: t('Connect this site?'), text: t('It will see this account’s address and can ask you to sign. Your other accounts stay hidden from it.') }
+        return { title: t('Connect this site?'), note: t('It will see this account’s address and can ask you to sign. Your other accounts stay hidden from it.') }
       case 'wallet_switchEthereumChain':
         return { title: t('Switch network?'), rows: [[t('Switch to'), networkLabel(d)]] }
       case 'wallet_addEthereumChain':
         return {
           title: t('Add and switch to this network?'),
           rows: [[t('Name'), d.name], [t('Chain ID'), String(d.id)], [t('Currency'), d.symbol], ['RPC', d.rpc]],
-          text: t('The site chose this RPC: it will see your address and activity on this network, and could hide or delay your transactions.'),
+          note: t('The site chose this RPC: it will see your address and activity on this network, and could hide or delay your transactions.'),
         }
       case 'personal_sign':
         if (typeof d === 'string') return { title: t('Sign message'), text: d }
@@ -415,42 +442,43 @@ function describe(p: Pending): { title: string; rows?: Row[]; text?: string } {
 }
 
 function approvalScreen(p: Pending, more: number) {
-  const { title, rows = [], text } = describe(p)
+  const { title, rows = [], text, note } = describe(p)
   const offline = watching.has(p.account) ? p.offline : undefined
   const tx = p.method === 'eth_sendTransaction'
   const settle = (ok: boolean) => act(async () => {
     if (!ok && offline && tx) await keepExported(offline, false) // rejected: not waiting for it on the home screen either
     await browser.runtime.sendMessage({ type: 'settle', id: p.id, ok })
   })
-  const all: Row[] = [[t('From site'), p.origin],
-    [t('Network'), networkLabel(p.network)], [t('Account'), p.account], ...rows]
+  const all: Row[] = [[t('Network'), networkLabel(p.network)], [t('Account'), p.account], ...rows]
   let ok: HTMLButtonElement, elsewhere: Node[] = []
-  if (!offline) ok = armed(h('button', { className: 'primary', onclick: settle(true) }, t('Approve')))
+  if (!offline) ok = consent(t('Approve'), settle(true))
   else {
     // Checked here so a wrong paste can be fixed in place; the background checks it again.
     const back = responseIn(), failure = h('p', { className: 'bad', role: 'alert' })
-    ok = armed(h('button', { className: 'primary', onclick: async () => {
+    ok = consent(tx ? t('Broadcast') : t('Submit signature'), async () => {
       try {
         const result = await checkResponse(parseRequest(offline), back.box.value)
         await browser.runtime.sendMessage({ type: 'settle', id: p.id, ok: true, result })
         await render()
       } catch (e) { failure.textContent = shown(e) }
-    } }, tx ? t('Broadcast') : t('Submit signature')))
+    })
     elsewhere = [h('p', {}, offlineNote()), ...requestOut(offline, tx ? () => keepExported(offline, true) : undefined), ...back.nodes, failure,
       h('p', {}, tx ? t('Once you’ve copied it, you can also close this window: the transaction waits under “Waiting for a signature” on the wallet’s home screen, though the site won’t hear back.')
         : t('Keep this window open: the site is waiting for the signature.'))]
   }
+  const bar = decide(t('Reject'), settle(false), ok)
+  bar.classList.add('bar')
+  // Who is asking, on top: the origin the browser reported, never the page's own title
   return [
+    h('p', { className: 'site mono' }, p.origin),
     h('h1', {}, title),
-    h('div', { className: 'slip' },
-      // red is reserved for requests that hand over open-ended control
-      ...(p.summary ? [h('strong', { className: p.danger ? 'stamp' : '' }, say(p.summary))] : []),
-      rowList(all),
-      ...(text ? [h('pre', {}, text)] : [])),
+    // red is reserved for requests that hand over open-ended control
+    slip(p.summary && h('strong', { className: p.danger ? 'stamp' : '' }, say(p.summary)), all,
+      ...(text ? [h('pre', {}, text)] : []), ...(note ? [h('p', { className: 'note' }, note)] : [])),
     ...sitePanel(p),
     ...elsewhere,
-    h('div', { className: 'row bar' }, h('button', { onclick: settle(false) }, t('Reject')), ok),
-    ...(more ? [h('p', {}, tn(more, '{n} more request waiting', '{n} more requests waiting'))] : []),
+    bar,
+    ...(more ? [h('p', { className: 'note' }, tn(more, '{n} more request waiting', '{n} more requests waiting'))] : []),
   ]
 }
 
@@ -458,15 +486,13 @@ function approvalScreen(p: Pending, more: number) {
 const offlineNote = () => t('This account is watch-only. Sign this request in Plain Wallet on the device that holds its key (Settings → Sign a request), then bring back what it gives you.')
 /** The request, to copy (or save, outside the apps). `kept`: once it's out, before a toolbar popup closing on a save can lose it. */
 function requestOut(text: string, kept: () => unknown = () => {}) {
-  const box = h('textarea', { value: text, readOnly: true, rows: 4, spellcheck: false })
-  return [h('label', {}, t('Request to sign'), box),
+  return [h('label', {}, t('Request to sign'), codeBox({ value: text, readOnly: true, rows: 4 })),
     h('div', { className: 'row' },
       h('button', { onclick: (e: Event) => { copy(text)(e); void kept() } }, t('Copy request')),
       ...(extras.files ? [h('button', { onclick: async () => { await kept(); saveFile(text, 'plainwallet-request.json') } }, t('Save to file'))] : []))]
 }
 function responseIn() {
-  const box = h('textarea', { rows: 3, placeholder: '0x…', spellcheck: false, autocomplete: 'off', autocapitalize: 'off' })
-  box.setAttribute('autocorrect', 'off')
+  const box = codeBox({ placeholder: '0x…' })
   return { box, nodes: [h('label', {}, t('Signed by the other device'), box), ...(extras.files ? [loadButton(box)] : [])] }
 }
 /** A transaction as signed, read from its own bytes: nothing fetched, so the offline device shows it the same way. */
@@ -503,17 +529,16 @@ function exportedTx(s: State, content: HTMLElement, run: ReturnType<typeof modal
   const { rows, summary } = txRows(s, tx)
   const back = responseIn()
   content.replaceChildren(
-    h('div', { className: 'slip' }, ...(summary ? [h('strong', {}, summary)] : []), rowList([[t('From'), request.from], ...rows])),
+    slip(summary, [[t('From'), request.from], ...rows]),
     h('p', {}, offlineNote()), ...requestOut(text), ...back.nodes,
     h('p', {}, t('The wallet keeps it under “Waiting for a signature” on its home screen until you broadcast or discard it.')),
-    h('div', { className: 'row' }, h('button', { onclick: run(() => keepExported(text, false)) }, t('Discard')),
-      armed(h('button', { className: 'primary', onclick: run(async () => {
-        const network = s.networks.find((n) => n.id === tx.chainId)
-        if (!network) throw new Error(t('Add chain {id} under networks to broadcast this', { id: tx.chainId! }))
-        const hash = await broadcast(network, await checkResponse(request, back.box.value))
-        await keepExported(text, false)
-        submitted(content, network, request.from, hash)
-      }, false) }, t('Broadcast')))))
+    decide(t('Discard'), run(() => keepExported(text, false)), consent(t('Broadcast'), run(async () => {
+      const network = s.networks.find((n) => n.id === tx.chainId)
+      if (!network) throw new Error(t('Add chain {id} under networks to broadcast this', { id: tx.chainId! }))
+      const hash = await broadcast(network, await checkResponse(request, back.box.value))
+      await keepExported(text, false)
+      submitted(content, network, request.from, hash)
+    }, false))))
 }
 function waitingDialog(s: State) {
   const { content, run } = modal(t('Waiting for a signature'))
@@ -522,8 +547,7 @@ function waitingDialog(s: State) {
       try {
         const { from, transaction } = parseRequest(text) as { from: string; transaction: `0x${string}` }
         const { rows, summary } = txRows(s, parseTransaction(transaction))
-        return [h('div', { className: 'slip' }, ...(summary ? [h('strong', {}, summary)] : []), rowList([[t('From'), from], ...rows]),
-          h('button', { className: 'primary', onclick: () => exportedTx(s, content, run, text) }, t('Continue')))]
+        return [slip(summary, [[t('From'), from], ...rows], h('button', { className: 'primary', onclick: () => exportedTx(s, content, run, text) }, t('Continue')))]
       } catch { return [] } // only something else writing to storage gets one here: nothing to show
     }))
 }
@@ -559,11 +583,12 @@ function sentDialog(s: State) {
         const index = s.addresses.findIndex((a) => a.toLowerCase() === from.toLowerCase())
         actions.hidden = index < 0 || watching.has(s.addresses[index]!) // the key is on another device, or the account is gone
       }, () => Object.assign(status, { className: 'warn', textContent: t('Can’t reach {network}’s RPC.', { network: network.name }) }))
-      return h('div', { className: 'slip' }, status, ...(summary ? [h('strong', {}, summary)] : []),
-        rowList([[t('From'), from], ...rows.filter(([k]) => k !== t('Data')).map(([k, v]): Row => (k === t('Network') && !network ? [k, `${e.network} (${tx.chainId})`] : [k, v])),
-          ...(e.site ? [[t('From site'), e.site] as Row] : []), [t('Sent'), new Date(e.at).toLocaleString()]]),
+      const entry = slip(summary, [[t('From'), from], ...rows.filter(([k]) => k !== t('Data')).map(([k, v]): Row => (k === t('Network') && !network ? [k, `${e.network} (${tx.chainId})`] : [k, v])),
+        ...(e.site ? [[t('From site'), e.site] as Row] : []), [t('Sent'), new Date(e.at).toLocaleString()]],
         h('button', { onclick: copy(keccak256(e.raw)) }, t('Copy hash')), actions)
-    }))
+      entry.prepend(status)
+      return entry
+    }), h('button', { onclick: () => openDebank(s.addresses[s.active]!) }, icon(icons.history), t('Transaction history on DeBank')))
   }
   /** What a speed-up or cancel would sign, at fees that work now; sent only once you approve it. */
   const replaceReview = async ({ e, from }: { e: Sent; from: `0x${string}` }, cancel: boolean) => {
@@ -571,24 +596,22 @@ function sentDialog(s: State) {
     const { request } = await replacement(network, e.raw, cancel)
     const { rows, summary } = txRows(s, request as ReturnType<typeof parseTransaction>)
     content.replaceChildren(
-      h('p', { className: 'warn' }, cancel
+      h('p', { className: 'callout warn' }, cancel
         ? t('Cancel: a transfer of nothing to yourself at the same nonce, for a higher fee. If it is included first, the original never happens.')
         : t('Speed up: the same transaction again at its nonce, for a higher fee. Whichever one is included first counts.')),
-      h('div', { className: 'slip' }, ...(summary ? [h('strong', {}, summary)] : []), rowList([[t('From'), from], ...rows])),
-      h('div', { className: 'row' }, h('button', { onclick: run(showList, false) }, t('Back')),
-        armed(h('button', { className: 'primary', onclick: run(async () => {
-          const index = s.addresses.findIndex((a) => a.toLowerCase() === from.toLowerCase())
-          const signed = await (await signer(index, s.addresses[index]!)).signTransaction(request)
-          submitted(content, network, from, await broadcast(network, signed, e.site))
-        }, false) }, t('Send')))))
+      slip(summary, [[t('From'), from], ...rows]),
+      decide(t('Back'), run(showList, false), consent(t('Send'), run(async () => {
+        const index = s.addresses.findIndex((a) => a.toLowerCase() === from.toLowerCase())
+        const signed = await (await signer(index, s.addresses[index]!)).signTransaction(request)
+        submitted(content, network, from, await broadcast(network, signed, e.site))
+      }, false))))
   }
   void run(showList, false)()
 }
 /** The other end: this device holds the key, and signs what a watch-only one exported. Nothing is fetched. */
 function signDialog(s: State) {
   const { content, run } = modal(t('Sign a request'))
-  const box = h('textarea', { rows: 5, placeholder: '{"plainwallet":"sign",…}', spellcheck: false, autocomplete: 'off', autocapitalize: 'off' })
-  box.setAttribute('autocorrect', 'off')
+  const box = codeBox({ rows: 5, placeholder: '{"plainwallet":"sign",…}' })
   const review = run(async () => {
     const r = parseRequest(box.value)
     const index = s.addresses.indexOf(r.from)
@@ -614,15 +637,14 @@ function signDialog(s: State) {
       sign = (a) => a.signTypedData(r.typedData)
     }
     content.replaceChildren(h('div', { className: 'slip' }, ...shown),
-      h('div', { className: 'row' }, h('button', { onclick: () => content.replaceChildren(...form) }, t('Back')),
-        armed(h('button', { className: 'primary', onclick: run(async () => {
-          // The check the other device will make, before you carry it back.
-          const signed = await checkResponse(r, await sign(await signer(index, r.from)))
-          content.replaceChildren(h('p', {}, t('Signed. Take this back to the watch-only device and paste it there.')),
-            h('label', {}, t('Signed'), h('textarea', { value: signed, readOnly: true, rows: 4, spellcheck: false })),
-            h('div', { className: 'row' }, h('button', { onclick: copy(signed) }, t('Copy')),
-              ...(extras.files ? [h('button', { onclick: () => saveFile(signed, 'plainwallet-signed.txt') }, t('Save to file'))] : [])))
-        }, false) }, t('Sign')))))
+      decide(t('Back'), () => content.replaceChildren(...form), consent(t('Sign'), run(async () => {
+        // The check the other device will make, before you carry it back.
+        const signed = await checkResponse(r, await sign(await signer(index, r.from)))
+        content.replaceChildren(h('p', {}, t('Signed. Take this back to the watch-only device and paste it there.')),
+          h('label', {}, t('Signed'), codeBox({ value: signed, readOnly: true, rows: 4 })),
+          h('div', { className: 'row' }, h('button', { onclick: copy(signed) }, t('Copy')),
+            ...(extras.files ? [h('button', { onclick: () => saveFile(signed, 'plainwallet-signed.txt') }, t('Save to file'))] : [])))
+      }, false))))
   }, false)
   const form = [h('p', {}, t('For a watch-only account on another device: paste the request it gave you, check it here, and sign it with the key this wallet holds. Nothing is sent anywhere.')),
     h('label', {}, t('Request'), box), ...(extras.files ? [loadButton(box)] : []), h('button', { className: 'primary', onclick: review }, t('Review'))]
@@ -668,17 +690,53 @@ function modal(title: string) {
       buttons.forEach(([button, disabled]) => (button.disabled = disabled))
     }
   }
+  /** Leaves this dialog for another one (`next` opens it). */
+  const go = (next: () => unknown) => run(async () => { dialog.close(); await next() })
   document.body.append(dialog)
   dialog.showModal()
-  return { content, run, dialog }
+  return { content, run, go, dialog }
+}
+type Run = ReturnType<typeof modal>['run']
+/** Things to take off a list one by one (tokens, connected sites), the list saying so once none are left. */
+function removable(run: Run, label: string, none: string, entries: { title: string; sub?: string[]; mono?: boolean; remove: () => Promise<unknown> }[]) {
+  const box = list()
+  const empty = () => { if (!box.childElementCount) box.append(h('p', { className: 'note' }, none)) }
+  for (const { remove, ...shown } of entries) {
+    const row: HTMLElement = item({ ...shown, end: h('button', { className: 'quiet danger', onclick: run(async () => { await remove(); row.remove(); empty() }, false) }, label) })
+    box.append(row)
+  }
+  empty()
+  return box
 }
 
 const shortAddress = (address: string) => `${address.slice(0, 8)}…${address.slice(-6)}`
-const nameOf = (s: State, address: string) => s.nicknames[address] || shortAddress(address)
 const networkLabel = (n: Network) => `${n.name} (${n.id})`
 const option = (value: string | number, text: string, selected = false) => h('option', { value, selected }, text)
-// `address`: off on the home screen, which shows it under the name.
-const accountOptions = (s: State, address = true) => s.addresses.map((a, i) => option(i, `${s.nicknames[a] || t('Account {n}', { n: i + 1 })}${address ? ` — ${shortAddress(a)}` : ''}${watching.has(a) ? ` ${t('(watch-only)')}` : ''}`, i === s.active))
+const accountName = (s: State, i: number) => s.nicknames[s.addresses[i]!] || t('Account {n}', { n: i + 1 })
+/** An account by its name, wherever it is mentioned; one no longer in the wallet by its address. */
+const nameOf = (s: State, address: string) => {
+  const i = (s.addresses as string[]).indexOf(address)
+  return i < 0 ? shortAddress(address) : accountName(s, i)
+}
+const accountOptions = (s: State) => s.addresses.map((a, i) => option(i, `${accountName(s, i)} — ${shortAddress(a)}${watching.has(a) ? ` ${t('(watch-only)')}` : ''}`, i === s.active))
+
+/** The accounts, to switch between and rename; adding and removing them is in Manage accounts. */
+function accountSheet(s: State) {
+  const { content, run, go } = modal(t('Account'))
+  content.append(list(...s.addresses.map((a, i) => item({
+    title: accountName(s, i), sub: [h('span', { className: 'mono' }, shortAddress(a)), ...(watching.has(a) ? [` ${t('(watch-only)')}`] : [])],
+    onclick: run(() => save({ active: i })), chosen: i === s.active,
+    end: iconButton(t('Edit account nickname'), icons.edit, go(() => nicknameDialog(s, a))),
+  }))), h('button', { onclick: go(() => accountDialog(s)) }, t('Manage accounts…')))
+}
+/** The networks, to switch between; editing and adding them is in Manage networks. */
+function networkSheet(s: State) {
+  const { content, run, go } = modal(t('Network'))
+  content.append(list(...s.networks.map((n) => item({
+    title: n.name, sub: [`${t('Chain ID')} ${n.id} · ${n.symbol}`], onclick: run(() => save({ chainId: n.id })), chosen: n.id === s.chainId,
+  }))), h('div', { className: 'row' }, h('button', { onclick: go(() => networkDialog(s, true)) }, t('Add network…')),
+    h('button', { onclick: go(() => networkDialog(s)) }, t('Manage networks'))))
+}
 
 async function accountDialog(s: State) {
   const { content, run, dialog } = modal(t('Manage accounts'))
@@ -695,20 +753,17 @@ async function accountDialog(s: State) {
       ...groups.map((group) => {
         const source = group.accounts[0]!
         const title = group.type === 'seed' ? t('Seed phrase {n}', { n: ++seedNumber }) : group.type === 'watch' ? t('Watch-only address {n}', { n: ++watchNumber }) : t('Imported private key {n}', { n: ++keyNumber })
-        return h('section', { className: 'slip' }, h('h3', {}, title),
-          ...group.accounts.map((a) => h('div', { className: 'dialog-content' },
-            h('strong', {}, label(a)), h('p', { className: 'mono' }, a.address),
-            ...(a.addressIndex !== undefined ? [h('p', { className: 'mono' }, `m/44'/60'/0'/0/${a.addressIndex}`)] : []),
-            h('button', { className: 'quiet', onclick: () => remove([a], false, group.type === 'seed', group.type === 'watch') }, t('Remove account')))),
-          ...(group.type === 'seed' ? [
-            h('button', { onclick: run(() => addDerivedAccount(source.index, source.address)) }, t('Generate account from this seed')),
-            h('button', { className: 'danger', onclick: () => remove(group.accounts, true, true) }, t('Remove seed phrase group')),
-          ] : []))
+        // A group: its accounts as rows, each removable; a seed's own actions under them
+        const isSeed = group.type === 'seed'
+        return h('section', { className: 'dialog-content' }, h('h3', { className: 'label' }, title),
+          list(...group.accounts.map((a) => item({
+            title: label(a), sub: [h('span', { className: 'mono' }, a.address, ...(a.addressIndex !== undefined ? [h('br'), `m/44'/60'/0'/0/${a.addressIndex}`] : []))],
+            end: h('button', { className: 'quiet danger', onclick: () => remove([a], false, isSeed, group.type === 'watch') }, t('Remove account')),
+          })), ...(isSeed ? [item({ title: t('Generate account from this seed'), onclick: run(() => addDerivedAccount(source.index, source.address)) })] : [])),
+          ...(isSeed ? [h('button', { className: 'quiet danger', onclick: () => remove(group.accounts, true, true) }, t('Remove seed phrase group'))] : []))
       }),
-      h('button', { className: 'primary', onclick: generate }, t('Generate new seed phrase')),
-      h('button', { onclick: () => importSecret(false) }, t('Import private key')),
-      h('button', { onclick: () => importSecret(true) }, t('Import seed phrase')),
-      h('button', { onclick: watchAddress }, t('Watch an address')))
+      menu([t('Generate new seed phrase'), generate], [t('Import private key'), () => importSecret(false)],
+        [t('Import seed phrase'), () => importSecret(true)], [t('Watch an address'), watchAddress]))
   }
   const back = () => h('button', { className: 'quiet back', onclick: choose }, t('Back'))
   const generate = () => {
@@ -738,7 +793,7 @@ async function accountDialog(s: State) {
     backedUp.onchange = () => (confirm.disabled = !backedUp.checked)
     content.replaceChildren(back(), h('h3', {}, wholeSeed ? t('Remove seed phrase group?') : t('Remove account?')),
       ...accounts.flatMap((a) => [h('strong', {}, label(a)), h('p', { className: 'mono' }, a.address)]),
-      h('p', { className: 'stamp' }, t('This removes local wallet access, nicknames and site connections from this device. It does not delete or move on-chain funds. Without a backup, you may permanently lose access.')),
+      h('p', { className: 'callout stamp' }, t('This removes local wallet access, nicknames and site connections from this device. It does not delete or move on-chain funds. Without a backup, you may permanently lose access.')),
       ...(fromSeed ? [h('p', {}, wholeSeed ? t('The seed phrase and every listed account will be removed. Independently imported private keys are not part of this group.') : t('Other accounts from this seed stay available. The seed is removed only when its last account is removed; you can restore this account with your backup and the derivation path shown in Manage accounts.'))] : []),
       h('p', {}, t('To remove every account, lock the wallet and use Forgot password? → Reset wallet.')),
       h('label', { className: 'acknowledgment' }, backedUp, t('I have the seed phrase or private key for these accounts backed up elsewhere.')), confirm)
@@ -761,8 +816,7 @@ async function accountDialog(s: State) {
   dialog.addEventListener('close', () => { generated = ''; content.replaceChildren() })
   choose()
 }
-function nicknameDialog(s: State) {
-  const address = s.addresses[s.active]!
+function nicknameDialog(s: State, address = s.addresses[s.active]!) {
   const { content, run } = modal(t('Account nickname'))
   const name = field(t('Nickname'), { value: s.nicknames[address] || '', maxLength: 40, placeholder: t('e.g. Savings') })
   content.append(h('p', { className: 'mono' }, address), name.el,
@@ -835,8 +889,7 @@ function exportDialog(s: State) {
       const exported = await exportAccount(index, pw.input.value)
       if (!dialog.open || !(await isUnlocked())) return
       // No copy buttons: the wallet never puts a secret on the system clipboard itself.
-      const secretField = (label: string, value: string) =>
-        [h('label', {}, label, h('textarea', { value, readOnly: true, rows: 3, spellcheck: false, autocomplete: 'off', autocapitalize: 'off' }))]
+      const secretField = (label: string, value: string) => [h('label', {}, label, codeBox({ value, readOnly: true }))]
       content.replaceChildren(
         h('p', { className: 'mono' }, s.addresses[index]!),
         h('p', {}, t('Keep these secrets private. Anyone with them can control your funds.')),
@@ -879,7 +932,7 @@ function sendDialog(s: State, network: Network, tokens: Token[]) {
     function show(prepared: Awaited<ReturnType<typeof prepare>>, refused?: 'replace' | 'fees') {
       const { request, fee } = prepared
       const watch = watching.has(from)
-      const confirm = armed(h('button', { className: 'primary', onclick: run(async () => {
+      const confirm = consent(watch ? t('Export to sign') : t('Send'), run(async () => {
         if (watch) {
           // Kept right away: a toolbar popup closes as soon as you switch to anything else.
           const text = requestText({ from, transaction: serializeTransaction(await unsigned(network, from, request)) })
@@ -893,22 +946,22 @@ function sendDialog(s: State, network: Network, tokens: Token[]) {
           return show(await refee(network, prepared, why === 'replace'), why)
         }
         submitted(content, network, from, hash)
-      }, false) }, watch ? t('Export to sign') : t('Send')))
+      }, false))
       content.replaceChildren(
-        ...(refused ? [h('p', { className: 'warn', role: 'alert' }, refused === 'replace'
+        ...(refused ? [h('p', { className: 'callout warn', role: 'alert' }, refused === 'replace'
           ? t('Another transaction from this account is waiting with the same nonce. This one takes its place, for a higher fee.')
           : t('Network fees went up, and the network refused the old fee. This is what it charges now.'))] : []),
-        h('div', { className: 'slip' }, rowList([
+        slip(undefined, [
           [t('Network'), networkLabel(network)], [t('From'), from], [t('To'), recipient],
           [t('Amount'), `${formatUnits(value, decimals)} ${token?.symbol ?? network.symbol}`],
           ...(token ? [[t('Token contract'), token.address] as Row] : []),
           [t('Estimated max fee'), feeValue(network, fee)],
-        ])),
+        ]),
         ...secondOpinion('transaction', {
           network: network.name, to: request.to!, value: `${formatEther(request.value ?? 0n)} ${network.symbol}`,
           call: describeCall(request.data, token, english) ?? 'none',
         }, () => txChecks(network, from, request)),
-        h('div', { className: 'row' }, h('button', { onclick: () => content.replaceChildren(...form) }, t('Back')), confirm))
+        decide(t('Back'), () => content.replaceChildren(...form), confirm))
     }
   }, false)
   const form = [h('label', {}, t('Asset'), asset), to.el, amount.el, h('button', { className: 'primary', onclick: review }, t('Review'))]
@@ -917,20 +970,12 @@ function sendDialog(s: State, network: Network, tokens: Token[]) {
 
 function tokenDialog(network: Network, tokens: Token[]) {
   const { content, run } = modal(t('Tokens on {network}', { network: network.name }))
-  const list = h('div', { className: 'dialog-content' })
-  const empty = () => { if (!list.childElementCount) list.append(h('p', {}, t('No tokens on this network.'))) }
-  for (const token of tokens) {
-    const row = h('div', { className: 'row' }, h('span', {}, h('span', {}, token.symbol), h('p', { className: 'mono' }, token.address)))
-    row.append(h('button', { className: 'quiet', onclick: run(async () => {
-      await save((now) => ({ tokens: { ...now.tokens, [network.id]: (now.tokens[network.id] ?? []).filter((x) => x.address !== token.address) } }))
-      row.remove()
-      empty()
-    }, false) }, t('Remove')))
-    list.append(row)
-  }
-  empty()
+  const listed = removable(run, t('Remove'), t('No tokens on this network.'), tokens.map((token) => ({
+    title: token.symbol, sub: [token.address],
+    remove: () => save((now) => ({ tokens: { ...now.tokens, [network.id]: (now.tokens[network.id] ?? []).filter((x) => x.address !== token.address) } })),
+  })))
   const address = field(t('Token contract address'), { placeholder: '0x…', spellcheck: false, autocomplete: 'off' })
-  content.append(list, address.el, h('button', { className: 'primary', onclick: run(async () => {
+  content.append(listed, address.el, h('button', { className: 'primary', onclick: run(async () => {
       const token = await tokenInfo(network, address.input.value)
       await save((now) => {
         const list = now.tokens[network.id] ?? []
@@ -941,31 +986,24 @@ function tokenDialog(network: Network, tokens: Token[]) {
 }
 
 async function settingsDialog(s: State) {
-  const { content, run, dialog } = modal(t('Settings'))
-  const locks = h('input', { type: 'checkbox', checked: await autolock() })
+  const { content, run, go } = modal(t('Settings'))
+  const locks = h('input', { type: 'checkbox', className: 'switch', role: 'switch', checked: await autolock() })
   locks.onchange = run(() => setAutolock(locks.checked), false)
-  const sites = h('div', { className: 'dialog-content' })
-  const empty = () => { if (!sites.childElementCount) sites.append(h('p', {}, t('No connected sites.'))) }
-  for (const [site, accounts] of Object.entries(s.connections)) {
-    const names = accounts.map((a) => nameOf(s, a)).join(', ')
-    const row = h('div', { className: 'row' }, h('span', {}, h('span', { className: 'mono' }, site), h('p', {}, names)))
-    row.append(h('button', { className: 'quiet', onclick: run(async () => {
-      await save((now) => ({ connections: Object.fromEntries(Object.entries(now.connections).filter(([o]) => o !== site)) }))
-      row.remove()
-      empty()
-    }, false) }, t('Disconnect')))
-    sites.append(row)
-  }
-  empty()
+  const sites = removable(run, t('Disconnect'), t('No connected sites.'), Object.entries(s.connections).map(([site, accounts]) => ({
+    title: site, mono: true, sub: [accounts.map((a) => nameOf(s, a)).join(', ')],
+    remove: () => save((now) => ({ connections: Object.fromEntries(Object.entries(now.connections).filter(([o]) => o !== site)) })),
+  })))
   const jev = field(t('API key'), { type: 'password', value: jevKey, autocomplete: 'off', spellcheck: false })
   const version = browser.runtime.getManifest().version
-  content.append(h('div', { className: 'menu' },
-    h('button', { onclick: run(async () => { dialog.close(); await accountDialog(s) }) }, t('Manage accounts')),
-    h('button', { onclick: () => { dialog.close(); exportDialog(s) } }, t('Export seeds / private keys')),
-    h('button', { onclick: () => { dialog.close(); signDialog(s) } }, t('Sign a request from a watch-only device'))),
-    ...(extras.autolockSetting ? [h('label', { className: 'acknowledgment' }, locks, t('Lock after 15 minutes without use')),
-      h('p', {}, extras.autolockOff())] : []),
-    h('h2', {}, t('Connected sites')), sites,
+  // Opening the sidebar needs the click's user gesture, so not through run(), which awaits first.
+  const places = elsewhere().map(([label, open]): [string, () => unknown] => [label, async () => { try { await open() } catch (e) { error = shown(e); await render() } }])
+  content.append(
+    ...(places.length ? [menu(...places)] : []),
+    menu([t('Manage accounts'), go(() => accountDialog(s))], [t('Export seeds / private keys'), go(() => exportDialog(s))],
+      [t('Sign a request from a watch-only device'), go(() => signDialog(s))]),
+    ...(extras.autolockSetting ? [list(h('label', { className: 'item toggle' }, t('Lock after 15 minutes without use'), locks)),
+      h('p', { className: 'note' }, extras.autolockOff())] : []),
+    h('h3', { className: 'label' }, t('Connected sites')), sites,
     h('details', { className: 'fold' },
       h('summary', {}, t('Jev transaction check:'), ' ', h('span', {}, jevKey ? t('on') : t('off'))),
       h('div', { className: 'dialog-content' },
@@ -975,43 +1013,32 @@ async function settingsDialog(s: State) {
           return key ? browser.storage.local.set({ jevKey: key }) : browser.storage.local.remove('jevKey')
         }) }, t('Save API key')))),
     ...extras.settings(),
-    h('p', {}, `Plain Wallet ${version} · `,
-      h('a', { href: 'https://github.com/backmeupplz/plainwallet', target: '_blank', rel: 'noreferrer' }, t('Source code on GitHub')), ' · ',
+    h('p', { className: 'about' }, h('span', {}, `Plain Wallet ${version}`),
+      h('a', { href: 'https://github.com/backmeupplz/plainwallet', target: '_blank', rel: 'noreferrer' }, t('Source code on GitHub')),
       // The support address of the site and PRIVACY.md, with the version filled in
       h('a', { href: `mailto:plainwallet@borodutch.com?subject=${encodeURIComponent(`Plain Wallet ${version}`)}`, target: '_blank', rel: 'noreferrer' }, t('Send feedback'))))
 }
 
 function mainScreen(s: State) {
   const address = s.addresses[s.active]!
-  const accounts = h('select', { id: 'account', className: 'title', title: address, ariaLabel: t('Account') }, ...accountOptions(s, false), option('add', t('Manage accounts…')))
-  accounts.onchange = () => {
-    if (accounts.value === 'add') { accounts.value = String(s.active); void act(() => accountDialog(s))() }
-    else void act(() => save({ active: Number(accounts.value) }))()
-  }
-  const networks = h('select', { id: 'network', className: 'pill', ariaLabel: t('Network') },
-    ...s.networks.map((n) => option(n.id, networkLabel(n), n.id === s.chainId)), option('add', t('Add network…')))
-  networks.onchange = () => {
-    if (networks.value === 'add') { networks.value = String(s.chainId); networkDialog(s, true) }
-    else void act(() => save({ chainId: Number(networks.value) }))()
-  }
-  const copyAddress = iconButton(t('Copy address'), icons.copy, async () => {
-    await navigator.clipboard.writeText(address)
-    copyAddress.querySelector('path')!.setAttribute('d', icons.check)
-    copyAddress.title = copyAddress.ariaLabel = t('Copied')
-    copyAddress.disabled = true
-    setTimeout(() => {
-      copyAddress.querySelector('path')!.setAttribute('d', icons.copy)
-      copyAddress.title = copyAddress.ariaLabel = t('Copy address')
-      copyAddress.disabled = false
-    }, 1200)
-  })
+  const name = accountName(s, s.active)
+  // The account, top left: tap for the list of accounts.
+  const account = h('button', { className: 'account', title: address, ariaLabel: `${t('Account')}: ${name}`, onclick: () => accountSheet(s) },
+    h('strong', {}, name), ...(watching.has(address) ? [h('span', { className: 'tag' }, t('(watch-only)'))] : []), h('span', { className: 'chevron' }))
   const network = s.networks.find((n) => n.id === s.chainId)!
+  // The network, over the balance it is the balance on: tap for the list of networks.
+  const networkPill = h('button', { className: 'pill', title: networkLabel(network), ariaLabel: `${t('Network')}: ${networkLabel(network)}`, onclick: () => networkSheet(s) },
+    h('span', { className: 'dot' }), network.name, h('span', { className: 'chevron' }))
+  // The address under the balance, the whole of it one button that copies it.
+  const shortened = h('span', { className: 'mono' }, shortAddress(address))
+  const copyAddress = h('button', { className: 'chip', title: address, ariaLabel: t('Copy address'), onclick: copy(address, shortened) }, shortened, icon(icons.copy))
   const tokens = s.tokens[network.id] ?? []
   const decimals = [18, ...tokens.map((t) => t.decimals)]
   // The network's own coin large on the card, the tokens in a list under it
   const amounts = decimals.map((_, i) => h(i ? 'dd' : 'span', { className: 'skeleton' }))
   const hero = h('div', { className: 'hero', ariaBusy: 'true' }, amounts[0]!, h('span', {}, network.symbol))
-  const list = h('dl', { className: 'balances', ariaBusy: 'true', hidden: !tokens.length }, ...tokens.flatMap((token, i) => [h('dt', {}, token.symbol), amounts[i + 1]!]))
+  const list = tokens.length ? h('dl', { className: 'balances', ariaBusy: 'true' }, ...tokens.flatMap((token, i) => [h('dt', {}, token.symbol), amounts[i + 1]!]))
+    : h('p', { className: 'note' }, t('No tokens on this network.'))
   const key = [network.id, network.rpc, address, ...tokens.map((t) => t.address)].join()
   // Offline, nothing to wait for: the RPC's retries would only keep the placeholders up.
   if (cached?.key !== key) cached = { key, values: navigator.onLine ? balances(network, address, tokens) : Promise.resolve(decimals.map(() => undefined)) }
@@ -1020,7 +1047,7 @@ function mainScreen(s: State) {
   const unreachable = h('div', { className: 'dialog-content', hidden: true })
   const showUnreachable = () => {
     unreachable.hidden = false
-    unreachable.replaceChildren(h('p', { className: 'warn' }, `${navigator.onLine ? t('Can’t reach {network}’s RPC.', { network: network.name }) : t('This device is offline.')} ${t('Balances and sending need it; signing a request from a watch-only device doesn’t.')}`),
+    unreachable.replaceChildren(h('p', { className: 'warn callout' },`${navigator.onLine ? t('Can’t reach {network}’s RPC.', { network: network.name }) : t('This device is offline.')} ${t('Balances and sending need it; signing a request from a watch-only device doesn’t.')}`),
       h('button', { onclick: () => signDialog(s) }, t('Sign a request')))
   }
   if (!navigator.onLine) showUnreachable()
@@ -1037,22 +1064,19 @@ function mainScreen(s: State) {
     })
   })
   return [
-    header(iconButton(t('Settings'), icons.settings, () => settingsDialog(s)), iconButton(t('Lock'), icons.lock, act(lock))),
+    h('header', {}, account,
+      iconButton(t('Settings'), icons.settings, () => settingsDialog(s)), iconButton(t('Lock'), icons.lock, act(lock))),
     ...extras.home(),
-    h('section', { className: 'card' },
-      h('div', { className: 'row' }, networks, iconButton(t('Manage networks'), icons.edit, () => networkDialog(s))),
-      h('div', { className: 'row' }, accounts, iconButton(t('Edit account nickname'), icons.edit, () => nicknameDialog(s))),
-      h('div', { className: 'row address' }, h('span', { className: 'mono', title: address }, shortAddress(address)), copyAddress,
-        iconButton(t('Transaction history on DeBank'), icons.history, () => openDebank(address))),
-      hero,
-      h('div', { className: 'actions' },
+    h('section', { className: 'card' }, networkPill, hero, copyAddress,
+      h('div', { className: 'row actions' },
         h('button', { className: 'primary', onclick: () => sendDialog(s, network, tokens) }, icon(icons.send), t('Send')),
-        h('button', { onclick: () => tokenDialog(network, tokens) }, icon(icons.tokens), t('Tokens')),
         h('button', { onclick: () => sentDialog(s) }, icon(icons.transactions), t('Transactions')))),
-    ...(watching.has(address) ? [h('p', {}, t('Watch-only: you sign for this account on the device that holds its key.'))] : []),
+    ...(watching.has(address) ? [h('p', { className: 'note' }, t('Watch-only: you sign for this account on the device that holds its key.'))] : []),
     unreachable,
     ...(waiting.length ? [h('button', { onclick: () => waitingDialog(s) }, t('Waiting for a signature ({n})', { n: waiting.length }))] : []),
-    list,
+    h('section', { className: 'tokens' },
+      h('div', { className: 'section-head' }, h('h3', { className: 'label' }, t('Tokens')), iconButton(t('Tokens'), icons.edit, () => tokenDialog(network, tokens))),
+      list),
   ]
 }
 
@@ -1066,7 +1090,7 @@ function home([top, ...rest]: Node[]) {
 // Only reachable unlocked: that's when load() has the key to check the state with.
 const tamperedScreen = () => [
   header(iconButton(t('Lock'), icons.lock, act(lock))),
-  h('p', { className: 'stamp' }, t('{problem}. Your keys are safe in the encrypted vault, but the wallet won’t use an account list, networks, tokens or connected sites it can’t trust.', { problem: t(TAMPERED) })),
+  h('p', { className: 'callout stamp' }, t('{problem}. Your keys are safe in the encrypted vault, but the wallet won’t use an account list, networks, tokens or connected sites it can’t trust.', { problem: t(TAMPERED) })),
   h('button', { className: 'primary', onclick: act(repair) }, t('Rebuild from the vault')),
   h('p', {}, t('This restores your accounts from the vault and resets networks, tokens, nicknames and connected sites.')),
 ]
@@ -1085,7 +1109,7 @@ export async function render(stillCurrent = () => true) {
     // Anything but tampering is storage failing to answer (in the Mac app: the file it shares with Safari).
     screen = s.message === TAMPERED ? tamperedScreen() : [header(), h('div', { className: 'error', role: 'alert' }, t('Can’t read the wallet: {error}', { error: shown(s) }))]
   } else if (seed) screen = seedScreen()
-  else if (!s.vault) screen = [header(), ...walletForm(true)]
+  else if (!s.vault) screen = [walletMode ? header() : brand(), ...walletForm(true)]
   else if (!unlocked) screen = unlockScreen(pending[0])
   else {
     touch() // using the wallet pushes the auto-lock back
