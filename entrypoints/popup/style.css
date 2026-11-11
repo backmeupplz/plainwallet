@@ -1,94 +1,165 @@
-/* A paper form filled in with a ballpoint: printed sans labels, typed mono values, blue ink for what you do,
-   stamp red only for what can cost you. */
+/* Calm and roomy: soft cards on a tinted page, one blue for what you do, stamp red only for what can cost you. Typed
+   values (addresses, amounts, data) stay in mono. Sized for a thumb on a phone (48px targets on touch screens, 16px
+   inputs so phones don't zoom in on them), a bit denser for a mouse. */
 :root {
   color-scheme: light dark;
-  --paper: light-dark(#f7f8fa, #151929);
-  --sheet: light-dark(#ffffff, #1c2136);
-  --ink: light-dark(#1b2340, #e6e9f5);
-  --muted: light-dark(#6a7390, #8e97b5);
-  --rule: light-dark(#d5d9e3, #2c3350);
+  --paper: light-dark(#f2f4f8, #0e1120);
+  --sheet: light-dark(#ffffff, #181c30);
+  --field: light-dark(#eef0f5, #0f1324);
+  --ink: light-dark(#141a31, #e8ebf7);
+  --muted: light-dark(#5f6886, #9099b9);
+  --rule: light-dark(#e2e5ee, #272d47);
   --pen: light-dark(#2443c4, #8fa4ff);
-  --on-pen: light-dark(#ffffff, #151929);
+  --pen-soft: light-dark(#e7ebfb, #212a4f);
+  --on-pen: light-dark(#ffffff, #0e1120);
   --stamp: light-dark(#c4281c, #ff7a6b);
+  --stamp-soft: light-dark(#fdeceb, #3a1c22);
   --warn: light-dark(#9a6200, #f2c14e);
   --ok: light-dark(#1d7a3e, #6fd08c);
+  --shade: light-dark(#141a3114, #00000066);
+  --tap: 40px; /* the smallest a button gets */
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  font: 14px/1.45 system-ui, sans-serif;
+  font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
 }
+@media (pointer: coarse) { :root { --tap: 48px; } }
 /* Text is sized in rem, from that 14px, and so are the boxes made to hold it. The iOS app sets the root's size from your
    Dynamic Type setting (ios/PlainWallet: textSize); larger text gets the narrow layout at the end. */
-body { margin: 0; padding: 16px 16px max(16px, env(safe-area-inset-bottom)); min-width: 348px; box-sizing: border-box; background: var(--paper); color: var(--ink); }
-#app { display: flex; flex-direction: column; gap: 12px; max-width: 400px; margin: 0 auto; }
+body { margin: 0; padding: 16px 16px max(16px, env(safe-area-inset-bottom)); min-width: 348px; box-sizing: border-box; background: var(--paper); color: var(--ink); -webkit-tap-highlight-color: transparent; }
+#app { display: flex; flex-direction: column; gap: 12px; max-width: 420px; margin: 0 auto; }
 body.sidebar { min-width: 0; }
+/* The apps fill the screen, so an approval's Approve and Reject can sit at the bottom, under your thumb (.bar) */
+body.app #app { min-height: calc(100dvh - 32px - env(safe-area-inset-bottom)); }
 /* The apps' page, which their window sizes (an extension popup sizes itself to what's in it, which this would rule out),
    and its dialogs, which have a width of their own */
 body.app :is(#app, dialog) { container: app / inline-size; }
-header { display: flex; align-items: center; gap: 6px; }
-h1 { flex: 1; margin: 0; font-size: calc(17rem / 14); font-weight: 650; letter-spacing: -0.01em; }
-h2 { margin: 0; font-size: calc(16rem / 14); font-weight: 650; }
+header { display: flex; align-items: center; gap: 2px; }
+header img { width: 28px; height: 28px; margin-inline-end: 8px; border-radius: 8px; }
+header h1 { flex: 1; }
+h1 { margin: 0; font-size: calc(19rem / 14); font-weight: 700; letter-spacing: -0.02em; }
+h2 { margin: 0; font-size: calc(17rem / 14); font-weight: 700; letter-spacing: -0.01em; }
 h3 { margin: 0; font-size: 1rem; font-weight: 650; }
 p { margin: 0; color: var(--muted); }
 
-label { display: flex; flex-direction: column; gap: 2px; font-size: calc(12rem / 14); color: var(--muted); }
-input, select, textarea { width: 100%; box-sizing: border-box; font: calc(13rem / 14) var(--mono); color: var(--ink); background: var(--paper); border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; padding: 6px 0; }
-dialog input:not([type="checkbox"]), dialog select { padding-inline: 10px; }
+label { display: flex; flex-direction: column; gap: 6px; font-size: calc(13rem / 14); font-weight: 500; color: var(--muted); }
+input, select, textarea { width: 100%; box-sizing: border-box; min-height: var(--tap); font: calc(14rem / 14) var(--mono); color: var(--ink); background: var(--field); border: 1px solid transparent; border-radius: 12px; padding: 8px 12px; }
+@media (pointer: coarse) { input, select, textarea { font-size: max(16px, 1rem); } }
+select { appearance: none; padding-inline-end: 36px; font-family: inherit; font-weight: 500; text-overflow: ellipsis; cursor: pointer;
+  background: var(--field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a93ad' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 16px; }
+select:dir(rtl) { background-position: left 12px center; }
 input[type="password"] { letter-spacing: 0.2em; }
-textarea { border: 1px solid var(--rule); border-radius: 6px; padding: 8px; resize: vertical; }
+input[type="checkbox"] { width: 20px; height: 20px; min-height: 0; padding: 0; accent-color: var(--pen); }
+textarea { resize: vertical; padding: 10px 12px; }
+::placeholder { color: var(--muted); opacity: 0.7; }
 :focus-visible { outline: 2px solid var(--pen); outline-offset: 2px; }
-input:focus-visible, select:focus-visible { outline: 0; border-bottom-color: var(--pen); box-shadow: 0 1px 0 var(--pen); }
+:is(input, select, textarea):focus-visible { outline: 0; border-color: var(--pen); box-shadow: 0 0 0 3px var(--pen-soft); }
 
-button { width: 100%; font: inherit; font-weight: 550; padding: 8px 12px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; cursor: pointer; }
-button:hover:not(:disabled, [aria-disabled="true"]) { border-color: var(--pen); }
+button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: var(--tap); box-sizing: border-box; font: inherit; font-weight: 600; text-align: center; padding: 8px 16px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
 button.primary { color: var(--on-pen); background: var(--pen); border-color: var(--pen); }
-button.primary:hover:not(:disabled, [aria-disabled="true"]) { filter: brightness(1.1); }
-button.quiet { width: auto; flex: none; padding: 3px 10px; font-size: calc(12rem / 14); font-weight: 500; }
-button.icon { display: grid; place-items: center; flex: none; width: 32px; height: 32px; padding: 6px; }
-button.icon svg { width: 18px; height: 18px; }
+button.danger { color: var(--stamp); border-color: color-mix(in srgb, var(--stamp) 45%, transparent); }
+/* a text button: Back, Remove, Forgot password? */
+button.quiet { width: auto; flex: none; padding: 6px 12px; color: var(--pen); background: none; border-color: transparent; font-size: calc(13rem / 14); }
+button.back { align-self: flex-start; margin-inline-start: -12px; }
+button.back::before { content: ''; width: 7px; height: 7px; border: solid currentColor; border-width: 0 0 2px 2px; transform: rotate(45deg); }
+button.back:dir(rtl)::before { transform: rotate(-135deg); }
+button.icon { flex: none; width: var(--tap); height: var(--tap); padding: 0; color: var(--muted); background: none; border-color: transparent; border-radius: 50%; }
+button.icon svg { width: 20px; height: 20px; }
 button:disabled, button[aria-disabled="true"] { opacity: 0.45; cursor: default; }
-button.danger { color: var(--stamp); border-color: var(--stamp); }
-dialog { box-sizing: border-box; width: 360px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); padding: 16px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
-dialog[open] { display: flex; flex-direction: column; gap: 12px; }
-dialog::backdrop { background: #0008; }
-.acknowledgment { flex-direction: row; align-items: flex-start; gap: 8px; color: var(--ink); }
-.acknowledgment input { width: auto; flex: none; margin-top: 3px; }
-@media (prefers-reduced-motion: no-preference) { button { transition: border-color 0.12s, filter 0.12s, opacity 0.2s; } }
+@media (hover: hover) {
+  button:hover:not(:disabled, [aria-disabled="true"]) { border-color: var(--pen); }
+  button:is(.primary, .quiet, .icon):hover:not(:disabled, [aria-disabled="true"]) { border-color: transparent; }
+  button.primary:hover:not(:disabled, [aria-disabled="true"]) { filter: brightness(1.1); }
+  button:is(.icon, .quiet):hover:not(:disabled, [aria-disabled="true"]) { color: var(--pen); background: var(--pen-soft); }
+}
+button:active:not(:disabled, [aria-disabled="true"]) { transform: scale(0.97); }
+@media (prefers-reduced-motion: no-preference) { button { transition: border-color 0.12s, background-color 0.12s, filter 0.12s, opacity 0.2s, transform 0.1s; } }
+
+/* Dialogs: a card in the middle on a wide screen, a sheet up from the bottom on a phone (or in the toolbar popup) */
+dialog { box-sizing: border-box; width: 420px; max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); padding: 0 20px 20px; color: var(--ink); background: var(--sheet); border: 0; border-radius: 20px; box-shadow: 0 24px 64px var(--shade); overscroll-behavior: contain; }
+dialog[open] { display: flex; flex-direction: column; gap: 14px; }
+dialog::backdrop { background: #0a0d1a8c; }
+/* the title and its close button, staying put while the rest scrolls */
+.sheet-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; margin-inline: -20px; padding: 14px 10px 6px 20px; background: var(--sheet); }
+.sheet-head:dir(rtl) { padding: 14px 20px 6px 10px; }
+.sheet-head h2 { flex: 1; }
+@media (max-width: 560px) {
+  dialog { width: 100%; max-width: 100%; margin: auto 0 0; max-height: calc(100dvh - max(24px, env(safe-area-inset-top))); padding-bottom: max(20px, env(safe-area-inset-bottom)); border-radius: 20px 20px 0 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    dialog[open] { transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    @starting-style { dialog[open] { transform: translateY(40%); } }
+  }
+}
+.acknowledgment { flex-direction: row; align-items: flex-start; gap: 10px; color: var(--ink); font-weight: 400; }
+.acknowledgment input { flex: none; margin: 0; }
 
 [hidden] { display: none !important; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .row > button:not(.quiet, .icon) { flex: 1 1 0; } /* side by side while their labels fit, else one under the other */
-.row > select { flex: 1; min-width: 0; width: 0; overflow: hidden; } /* a long label stays inside, not widening the page */
-.selector-field { display: flex; flex-direction: column; gap: 4px; }
+.row > select { flex: 1; min-width: 0; width: 0; } /* a long label stays inside, not widening the page */
 .dialog-content { display: flex; flex-direction: column; gap: 12px; }
 .row > span { flex: 1; overflow-wrap: anywhere; }
 .mono { font: calc(12rem / 14) var(--mono); overflow-wrap: anywhere; }
 /* Addresses, amounts and a site's own text keep their own direction inside a right-to-left page. */
-.mono, dd, pre, input, textarea { unicode-bidi: plaintext; }
+.mono, dd, pre, input, textarea, .hero { unicode-bidi: plaintext; }
 a { color: var(--pen); }
-.error { color: var(--stamp); border-inline-start: 3px solid var(--stamp); padding-inline-start: 8px; }
+.error { color: var(--stamp); background: var(--stamp-soft); border-radius: 12px; padding: 10px 14px; }
 
-/* the thing you are about to sign, as a slip torn off a pad */
-.slip { display: flex; flex-direction: column; gap: 10px; padding: 12px; background: var(--sheet); border: 1px solid var(--rule); border-top: 2px dashed var(--rule); border-radius: 0 0 8px 8px; }
+/* An approval's Reject and Approve: kept in view at the bottom while you scroll through what you're approving */
+.bar { position: sticky; bottom: 0; z-index: 1; margin-top: auto; flex-wrap: nowrap; padding-block: 16px max(4px, env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 14px); }
+
+/* the home screen: the account, its coin and what you can do with it */
+.card { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 20px; box-shadow: 0 1px 2px var(--shade); }
+/* as wide as the chosen name, so the chevron and the edit button sit right after it */
+.row > select:is(.pill, .title) { flex: 0 1 auto; width: auto; field-sizing: content; }
+.row > select.pill { min-height: 34px; padding: 4px 32px 4px 12px; font-size: calc(13rem / 14); font-weight: 600; color: var(--pen); background-color: var(--pen-soft); border-radius: 999px; }
+.row > select.pill:dir(rtl) { padding: 4px 12px 4px 32px; }
+@media (pointer: coarse) { .row > select.pill { min-height: 40px; } }
+.row > select.title { padding-inline-start: 0; font-size: calc(17rem / 14); font-weight: 700; background-color: transparent; }
+.card .address { gap: 0; margin-top: -8px; }
+.card .address .mono { flex: 1; color: var(--muted); font-size: calc(13rem / 14); }
+.hero { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-block: 2px 6px; font-size: calc(34rem / 14); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.hero > :last-child { font-size: calc(17rem / 14); font-weight: 600; letter-spacing: 0; color: var(--muted); }
+.hero .skeleton { width: calc(140rem / 14); height: calc(32rem / 14); border-radius: 8px; background: var(--rule); }
+.actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 4px; }
+.actions button { flex-direction: column; gap: 6px; min-height: 0; padding: 4px 2px; font-size: calc(12rem / 14); color: var(--ink); background: none; border: 0; }
+.actions button.primary { color: var(--ink); background: none; filter: none; }
+.actions svg { box-sizing: border-box; width: 48px; height: 48px; padding: 13px; border-radius: 50%; color: var(--pen); background: var(--pen-soft); }
+.actions .primary svg { color: var(--on-pen); background: var(--pen); }
+@media (hover: hover) { .actions button:hover:not(:disabled) svg { filter: brightness(1.08); } }
+
+/* a list of buttons that open something (Settings): one card, a row each */
+.menu { display: flex; flex-direction: column; border: 1px solid var(--rule); border-radius: 14px; overflow: hidden; }
+.menu button { justify-content: space-between; min-height: calc(var(--tap) + 4px); text-align: start; border: 0; border-radius: 0; background: none; font-weight: 500; }
+.menu button + button { border-top: 1px solid var(--rule); }
+.menu button::after { content: ''; flex: none; width: 7px; height: 7px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(-45deg); }
+.menu button:dir(rtl)::after { transform: rotate(135deg); }
+@media (hover: hover) { .menu button:hover:not(:disabled) { background: var(--pen-soft); } }
+
+/* the thing you are about to sign */
+.slip { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 16px; }
+dialog .slip { background: var(--paper); border-color: transparent; }
 .slip strong { font-size: calc(15rem / 14); line-height: 1.35; overflow-wrap: anywhere; }
 .stamp { color: var(--stamp); }
-dl { display: grid; grid-template-columns: fit-content(42%) 1fr; gap: 6px 12px; margin: 0; }
+dl { display: grid; grid-template-columns: fit-content(42%) 1fr; gap: 8px 12px; margin: 0; }
 dt { font-size: calc(12rem / 14); color: var(--muted); overflow-wrap: anywhere; }
 dd { margin: 0; font: calc(12rem / 14) var(--mono); overflow-wrap: anywhere; max-height: calc(110rem / 14); overflow: auto; }
 .slip pre { border-top: 1px solid var(--rule); padding-top: 10px; } /* wallet's rows above, the dapp's text below */
 pre { margin: 0; font: calc(12rem / 14)/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; max-height: calc(260rem / 14); overflow: auto; }
 
-.balances { padding: 12px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
-.balances dt { font: calc(13rem / 14) var(--mono); color: var(--ink); }
+.balances { grid-template-columns: 1fr auto; row-gap: 16px; padding: 16px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 20px; }
+.balances dt { font-size: calc(14rem / 14); font-weight: 600; color: var(--ink); }
 /* at the row's far end in either direction: a number's own (plaintext) direction would put text-align: end on the
    right in Arabic too, beside its symbol */
-.balances dd { font-size: calc(13rem / 14); text-align: end; justify-self: end; }
+.balances dd { font-size: calc(14rem / 14); text-align: end; justify-self: end; font-variant-numeric: tabular-nums; }
 dd.skeleton { width: calc(64rem / 14); height: calc(13rem / 14); margin-block: calc(3rem / 14); border-radius: 4px; background: var(--rule); }
 /* checks on a request: one line each, the details folding out under a chevron */
-.fold { padding: 8px 12px; border: 1px dashed var(--rule); border-radius: 8px; font-size: calc(13rem / 14); }
-.fold summary { display: flex; align-items: center; gap: 6px; list-style: none; cursor: pointer; color: var(--muted); }
+.fold { padding: 10px 14px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 14px; font-size: calc(13rem / 14); }
+dialog .fold { background: none; }
+.fold summary { display: flex; align-items: center; gap: 6px; min-height: 28px; list-style: none; cursor: pointer; color: var(--muted); }
 .fold summary::-webkit-details-marker { display: none; }
 .fold summary > span { flex: 1; font: calc(12rem / 14) var(--mono); color: var(--ink); overflow-wrap: anywhere; }
 .fold summary > span.skeleton { flex: 0 0 calc(96rem / 14); height: calc(12rem / 14); border-radius: 4px; background: var(--rule); }
-.fold summary::after { content: ''; flex: none; width: 6px; height: 6px; margin-block: 0 3px; margin-inline: auto 2px; border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+.fold summary::after { content: ''; flex: none; width: 7px; height: 7px; margin-block: 0 3px; margin-inline: auto 2px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(45deg); }
 .fold[open] summary::after { margin-bottom: -3px; transform: rotate(-135deg); }
 .fold[open] summary { margin-bottom: 10px; }
 @media (prefers-reduced-motion: no-preference) { .fold summary::after { transition: transform 0.15s; } }
@@ -99,16 +170,19 @@ dd.skeleton { width: calc(64rem / 14); height: calc(13rem / 14); margin-block: c
 @media (prefers-reduced-motion: no-preference) { .skeleton, .pending { animation: pulse 1.2s ease-in-out infinite alternate; } }
 @keyframes pulse { to { opacity: 0.4; } }
 
-ol { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 4px; margin: 0; padding: 12px; padding-inline-start: calc(32rem / 14); font: calc(13rem / 14) var(--mono); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
+/* a seed phrase: numbered words, three to a row */
+ol { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; padding: 0; list-style-position: inside; font: calc(14rem / 14) var(--mono); }
+li { padding: 8px 10px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; overflow-wrap: anywhere; }
+dialog li { background: var(--paper); }
 li::marker { color: var(--muted); font-size: calc(11rem / 14); }
 
 /* Android app: sites starred in its browser, as launcher tiles above the balances */
-.favorites { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.favorites button { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding: 8px 4px; font-size: calc(11rem / 14); font-weight: 500; }
-.favorites button > span:first-child { display: grid; place-items: center; width: calc(32rem / 14); height: calc(32rem / 14); border-radius: 50%; color: var(--on-pen); background: var(--pen); font-size: calc(15rem / 14); font-weight: 650; }
+.favorites { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.favorites button { flex-direction: column; gap: 6px; min-width: 0; min-height: 0; padding: 8px 4px; font-size: calc(12rem / 14); font-weight: 500; background: none; border-color: transparent; }
+.favorites button > span:first-child { display: grid; place-items: center; width: calc(44rem / 14); height: calc(44rem / 14); border-radius: 14px; color: var(--pen); background: var(--pen-soft); font-size: calc(17rem / 14); font-weight: 700; }
 .favorites button > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.favorites p { grid-column: 1 / -1; }
-.favorites img { width: calc(32rem / 14); height: calc(32rem / 14); border-radius: 8px; }
+.favorites p { grid-column: 1 / -1; padding: 12px; text-align: center; border: 1px dashed var(--rule); border-radius: 14px; }
+.favorites img { width: calc(44rem / 14); height: calc(44rem / 14); border-radius: 14px; }
 
 /* The home screen's wallet (main.ts: home): just the next rows on a narrow screen. On a wide one (a tablet, an
    unfolded phone) it keeps its readable column and the favorites get one beside it, rather than one stretched column.
@@ -117,7 +191,7 @@ li::marker { color: var(--muted); font-size: calc(11rem / 14); }
    page too) stays one column. */
 .wallet { display: contents; }
 @media (min-width: 560px) {
-  #app:has(> .favorites) { display: grid; grid-template-columns: minmax(348px, 400px) minmax(0, 320px); grid-auto-flow: row dense; justify-content: center; align-items: start; gap: 12px 24px; max-width: none; }
+  #app:has(> .favorites) { display: grid; grid-template-columns: minmax(348px, 420px) minmax(0, 320px); grid-auto-flow: row dense; justify-content: center; align-items: start; align-content: start; gap: 12px 24px; max-width: none; }
   #app:has(> .favorites) > :not(.favorites, .wallet) { grid-column: 1 / -1; } /* the header, an error */
   #app:has(> .favorites) > .wallet { grid-column: 1; display: flex; flex-direction: column; gap: 12px; }
   #app:has(> .favorites) > .favorites { grid-column: 2; grid-template-columns: repeat(auto-fill, minmax(min(calc(72rem / 14), 100%), 1fr)); }

@@ -1,0 +1,1 @@
+Um visual novo: seu saldo em destaque em um único cartão, Enviar, Tokens e Transações como botões grandes e áreas de toque maiores em todo lugar. No celular, as janelas deslizam de baixo para cima, e Aprovar e Rejeitar ficam na parte de baixo da tela, ao alcance do polegar.

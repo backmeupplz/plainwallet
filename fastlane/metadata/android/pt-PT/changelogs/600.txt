@@ -1,0 +1,1 @@
+Um novo visual: o seu saldo em destaque num único cartão, Enviar, Tokens e Transações como botões grandes e áreas de toque maiores em todo o lado. No telemóvel, as janelas deslizam a partir de baixo, e Aprovar e Rejeitar ficam no fundo do ecrã, ao alcance do polegar.

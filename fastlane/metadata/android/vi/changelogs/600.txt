@@ -1,0 +1,1 @@
+Giao diện mới: số dư hiển thị nổi bật trên một thẻ, Gửi, Token và Giao dịch thành các nút lớn, cùng vùng chạm rộng hơn ở mọi nơi. Trên điện thoại, hộp thoại trượt lên từ phía dưới, còn Phê duyệt và Từ chối luôn nằm ở cuối màn hình, trong tầm ngón cái.

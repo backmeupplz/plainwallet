@@ -1,0 +1,1 @@
+Un nuovo aspetto: il saldo in primo piano su un’unica scheda, Invia, Token e Transazioni come pulsanti grandi e aree di tocco più ampie ovunque. Sul telefono le finestre scorrono dal basso, e Approva e Rifiuta restano in fondo allo schermo, a portata di pollice.

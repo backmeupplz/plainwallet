@@ -1,0 +1,1 @@
+Nowy wygląd: saldo na pierwszym planie na jednej karcie, Wyślij, Tokeny i Transakcje jako duże przyciski oraz większe pola dotyku wszędzie. Na telefonie okna wysuwają się od dołu, a Zatwierdź i Odrzuć zostają na dole ekranu, w zasięgu kciuka.

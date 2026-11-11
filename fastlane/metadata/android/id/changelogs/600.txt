@@ -1,0 +1,1 @@
+Tampilan baru: saldo Anda di depan dalam satu kartu, Kirim, Token, dan Transaksi sebagai tombol besar, serta area sentuh yang lebih besar di mana-mana. Di ponsel, dialog muncul dari bawah, dan Setujui serta Tolak tetap di bagian bawah layar, dalam jangkauan jempol Anda.
