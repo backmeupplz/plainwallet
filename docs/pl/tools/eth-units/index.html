@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Konwerter wei na ETH i gwei: dokładny, w przeglądarce</title>
-    <meta name="description" content="Przeliczaj wei, gwei i ether w obie strony na liczbach całkowitych i sprawdź sumę kontrolną EIP-55 adresu Ethereum. Nic nie opuszcza strony." />
+    <meta name="description" content="1 ETH to 10^18 wei, czyli 1 000 000 000 gwei. Przeliczaj wei, gwei i ether na liczbach całkowitych, z przykładami, i sprawdź sumę kontrolną EIP-55 adresu." />
     <link rel="canonical" href="https://plainwallet.app/pl/tools/eth-units/" />
 <link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/eth-units/">
 <link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/eth-units/">
@@ -78,7 +78,7 @@
  "name": "Konwerter wei na ETH i gwei",
  "url": "https://plainwallet.app/pl/tools/eth-units/",
  "inLanguage": "pl",
- "description": "Przeliczaj wei, gwei i ether w obie strony na liczbach całkowitych i sprawdź sumę kontrolną EIP-55 adresu Ethereum. Nic nie opuszcza strony.",
+ "description": "1 ETH to 10^18 wei, czyli 1 000 000 000 gwei. Przeliczaj wei, gwei i ether na liczbach całkowitych, z przykładami, i sprawdź sumę kontrolną EIP-55 adresu.",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Any",
  "offers": {
@@ -147,7 +147,7 @@
     </header>
     <main>
       <h1>Konwerter wei na ETH i gwei</h1>
-      <p class="lede">Wpisz kwotę w dowolnej jednostce Ethereum i zobacz ją we wszystkich pozostałych, obliczoną na liczbach całkowitych, więc żadna cyfra nie jest zaokrąglana. Nic, co wpiszesz, nie opuszcza tej strony.</p>
+      <p class="lede">Jeden ETH to 1 000 000 000 gwei, czyli 1 000 000 000 000 000 000 (10<sup>18</sup>) wei. Aby zamienić wei na ETH, przesuń przecinek o 18 miejsc w lewo; aby zamienić gwei na ETH, przesuń go o 9 miejsc. Wpisz poniżej kwotę w dowolnej jednostce Ethereum i zobacz ją we wszystkich pozostałych, obliczoną na liczbach całkowitych, więc żadna cyfra nie jest zaokrąglana. Nic, co wpiszesz, nie opuszcza tej strony.</p>
 
       <div class="row">
         <div>
@@ -176,6 +176,17 @@
       <p>Wszystko w łańcuchu jest liczone w wei, czyli w najmniejszej jednostce. Jeden ether to 10<sup>18</sup> wei, a jeden gwei to 10<sup>9</sup> wei, więc przeliczanie polega na przesunięciu przecinka. Ta strona odczytuje wpisany tekst jako liczbę dziesiętną, zamienia ją na całkowitą liczbę wei za pomocą BigInt i wypisuje każdą jednostkę, umieszczając przecinek w tej liczbie całkowitej. Nigdy nie używa liczb zmiennoprzecinkowych, które nie potrafią przechować 18 miejsc po przecinku: w JavaScript <code>0.1 + 0.2</code> to już <code>0.30000000000000004</code>.</p>
       <p>Kwota z większą liczbą miejsc po przecinku, niż pozwala jej jednostka, na przykład 0.5 wei, nie jest całkowitą liczbą wei i zostanie odrzucona zamiast zaokrąglona. Przecinki, spacje i podkreślniki w liczbie są ignorowane.</p>
       <p>Nazwy: kwei to 10<sup>3</sup> wei (babbage), mwei to 10<sup>6</sup> (lovelace), szabo to 10<sup>12</sup>, a finney to 10<sup>15</sup>. Portfele i eksploratory bloków zwykle pokazują gwei przy cenach gazu i ETH przy saldach.</p>
+
+      <h2>Przykłady z obliczeniami</h2>
+      <p>Każdy z tych przykładów przepuściłem przez kod przeliczający tej strony 10 listopada 2026 roku i możesz każdy z nich wpisać ponownie w polu powyżej.</p>
+      <ul>
+        <li><strong>1 gwei w ETH:</strong> 0.000000001 ETH.</li>
+        <li><strong>30 gwei w ETH:</strong> 0.00000003 ETH, cena gazu, jaką można zobaczyć w bardziej ruchliwym dniu.</li>
+        <li><strong>1 500 000 000 000 000 wei w ETH:</strong> 0.0015 ETH, czyli 1 500 000 gwei.</li>
+        <li><strong>0.05 ETH w gwei:</strong> 50 000 000 gwei, czyli 50 000 000 000 000 000 wei.</li>
+        <li><strong>Zwykły przelew ETH przy 30 gwei:</strong> zużywa 21 000 jednostek gazu, a 21 000 × 30 gwei to 630 000 gwei, czyli 0.00063 ETH.</li>
+      </ul>
+      <p>Ten przykład z opłatą działa, ponieważ ceny gazu podaje się w gwei za jednostkę gazu: pomnóż zużyty gaz przez cenę, aby otrzymać opłatę w gwei, a potem przesuń przecinek o 9 miejsc, aby uzyskać ETH.</p>
 
       <h2>Sprawdź sumę kontrolną adresu</h2>
       <p>Adres Ethereum to 40 cyfr szesnastkowych. <a href="https://eips.ethereum.org/EIPS/eip-55">EIP-55</a> zapisuje część jego liter wielkimi, wybranymi na podstawie skrótu Keccak-256 adresu zapisanego małymi literami, dzięki czemu błędnie wpisany znak bardzo prawdopodobnie zostanie wykryty. Wklej adres, aby zobaczyć jego poprawną postać i sprawdzić, czy Twój się zgadza.</p>

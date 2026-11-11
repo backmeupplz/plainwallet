@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Wei から ETH・gwei への換算ツール:正確、ブラウザ内で完結</title>
-    <meta name="description" content="wei、gwei、ether を整数演算で正確に相互換算し、Ethereum アドレスを EIP-55 チェックサムで確認できます。入力した内容はページの外に出ません。" />
+    <meta name="description" content="1 ETH は 10^18 wei、つまり 1,000,000,000 gwei です。wei、gwei、ether を整数演算で正確に相互換算でき、計算例の紹介や EIP-55 チェックサムの確認もできます。" />
     <link rel="canonical" href="https://plainwallet.app/ja/tools/eth-units/" />
 <link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/eth-units/">
 <link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/eth-units/">
@@ -78,7 +78,7 @@
  "name": "Wei から ETH・gwei への換算ツール",
  "url": "https://plainwallet.app/ja/tools/eth-units/",
  "inLanguage": "ja",
- "description": "wei、gwei、ether を整数演算で正確に相互換算し、Ethereum アドレスを EIP-55 チェックサムで確認できます。入力した内容はページの外に出ません。",
+ "description": "1 ETH は 10^18 wei、つまり 1,000,000,000 gwei です。wei、gwei、ether を整数演算で正確に相互換算でき、計算例の紹介や EIP-55 チェックサムの確認もできます。",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Any",
  "offers": {
@@ -147,7 +147,7 @@
     </header>
     <main>
       <h1>Wei から ETH・gwei への換算ツール</h1>
-      <p class="lede">Ethereum のいずれかの単位で金額を入力すると、ほかのすべての単位での値が表示されます。計算は整数で行うので、丸められる桁はありません。入力した内容がこのページの外に出ることはありません。</p>
+      <p class="lede">1 ETH は 1,000,000,000 gwei で、これは 1,000,000,000,000,000,000(10<sup>18</sup>)wei にあたります。wei を ETH にするには小数点を左へ 18 桁、gwei を ETH にするには 9 桁動かします。下の欄に Ethereum のいずれかの単位で金額を入力すると、ほかのすべての単位での値が表示されます。計算は整数で行うので、丸められる桁はありません。入力した内容がこのページの外に出ることはありません。</p>
 
       <div class="row">
         <div>
@@ -176,6 +176,17 @@
       <p>チェーン上のものはすべて、最小の単位である wei で数えられます。1 ether は 10<sup>18</sup> wei、1 gwei は 10<sup>9</sup> wei なので、換算とは小数点を動かすことです。このページは入力された内容を小数の文字列として読み取り、BigInt で wei の整数に変換して、その整数に小数点を置くことで各単位の値を表示します。小数点以下 18 桁を保持できない浮動小数点数は、一切使いません。JavaScript では <code>0.1 + 0.2</code> がすでに <code>0.30000000000000004</code> になります。</p>
       <p>0.5 wei のように、単位が許す桁数より多くの小数を含む金額は、wei の整数にならないため、丸めずに拒否されます。数値中のカンマ、スペース、アンダースコアは無視されます。</p>
       <p>単位名は次のとおりです。kwei は 10<sup>3</sup> wei(babbage)、mwei は 10<sup>6</sup>(lovelace)、szabo は 10<sup>12</sup>、finney は 10<sup>15</sup> です。ウォレットやブロックエクスプローラーでは、ガス価格はたいてい gwei で、残高は ETH で表示されます。</p>
+
+      <h2>計算例</h2>
+      <p>以下はいずれも、2026年11月10日にこのページ自身の換算コードで実際に計算したものです。上の欄に入力し直して確かめることもできます。</p>
+      <ul>
+        <li><strong>1 gwei を ETH で表すと:</strong> 0.000000001 ETH。</li>
+        <li><strong>30 gwei を ETH で表すと:</strong> 0.00000003 ETH。混雑した日に見かけることのあるガス価格です。</li>
+        <li><strong>1,500,000,000,000,000 wei を ETH で表すと:</strong> 0.0015 ETH。gwei では 1,500,000 gwei にあたります。</li>
+        <li><strong>0.05 ETH を gwei で表すと:</strong> 50,000,000 gwei、wei では 50,000,000,000,000,000 wei です。</li>
+        <li><strong>30 gwei での通常の ETH 送金:</strong> 21,000 ガスを使うので、21,000 × 30 gwei は 630,000 gwei、つまり 0.00063 ETH です。</li>
+      </ul>
+      <p>この手数料の例が成り立つのは、ガス価格が 1 ガスあたりの gwei で示されるからです。使用したガスの量に価格を掛けると手数料が gwei で求まり、小数点を 9 桁動かすと ETH になります。</p>
 
       <h2>アドレスのチェックサムを確認</h2>
       <p>Ethereum のアドレスは 16 進数 40 桁です。<a href="https://eips.ethereum.org/EIPS/eip-55">EIP-55</a> では、小文字のアドレスから求めた Keccak-256 ハッシュに基づいて一部の文字を大文字にするため、1 文字の入力ミスはかなりの確率で見つかります。アドレスを貼り付けると、正しい表記と、入力したものが一致しているかどうかがわかります。</p>

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Convertitore da wei a ETH e gwei: esatto, nel browser</title>
-    <meta name="description" content="Converti wei, gwei ed ether nei due sensi con calcoli esatti su interi e verifica il checksum EIP-55 di un indirizzo Ethereum. Nulla esce dalla pagina." />
+    <meta name="description" content="1 ETH vale 10^18 wei, ovvero 1,000,000,000 gwei. Converti wei, gwei ed ether con calcoli esatti su interi, con esempi svolti, e verifica il checksum EIP-55." />
     <link rel="canonical" href="https://plainwallet.app/it/tools/eth-units/" />
 <link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/eth-units/">
 <link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/eth-units/">
@@ -78,7 +78,7 @@
  "name": "Convertitore da wei a ETH e gwei",
  "url": "https://plainwallet.app/it/tools/eth-units/",
  "inLanguage": "it",
- "description": "Converti wei, gwei ed ether nei due sensi con calcoli esatti su interi e verifica il checksum EIP-55 di un indirizzo Ethereum. Nulla esce dalla pagina.",
+ "description": "1 ETH vale 10^18 wei, ovvero 1,000,000,000 gwei. Converti wei, gwei ed ether con calcoli esatti su interi, con esempi svolti, e verifica il checksum EIP-55.",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Any",
  "offers": {
@@ -147,7 +147,7 @@
     </header>
     <main>
       <h1>Convertitore da wei a ETH e gwei</h1>
-      <p class="lede">Digita un importo in una qualsiasi unità di Ethereum e vedilo in tutte le altre, calcolato con numeri interi, quindi nessuna cifra viene arrotondata. Nulla di ciò che digiti esce da questa pagina.</p>
+      <p class="lede">Un ETH vale 1 000 000 000 gwei, cioè 1 000 000 000 000 000 000 (10<sup>18</sup>) wei. Per trasformare i wei in ETH si sposta la virgola di 18 posizioni verso sinistra; per trasformare i gwei in ETH la si sposta di 9 posizioni. Digita sotto un importo in una qualsiasi unità di Ethereum e vedilo in tutte le altre, calcolato con numeri interi, quindi nessuna cifra viene arrotondata. Nulla di ciò che digiti esce da questa pagina.</p>
 
       <div class="row">
         <div>
@@ -176,6 +176,17 @@
       <p>Sulla blockchain tutto è contato in wei, l'unità più piccola. Un ether vale 10<sup>18</sup> wei e un gwei vale 10<sup>9</sup> wei, quindi convertire significa spostare una virgola. Questa pagina legge ciò che digiti come stringa decimale, la trasforma in un numero intero di wei con BigInt e stampa ogni unità collocando la virgola in quel numero intero. Non usa mai i numeri in virgola mobile, che non possono contenere 18 cifre decimali: in JavaScript <code>0.1 + 0.2</code> è già <code>0.30000000000000004</code>.</p>
       <p>Un importo con più decimali di quelli consentiti dalla sua unità, come 0.5 wei, non è un numero intero di wei e viene rifiutato anziché arrotondato. Virgole, spazi e trattini bassi nel numero vengono ignorati.</p>
       <p>I nomi: kwei vale 10<sup>3</sup> wei (babbage), mwei vale 10<sup>6</sup> (lovelace), szabo vale 10<sup>12</sup> e finney vale 10<sup>15</sup>. I wallet e i block explorer mostrano per lo più gwei per i prezzi del gas ed ETH per i saldi.</p>
+
+      <h2>Esempi svolti</h2>
+      <p>Ho fatto passare ognuno di questi esempi nel codice di conversione di questa stessa pagina il 10 novembre 2026, e puoi riscriverli tutti nel campo qui sopra.</p>
+      <ul>
+        <li><strong>1 gwei in ETH:</strong> 0.000000001 ETH.</li>
+        <li><strong>30 gwei in ETH:</strong> 0.00000003 ETH, un prezzo del gas che si può vedere in una giornata di traffico intenso.</li>
+        <li><strong>1 500 000 000 000 000 wei in ETH:</strong> 0.0015 ETH, cioè 1 500 000 gwei.</li>
+        <li><strong>0.05 ETH in gwei:</strong> 50 000 000 gwei, ovvero 50 000 000 000 000 000 wei.</li>
+        <li><strong>Un semplice trasferimento di ETH a 30 gwei:</strong> usa 21 000 di gas, e 21 000 × 30 gwei fa 630 000 gwei, cioè 0.00063 ETH.</li>
+      </ul>
+      <p>L'esempio della commissione funziona perché i prezzi del gas sono indicati in gwei per unità di gas: si moltiplica il gas usato per il prezzo per ottenere la commissione in gwei, poi si sposta la virgola di 9 posizioni per ottenere gli ETH.</p>
 
       <h2>Verifica il checksum di un indirizzo</h2>
       <p>Un indirizzo Ethereum è composto da 40 cifre esadecimali. <a href="https://eips.ethereum.org/EIPS/eip-55">EIP-55</a> scrive in maiuscolo alcune delle sue lettere, scelte in base all'hash Keccak-256 dell'indirizzo in minuscolo, così un carattere digitato male viene quasi sempre individuato. Incolla un indirizzo per vedere la sua forma corretta e se il tuo coincide.</p>

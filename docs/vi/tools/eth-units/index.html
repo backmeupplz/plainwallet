@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Đổi wei sang ETH và gwei: chính xác, ngay trong trình duyệt</title>
-    <meta name="description" content="Đổi wei, gwei và ether hai chiều bằng số nguyên chính xác, và kiểm tra địa chỉ Ethereum theo checksum EIP-55. Những gì bạn nhập không rời khỏi trang." />
+    <meta name="description" content="1 ETH bằng 10^18 wei hay 1,000,000,000 gwei. Đổi wei, gwei, ether hai chiều bằng số nguyên chính xác, có ví dụ, và kiểm tra checksum EIP-55 của địa chỉ." />
     <link rel="canonical" href="https://plainwallet.app/vi/tools/eth-units/" />
 <link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/eth-units/">
 <link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/eth-units/">
@@ -78,7 +78,7 @@
  "name": "Công cụ đổi wei sang ETH và gwei",
  "url": "https://plainwallet.app/vi/tools/eth-units/",
  "inLanguage": "vi",
- "description": "Đổi wei, gwei và ether hai chiều bằng số nguyên chính xác, và kiểm tra địa chỉ Ethereum theo checksum EIP-55. Những gì bạn nhập không rời khỏi trang.",
+ "description": "1 ETH bằng 10^18 wei hay 1,000,000,000 gwei. Đổi wei, gwei, ether hai chiều bằng số nguyên chính xác, có ví dụ, và kiểm tra checksum EIP-55 của địa chỉ.",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Any",
  "offers": {
@@ -147,7 +147,7 @@
     </header>
     <main>
       <h1>Công cụ đổi wei sang ETH và gwei</h1>
-      <p class="lede">Nhập một số lượng ở bất kỳ đơn vị Ethereum nào và xem giá trị ở tất cả các đơn vị còn lại, được tính bằng số nguyên nên không chữ số nào bị làm tròn. Những gì bạn nhập không rời khỏi trang này.</p>
+      <p class="lede">Một ETH bằng 1 000 000 000 gwei, tức 1 000 000 000 000 000 000 (10<sup>18</sup>) wei. Để đổi wei sang ETH, hãy dời dấu thập phân sang trái 18 chữ số; để đổi gwei sang ETH, hãy dời 9 chữ số. Nhập một số lượng ở bất kỳ đơn vị Ethereum nào bên dưới và xem giá trị ở tất cả các đơn vị còn lại, được tính bằng số nguyên nên không chữ số nào bị làm tròn. Những gì bạn nhập không rời khỏi trang này.</p>
 
       <div class="row">
         <div>
@@ -176,6 +176,17 @@
       <p>Mọi thứ trên chuỗi đều được đếm bằng wei, đơn vị nhỏ nhất. Một ether bằng 10<sup>18</sup> wei và một gwei bằng 10<sup>9</sup> wei, nên việc đổi chỉ là dời dấu thập phân. Trang này đọc những gì bạn nhập như một chuỗi số thập phân, đổi nó thành một số nguyên wei bằng BigInt, rồi in ra từng đơn vị bằng cách đặt dấu thập phân vào số nguyên đó. Trang không bao giờ dùng số dấu phẩy động, vì loại số này không thể chứa 18 chữ số thập phân: trong JavaScript, <code>0.1 + 0.2</code> đã ra <code>0.30000000000000004</code>.</p>
       <p>Một số lượng có nhiều chữ số thập phân hơn đơn vị cho phép, chẳng hạn 0.5 wei, không phải là số nguyên wei nên sẽ bị từ chối chứ không được làm tròn. Dấu phẩy, dấu cách và dấu gạch dưới trong số sẽ bị bỏ qua.</p>
       <p>Tên gọi: kwei bằng 10<sup>3</sup> wei (babbage), mwei bằng 10<sup>6</sup> (lovelace), szabo bằng 10<sup>12</sup> và finney bằng 10<sup>15</sup>. Các ví và trình khám phá khối thường hiển thị gwei cho giá gas và ETH cho số dư.</p>
+
+      <h2>Ví dụ minh họa</h2>
+      <p>Tôi đã chạy từng ví dụ này qua chính mã chuyển đổi của trang này vào ngày 10 tháng 11 năm 2026, và bạn có thể nhập lại bất kỳ ví dụ nào vào ô phía trên.</p>
+      <ul>
+        <li><strong>1 gwei sang ETH:</strong> 0.000000001 ETH.</li>
+        <li><strong>30 gwei sang ETH:</strong> 0.00000003 ETH, mức giá gas bạn có thể gặp vào một ngày đông giao dịch.</li>
+        <li><strong>1 500 000 000 000 000 wei sang ETH:</strong> 0.0015 ETH, tức 1 500 000 gwei.</li>
+        <li><strong>0.05 ETH sang gwei:</strong> 50 000 000 gwei, hay 50 000 000 000 000 000 wei.</li>
+        <li><strong>Một giao dịch chuyển ETH thông thường ở mức 30 gwei:</strong> tốn 21 000 gas, và 21 000 × 30 gwei là 630 000 gwei, tức 0.00063 ETH.</li>
+      </ul>
+      <p>Ví dụ về phí này tính được vì giá gas được niêm yết theo gwei trên mỗi đơn vị gas: nhân lượng gas đã dùng với giá để ra phí tính bằng gwei, rồi dời dấu thập phân 9 chữ số để ra ETH.</p>
 
       <h2>Kiểm tra checksum của địa chỉ</h2>
       <p>Một địa chỉ Ethereum gồm 40 chữ số hex. <a href="https://eips.ethereum.org/EIPS/eip-55">EIP-55</a> viết hoa một số chữ cái của nó, được chọn theo mã băm Keccak-256 của địa chỉ viết thường, nhờ vậy một ký tự gõ sai rất có khả năng bị phát hiện. Hãy dán một địa chỉ để xem dạng đúng của nó và địa chỉ của bạn có khớp hay không.</p>

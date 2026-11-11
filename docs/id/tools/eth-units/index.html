@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Konverter wei ke ETH dan gwei: akurat, di peramban Anda</title>
-    <meta name="description" content="Konversi wei, gwei, dan ether dua arah secara akurat, dan periksa alamat Ethereum dengan checksum EIP-55. Yang Anda ketik tidak keluar dari halaman." />
+    <meta name="description" content="1 ETH adalah 10^18 wei atau 1,000,000,000 gwei. Konversi wei, gwei, dan ether dua arah dengan bilangan bulat, dengan contoh, dan periksa checksum EIP-55." />
     <link rel="canonical" href="https://plainwallet.app/id/tools/eth-units/" />
 <link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/eth-units/">
 <link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/eth-units/">
@@ -78,7 +78,7 @@
  "name": "Konverter wei ke ETH dan gwei",
  "url": "https://plainwallet.app/id/tools/eth-units/",
  "inLanguage": "id",
- "description": "Konversi wei, gwei, dan ether dua arah secara akurat, dan periksa alamat Ethereum dengan checksum EIP-55. Yang Anda ketik tidak keluar dari halaman.",
+ "description": "1 ETH adalah 10^18 wei atau 1,000,000,000 gwei. Konversi wei, gwei, dan ether dua arah dengan bilangan bulat, dengan contoh, dan periksa checksum EIP-55.",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Any",
  "offers": {
@@ -147,7 +147,7 @@
     </header>
     <main>
       <h1>Konverter wei ke ETH dan gwei</h1>
-      <p class="lede">Ketik jumlah dalam satuan Ethereum apa pun dan lihat nilainya dalam semua satuan lain, dihitung dengan bilangan bulat sehingga tidak ada digit yang dibulatkan. Apa pun yang Anda ketik tidak keluar dari halaman ini.</p>
+      <p class="lede">Satu ETH sama dengan 1 000 000 000 gwei, atau 1 000 000 000 000 000 000 (10<sup>18</sup>) wei. Untuk mengubah wei menjadi ETH, geser titik desimal 18 tempat ke kiri; untuk mengubah gwei menjadi ETH, geser 9 tempat. Ketik jumlah dalam satuan Ethereum apa pun di bawah dan lihat nilainya dalam semua satuan lain, dihitung dengan bilangan bulat sehingga tidak ada digit yang dibulatkan. Apa pun yang Anda ketik tidak keluar dari halaman ini.</p>
 
       <div class="row">
         <div>
@@ -176,6 +176,17 @@
       <p>Semua yang ada di blockchain dihitung dalam wei, satuan terkecil. Satu ether adalah 10<sup>18</sup> wei dan satu gwei adalah 10<sup>9</sup> wei, jadi konversi hanyalah menggeser titik desimal. Halaman ini membaca yang Anda ketik sebagai string desimal, mengubahnya menjadi bilangan bulat wei dengan BigInt, lalu menampilkan setiap satuan dengan menempatkan titik desimal pada bilangan bulat itu. Halaman ini tidak pernah memakai bilangan floating-point, yang tidak dapat menampung 18 angka desimal: di JavaScript, <code>0.1 + 0.2</code> sudah menghasilkan <code>0.30000000000000004</code>.</p>
       <p>Jumlah dengan desimal lebih banyak daripada yang diizinkan satuannya, seperti 0.5 wei, bukan bilangan bulat wei dan ditolak, bukan dibulatkan. Koma, spasi, dan garis bawah dalam angka diabaikan.</p>
       <p>Nama satuan: kwei adalah 10<sup>3</sup> wei (babbage), mwei adalah 10<sup>6</sup> (lovelace), szabo adalah 10<sup>12</sup>, dan finney adalah 10<sup>15</sup>. Dompet dan block explorer umumnya menampilkan gwei untuk harga gas dan ETH untuk saldo.</p>
+
+      <h2>Contoh perhitungan</h2>
+      <p>Saya menjalankan setiap contoh ini melalui kode konversi halaman ini sendiri pada 10 November 2026, dan Anda bisa mengetik ulang salah satunya di kotak di atas.</p>
+      <ul>
+        <li><strong>1 gwei dalam ETH:</strong> 0.000000001 ETH.</li>
+        <li><strong>30 gwei dalam ETH:</strong> 0.00000003 ETH, harga gas yang mungkin Anda lihat saat jaringan sedang ramai.</li>
+        <li><strong>1 500 000 000 000 000 wei dalam ETH:</strong> 0.0015 ETH, yaitu 1 500 000 gwei.</li>
+        <li><strong>0.05 ETH dalam gwei:</strong> 50 000 000 gwei, atau 50 000 000 000 000 000 wei.</li>
+        <li><strong>Transfer ETH biasa dengan harga 30 gwei:</strong> membutuhkan 21 000 gas, dan 21 000 × 30 gwei adalah 630 000 gwei, yaitu 0.00063 ETH.</li>
+      </ul>
+      <p>Contoh biaya itu berlaku karena harga gas dinyatakan dalam gwei per unit gas: kalikan gas yang terpakai dengan harganya untuk mendapatkan biaya dalam gwei, lalu geser titik desimal 9 tempat untuk mendapatkan ETH.</p>
 
       <h2>Periksa checksum alamat</h2>
       <p>Alamat Ethereum terdiri dari 40 digit heksadesimal. <a href="https://eips.ethereum.org/EIPS/eip-55">EIP-55</a> menuliskan sebagian hurufnya dengan huruf kapital, dipilih berdasarkan hash Keccak-256 dari alamat huruf kecil, sehingga karakter yang salah ketik sangat mungkin terdeteksi. Tempel sebuah alamat untuk melihat bentuk yang benar dan apakah alamat Anda cocok.</p>

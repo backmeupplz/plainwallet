@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Wei till ETH och gwei: exakt, i din webbläsare</title>
-    <meta name="description" content="Omvandla wei, gwei och ether åt båda hållen med exakta heltal och kontrollera en Ethereum-adress mot EIP-55-kontrollsumman. Inget du skriver lämnar sidan." />
+    <meta name="description" content="1 ETH är 10^18 wei eller 1 000 000 000 gwei. Omvandla wei, gwei och ether åt båda hållen med exakta heltal, se exempel och kontrollera EIP-55-kontrollsumman." />
     <link rel="canonical" href="https://plainwallet.app/sv/tools/eth-units/" />
 <link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/eth-units/">
 <link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/eth-units/">
@@ -78,7 +78,7 @@
  "name": "Omvandlare från wei till ETH och gwei",
  "url": "https://plainwallet.app/sv/tools/eth-units/",
  "inLanguage": "sv",
- "description": "Omvandla wei, gwei och ether åt båda hållen med exakta heltal och kontrollera en Ethereum-adress mot EIP-55-kontrollsumman. Inget du skriver lämnar sidan.",
+ "description": "1 ETH är 10^18 wei eller 1 000 000 000 gwei. Omvandla wei, gwei och ether åt båda hållen med exakta heltal, se exempel och kontrollera EIP-55-kontrollsumman.",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Any",
  "offers": {
@@ -147,7 +147,7 @@
     </header>
     <main>
       <h1>Omvandlare från wei till ETH och gwei</h1>
-      <p class="lede">Skriv in ett belopp i valfri Ethereum-enhet och se det i alla andra, uträknat med heltal så att ingen siffra avrundas. Inget du skriver lämnar den här sidan.</p>
+      <p class="lede">En ETH är 1 000 000 000 gwei, vilket är 1 000 000 000 000 000 000 (10<sup>18</sup>) wei. För att göra om wei till ETH flyttar du decimaltecknet 18 steg åt vänster, och för att göra om gwei till ETH flyttar du det 9 steg. Skriv in ett belopp i valfri Ethereum-enhet nedan och se det i alla andra, uträknat med heltal så att ingen siffra avrundas. Inget du skriver lämnar den här sidan.</p>
 
       <div class="row">
         <div>
@@ -176,6 +176,17 @@
       <p>Allt på kedjan räknas i wei, den minsta enheten. En ether är 10<sup>18</sup> wei och en gwei är 10<sup>9</sup> wei, så att omvandla är att flytta ett decimaltecken. Den här sidan läser det du skriver som en decimalsträng, gör om den till ett helt antal wei med BigInt och skriver ut varje enhet genom att placera decimaltecknet i det heltalet. Den använder aldrig flyttal, som inte kan rymma 18 decimaler: i JavaScript är <code>0.1 + 0.2</code> redan <code>0.30000000000000004</code>.</p>
       <p>Ett belopp med fler decimaler än enheten tillåter, till exempel 0,5 wei, är inte ett helt antal wei och avvisas i stället för att avrundas. Kommatecken, mellanslag och understreck i talet ignoreras.</p>
       <p>Namn: kwei är 10<sup>3</sup> wei (babbage), mwei är 10<sup>6</sup> (lovelace), szabo är 10<sup>12</sup> och finney är 10<sup>15</sup>. Plånböcker och blockutforskare visar oftast gwei för gaspriser och ETH för saldon.</p>
+
+      <h2>Uträknade exempel</h2>
+      <p>Jag har kört vart och ett av dessa genom den här sidans egen omvandlingskod den 10 november 2026, och du kan skriva in vilket som helst av dem i rutan ovan.</p>
+      <ul>
+        <li><strong>1 gwei i ETH:</strong> 0.000000001 ETH.</li>
+        <li><strong>30 gwei i ETH:</strong> 0.00000003 ETH, ett gaspris som du kan se en hektisk dag.</li>
+        <li><strong>1 500 000 000 000 000 wei i ETH:</strong> 0.0015 ETH, vilket är 1 500 000 gwei.</li>
+        <li><strong>0.05 ETH i gwei:</strong> 50 000 000 gwei, eller 50 000 000 000 000 000 wei.</li>
+        <li><strong>En vanlig ETH-överföring till 30 gwei:</strong> den använder 21 000 gas, och 21 000 × 30 gwei är 630 000 gwei, vilket är 0.00063 ETH.</li>
+      </ul>
+      <p>Avgiftsexemplet fungerar eftersom gaspriser anges i gwei per gasenhet: multiplicera använd gas med priset för att få avgiften i gwei och flytta sedan decimaltecknet 9 steg för att få ETH.</p>
 
       <h2>Kontrollera kontrollsumman för en adress</h2>
       <p>En Ethereum-adress består av 40 hexadecimala siffror. <a href="https://eips.ethereum.org/EIPS/eip-55">EIP-55</a> skriver några av dess bokstäver med versaler, valda utifrån Keccak-256-hashen av adressen med gemener, så att ett felskrivet tecken med stor sannolikhet upptäcks. Klistra in en adress för att se dess korrekta form och om din stämmer.</p>
