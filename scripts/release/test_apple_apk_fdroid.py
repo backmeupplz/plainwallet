@@ -283,6 +283,26 @@ class AppleApkFdroidTests(unittest.TestCase):
             fdroid_script.main()
         self.assertEqual(exit.exception.code, "git push failed with status 1: remote: HTTP Basic: Access denied for *** | fatal: Authentication failed for 'https://gitlab.com/backmeupplz/fdroiddata.git/'")
 
+    def test_fdroid_closed_merge_request_updates_the_fork_then_fails(self):
+        metadata = "AutoName: Plain Wallet\nBuilds:\n  - versionName: 0.5.4\n    versionCode: 504\n    commit: " + "b" * 40 + "\nCurrentVersion: 0.5.4\nCurrentVersionCode: 504\n"
+        for state in ("closed", "merged"):
+            def urlopen(url):
+                if "merge_requests" not in url:
+                    self.assertEqual(state, "closed", "a merged merge request needs nothing from the fork")
+                body = json.dumps({"state": state, "iid": 123, "web_url": "https://gitlab.com/mr"}) if "merge_requests" in url else metadata
+                return io.BytesIO(body.encode())
+            env = {"FDROID_MR": "123", "FDROID_APP_ID": "com.borodutch.plainwallet", "FDROID_FORK": "backmeupplz/fdroiddata", "FDROID_BRANCH": "com.borodutch.plainwallet"}
+            with mock.patch.dict(os.environ, env), mock.patch("sys.argv", ["fdroid.py", "0.5.5", "505", "a" * 40, "--dry-run"]), \
+                    mock.patch("fdroid.urllib.request.urlopen", urlopen), contextlib.redirect_stdout(io.StringIO()) as out:
+                if state == "merged":
+                    fdroid_script.main()
+                    self.assertIn("is merged", out.getvalue())
+                else:
+                    with self.assertRaises(SystemExit) as exit:
+                        fdroid_script.main()
+                    self.assertIn("+  - versionName: 0.5.5\n", out.getvalue())
+                    self.assertIn("is closed, not merged", exit.exception.code)
+
     def test_new_stores_need_their_configuration(self):
         base = {"GH_TOKEN": "fake", "GITHUB_REPOSITORY": "backmeupplz/plainwallet", "STORE_SETUP_CONFIRMED": "true", "STORE_AUTO_PUBLISH_APPROVED": "true"}
         for store in ("apk", "fdroid", "appstore"):
