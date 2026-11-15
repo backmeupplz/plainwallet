@@ -599,9 +599,6 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/eth-units/"/>
   </url>
   <url>
-    <loc>https://plainwallet.app/tools/gas-fee/</loc>
-  </url>
-  <url>
     <loc>https://plainwallet.app/ar/tools/eth-units/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/eth-units/"/>
     <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/eth-units/"/>
@@ -1146,5 +1143,577 @@
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/eth-units/"/>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/eth-units/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/eth-units/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/ar/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/de/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/es/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/fr/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/hi/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/id/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/it/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/ja/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/ko/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/nl/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/pl/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/pt-br/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/pt-pt/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/ru/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/sv/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/th/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/tr/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/uk/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/vi/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/zh-hans/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
+  </url>
+  <url>
+    <loc>https://plainwallet.app/zh-hant/tools/gas-fee/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/"/>
   </url>
 </urlset>
