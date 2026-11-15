@@ -599,6 +599,9 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/eth-units/"/>
   </url>
   <url>
+    <loc>https://plainwallet.app/tools/gas-fee/</loc>
+  </url>
+  <url>
     <loc>https://plainwallet.app/ar/tools/eth-units/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/eth-units/"/>
     <xhtml:link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/eth-units/"/>

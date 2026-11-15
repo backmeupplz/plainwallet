@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ethereum gas fee calculator: gwei to ETH and USD</title>
+    <meta name="description" content="Turn a gas price in gwei and a gas limit into a fee in ETH and dollars. Reads the current base fee on Ethereum or Base from a public node, with a transfer, token transfer and swap worked out." />
+    <link rel="canonical" href="https://plainwallet.app/tools/gas-fee/" />
+    <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#151929" media="(prefers-color-scheme: dark)" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Plain Wallet" />
+    <meta property="og:url" content="https://plainwallet.app/tools/gas-fee/" />
+    <meta property="og:title" content="Ethereum gas fee calculator" />
+    <meta property="og:description" content="Gas price in gwei times gas used is the fee. See it in ETH and dollars for Ethereum or Base, in your browser." />
+    <meta property="og:image" content="https://plainwallet.app/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Plain Wallet: a wallet you can read. The extension popup showing token balances, stamped NOT AUDITED." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Ethereum gas fee calculator" />
+    <meta name="twitter:description" content="Gas price in gwei times gas used is the fee. See it in ETH and dollars for Ethereum or Base, in your browser." />
+    <meta name="twitter:image" content="https://plainwallet.app/og.png" />
+    <meta name="twitter:image:alt" content="Plain Wallet: a wallet you can read. The extension popup showing token balances, stamped NOT AUDITED." />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Ethereum gas fee calculator","url":"https://plainwallet.app/tools/gas-fee/","applicationCategory":"DeveloperApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@type":"Organization","name":"Plain Wallet","url":"https://plainwallet.app/"}}</script>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --paper: light-dark(#f7f8fa, #151929);
+        --sheet: light-dark(#ffffff, #1c2136);
+        --ink: light-dark(#1b2340, #e6e9f5);
+        --muted: light-dark(#5a6382, #a4acc8);
+        --rule: light-dark(#d5d9e3, #2c3350);
+        --pen: light-dark(#2443c4, #8fa4ff);
+        --stamp: light-dark(#b3241a, #ff8c7e);
+        --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font: 16px/1.55 system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: var(--ink); background: var(--paper); }
+      main, header, footer { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+      a { color: var(--pen); text-underline-offset: 3px; }
+      :focus-visible { outline: 2px solid var(--pen); outline-offset: 3px; border-radius: 4px; }
+      header { display: flex; align-items: center; gap: 10px; padding-block: 20px; }
+      header img { width: 28px; height: 28px; }
+      header a { font-weight: 650; text-decoration: none; color: var(--ink); }
+      h1 { margin: 8px 0 12px; font-size: clamp(30px, 6vw, 42px); line-height: 1.1; letter-spacing: -0.03em; }
+      h2 { margin: 40px 0 8px; font-size: 24px; letter-spacing: -0.02em; }
+      .lede { margin: 0 0 24px; color: var(--muted); font-size: 18px; }
+      label { display: block; margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+      .row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+      .row > div { flex: 1 1 200px; }
+      input, select, button { width: 100%; min-height: 44px; padding: 8px 12px; font: 16px var(--mono); color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
+      button { font-family: system-ui, sans-serif; font-weight: 600; cursor: pointer; color: var(--pen); }
+      table { width: 100%; border-collapse: collapse; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
+      th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--rule); font-size: 15px; }
+      td { font-family: var(--mono); overflow-wrap: anywhere; }
+      tr:last-child th, tr:last-child td { border-bottom: 0; }
+      .out { min-height: 1.6em; margin: 8px 0 0; font: 15px var(--mono); overflow-wrap: anywhere; }
+      .note { color: var(--muted); font-size: 15px; }
+      .bad { color: var(--stamp); }
+      .big { margin: 8px 0 16px; padding: 16px 20px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; font: 600 20px/1.4 var(--mono); overflow-wrap: anywhere; }
+      .cta { margin-top: 40px; padding: 20px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; }
+      .cta p { margin: 0 0 8px; }
+      footer { padding-block: 32px 48px; color: var(--muted); font-size: 14px; }
+      @media (max-width: 560px) {
+        thead { display: none; }
+        th, td { display: block; width: auto; padding: 4px 12px; border: 0; }
+        td::before { content: attr(data-label) ': '; font-family: system-ui, sans-serif; color: var(--muted); }
+        tr { display: block; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+        tr:last-child { border-bottom: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <img src="/icon.svg" alt="" width="28" height="28" />
+      <a href="/">Plain Wallet</a>
+    </header>
+    <main>
+      <h1>Ethereum gas fee calculator</h1>
+      <p class="lede">A transaction fee is the gas it uses times the price of each unit of gas, and the price is quoted in gwei. A plain ETH transfer uses 21,000 gas, so at 30 gwei it costs 630,000 gwei, which is 0.00063 ETH. Pick Ethereum or Base, read the current fee from a public node or type your own, and see the cost in gwei, ETH and dollars.</p>
+
+      <div class="row">
+        <div>
+          <label for="net">Network</label>
+          <select id="net">
+            <option value="eth" selected>Ethereum</option>
+            <option value="base">Base</option>
+          </select>
+        </div>
+        <div>
+          <label for="refresh">Current fee</label>
+          <button id="refresh" type="button">Read current fee</button>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="base">Base fee (gwei)</label>
+          <input id="base" inputmode="decimal" autocomplete="off" value="30" />
+        </div>
+        <div>
+          <label for="tip">Priority fee, the tip (gwei)</label>
+          <input id="tip" inputmode="decimal" autocomplete="off" value="1" />
+        </div>
+        <div>
+          <label for="usd">ETH price (USD)</label>
+          <input id="usd" inputmode="decimal" autocomplete="off" value="3000" />
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="gas">Gas used</label>
+          <input id="gas" inputmode="numeric" autocomplete="off" value="21000" />
+        </div>
+      </div>
+      <p id="status" class="out note" role="status">The fields hold example numbers until you read the current fee or change them.</p>
+      <p id="error" class="out bad" role="alert"></p>
+      <div class="big" id="total" aria-live="polite"></div>
+
+      <h2>Typical transactions at this price</h2>
+      <table>
+        <thead><tr><th scope="col">Transaction</th><th scope="col">Gas used</th><th scope="col">Fee in ETH</th><th scope="col">Fee in USD</th></tr></thead>
+        <tbody id="presets"></tbody>
+      </table>
+      <p class="note">A plain ETH transfer always uses 21,000 gas. The other two are rough, round figures: a token transfer commonly uses between about 45,000 and 65,000 gas and a swap on a decentralized exchange between about 120,000 and 200,000, depending on the contract. Your wallet shows the real estimate before you confirm.</p>
+
+      <h2>How the fee is worked out</h2>
+      <p>Since the London upgrade (EIP-1559) every block has a base fee, set by the protocol from how full the previous blocks were, and it is burned. On top of it you may offer a priority fee, which goes to the block producer. What you pay per unit of gas is the base fee plus the priority fee, and the fee is that price times the gas the transaction actually uses. The number a wallet shows before you send is usually a maximum: a transaction pays the base fee of its own block, which can be lower than the cap you set, and any difference is not charged.</p>
+      <p>This page multiplies exact integers: your gwei values become whole numbers of wei, and the fee is shown in gwei, ETH and, using the ETH price in the box, dollars. The dollar figure is approximate because the price moves; edit it to any price you want to test.</p>
+
+      <h2>Where the current fee comes from</h2>
+      <p>The button asks a public node, <a href="https://www.publicnode.com/">PublicNode</a>, for the latest block's base fee and for its suggested priority fee, and asks the network's Chainlink ETH/USD price feed (read with a plain contract call on the same node) for the price. That is a read-only request from your browser: no wallet, no address and nothing you typed is sent, but the node does see your IP address as any website does. If the node does not answer within five seconds, the fields keep your numbers and you can type your own.</p>
+      <p><strong>Base</strong> is a layer 2, and its fee has a second part this page leaves out: the cost of posting the transaction's data to Ethereum, which is added to the fee on top of the amount shown here and is usually small next to Ethereum's fee. Fees on both networks can change from one block to the next, and the figure is an estimate, not a quote.</p>
+
+      <h2>Worked examples</h2>
+      <p>I ran these through this page's own code on November 15, 2026 with a made-up price of 30 gwei (base fee 29 plus a tip of 1) and ETH at $3,000. The figures are examples, not today's fees.</p>
+      <ul>
+        <li><strong>ETH transfer, 21,000 gas:</strong> 630,000 gwei, which is 0.00063 ETH, or $1.89.</li>
+        <li><strong>Token transfer, 65,000 gas:</strong> 1,950,000 gwei, which is 0.00195 ETH, or $5.85.</li>
+        <li><strong>Swap, 150,000 gas:</strong> 4,500,000 gwei, which is 0.0045 ETH, or $13.50.</li>
+        <li><strong>The same ETH transfer at 0.01 gwei</strong>, a price Base and other layer 2 networks often have: 210 gwei, which is 0.00000021 ETH, or less than $0.001.</li>
+      </ul>
+      <p>To turn between gwei and ETH on their own, use the <a href="/tools/eth-units/">wei, gwei and ETH converter</a>.</p>
+
+      <div class="cta">
+        <p><strong>Plain Wallet</strong> shows the fee before you sign: an open-source Ethereum wallet for Chrome, Android and Mac in about 2,850 lines of TypeScript you can read.</p>
+        <p><a href="/?utm_source=tool&amp;utm_campaign=gas-fee">See Plain Wallet</a></p>
+      </div>
+    </main>
+    <footer>
+      <a href="/">plainwallet.app</a> · MIT · <a href="https://github.com/backmeupplz/plainwallet">GitHub</a>
+    </footer>
+    <script>
+// Decimal string to a whole number of units at `decimals` places, exactly. Returns null when it is not a plain
+// non-negative decimal or has more places than that.
+function toUnits(text, decimals) {
+  const m = /^(\d*)(?:\.(\d*))?$/.exec(text.trim().replace(/[,_\s]/g, ''))
+  if (!m || (m[1] === '' && !m[2])) return null
+  const frac = m[2] || ''
+  if (frac.length > decimals && /[1-9]/.test(frac.slice(decimals))) return null
+  return BigInt((m[1] || '0') + frac.slice(0, decimals).padEnd(decimals, '0'))
+}
+
+// A whole number of units as a decimal string, exactly, without trailing zeros, with thousands separators in the integer part.
+function fromUnits(n, decimals) {
+  const s = n.toString().padStart(decimals + 1, '0')
+  const whole = s.slice(0, s.length - decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  const frac = s.slice(s.length - decimals).replace(/0+$/, '')
+  return frac ? whole + '.' + frac : whole
+}
+
+// Fee in wei and in USD micro-units (1e-6 dollar) for a gas price (wei), gas used and ETH price (USD, 6 places).
+function fee(priceWei, gas, usdMicro) {
+  const wei = priceWei * gas
+  return { wei, gwei: wei, usdMicro: (wei * usdMicro) / 10n ** 18n }
+}
+
+function fmtUsd(micro) {
+  if (micro === 0n) return '$0'
+  if (micro < 1000n) return '<$0.001'
+  const v = Number(micro) / 1e6
+  return '$' + v.toLocaleString('en-US', v >= 1 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumSignificantDigits: 3 })
+}
+
+const fmtGwei = (wei) => fromUnits(wei, 9)
+const fmtEth = (wei) => fromUnits(wei, 18)
+
+const PRESETS = [['ETH transfer', 21000n], ['Token transfer', 65000n], ['Swap on a decentralized exchange', 150000n]]
+const NETS = {
+  eth: { rpc: 'https://ethereum-rpc.publicnode.com', feed: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419', name: 'Ethereum' },
+  base: { rpc: 'https://base-rpc.publicnode.com', feed: '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70', name: 'Base' },
+}
+
+      const $ = (id) => document.getElementById(id)
+      function render() {
+        const base = toUnits($('base').value, 9)
+        const tip = toUnits($('tip').value, 9)
+        const usd = toUnits($('usd').value, 6)
+        const gas = /^[\d,_\s]+$/.test($('gas').value) ? BigInt($('gas').value.replace(/[,_\s]/g, '')) : null
+        const presets = $('presets')
+        presets.replaceChildren()
+        $('total').textContent = ''
+        if (base === null || tip === null || usd === null || gas === null) {
+          $('error').textContent = 'Enter plain numbers: fees in gwei with up to 9 decimals, the ETH price in dollars, and gas as a whole number.'
+          return
+        }
+        $('error').textContent = ''
+        const price = base + tip
+        const f = fee(price, gas, usd)
+        $('total').textContent = fmtGwei(f.wei) + ' gwei = ' + fmtEth(f.wei) + ' ETH = ' + fmtUsd(f.usdMicro)
+        for (const [name, g] of PRESETS) {
+          const p = fee(price, g, usd)
+          const tr = presets.insertRow()
+          tr.insertCell().outerHTML = '<th scope="row">' + name + '</th>'
+          for (const [label, text] of [['Gas used', g.toLocaleString('en-US')], ['Fee in ETH', fmtEth(p.wei)], ['Fee in USD', fmtUsd(p.usdMicro)]]) {
+            const td = tr.insertCell()
+            td.dataset.label = label
+            td.textContent = text
+          }
+        }
+      }
+
+      async function rpc(url, method, params) {
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+          redirect: 'error',
+          credentials: 'omit',
+          signal: AbortSignal.timeout(5000),
+        })
+        const j = await r.json()
+        if (j.error || typeof j.result === 'undefined') throw new Error('bad answer')
+        return j.result
+      }
+
+      async function readCurrent() {
+        const net = NETS[$('net').value]
+        $('status').textContent = 'Reading ' + net.name + '…'
+        try {
+          const [block, tip, round] = await Promise.all([
+            rpc(net.rpc, 'eth_getBlockByNumber', ['latest', false]),
+            rpc(net.rpc, 'eth_maxPriorityFeePerGas', []),
+            rpc(net.rpc, 'eth_call', [{ to: net.feed, data: '0xfeaf968c' }, 'latest']),
+          ])
+          const answer = BigInt('0x' + round.slice(2).slice(64, 128))
+          const updated = Number(BigInt('0x' + round.slice(2).slice(192, 256)))
+          if (answer <= 0n || !block.baseFeePerGas) throw new Error('bad answer')
+          $('base').value = fmtGwei(BigInt(block.baseFeePerGas)).replace(/,/g, '')
+          $('tip').value = fmtGwei(BigInt(tip)).replace(/,/g, '')
+          $('usd').value = fromUnits(answer * 10n ** 6n / 10n ** 8n, 6).replace(/,/g, '')
+          const ageMin = Math.max(0, Math.round((Date.now() / 1000 - updated) / 60))
+          $('status').textContent = net.name + ' base fee of block ' + BigInt(block.number).toLocaleString('en-US') + ', its node’s suggested tip and Chainlink’s ETH/USD price from ' + ageMin + ' min ago. Edit any number.'
+        } catch {
+          $('status').textContent = 'Could not read ' + net.name + ' from the public node. Type your own numbers; the calculator works without it.'
+        }
+        render()
+      }
+
+      for (const id of ['base', 'tip', 'usd', 'gas']) $(id).oninput = render
+      $('refresh').onclick = readCurrent
+      $('net').onchange = readCurrent
+      render()
+    </script>
+  </body>
+</html>
