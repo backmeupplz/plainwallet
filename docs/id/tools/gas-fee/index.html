@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kalkulator Biaya Gas Ethereum: gwei ke ETH dan USD</title>
+    <meta name="description" content="Ubah harga gas (gwei) dan gas terpakai menjadi biaya dalam ETH dan dolar. Membaca biaya dasar Ethereum atau Base dari node publik, dengan contoh swap." />
+    <link rel="canonical" href="https://plainwallet.app/id/tools/gas-fee/" />
+<link rel="alternate" hreflang="en" href="https://plainwallet.app/tools/gas-fee/">
+<link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/tools/gas-fee/">
+<link rel="alternate" hreflang="de" href="https://plainwallet.app/de/tools/gas-fee/">
+<link rel="alternate" hreflang="es" href="https://plainwallet.app/es/tools/gas-fee/">
+<link rel="alternate" hreflang="fr" href="https://plainwallet.app/fr/tools/gas-fee/">
+<link rel="alternate" hreflang="hi" href="https://plainwallet.app/hi/tools/gas-fee/">
+<link rel="alternate" hreflang="id" href="https://plainwallet.app/id/tools/gas-fee/">
+<link rel="alternate" hreflang="it" href="https://plainwallet.app/it/tools/gas-fee/">
+<link rel="alternate" hreflang="ja" href="https://plainwallet.app/ja/tools/gas-fee/">
+<link rel="alternate" hreflang="ko" href="https://plainwallet.app/ko/tools/gas-fee/">
+<link rel="alternate" hreflang="nl" href="https://plainwallet.app/nl/tools/gas-fee/">
+<link rel="alternate" hreflang="pl" href="https://plainwallet.app/pl/tools/gas-fee/">
+<link rel="alternate" hreflang="pt-BR" href="https://plainwallet.app/pt-br/tools/gas-fee/">
+<link rel="alternate" hreflang="pt-PT" href="https://plainwallet.app/pt-pt/tools/gas-fee/">
+<link rel="alternate" hreflang="ru" href="https://plainwallet.app/ru/tools/gas-fee/">
+<link rel="alternate" hreflang="sv" href="https://plainwallet.app/sv/tools/gas-fee/">
+<link rel="alternate" hreflang="th" href="https://plainwallet.app/th/tools/gas-fee/">
+<link rel="alternate" hreflang="tr" href="https://plainwallet.app/tr/tools/gas-fee/">
+<link rel="alternate" hreflang="uk" href="https://plainwallet.app/uk/tools/gas-fee/">
+<link rel="alternate" hreflang="vi" href="https://plainwallet.app/vi/tools/gas-fee/">
+<link rel="alternate" hreflang="zh-Hans" href="https://plainwallet.app/zh-hans/tools/gas-fee/">
+<link rel="alternate" hreflang="zh-Hant" href="https://plainwallet.app/zh-hant/tools/gas-fee/">
+<link rel="alternate" hreflang="x-default" href="https://plainwallet.app/tools/gas-fee/">
+    <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#151929" media="(prefers-color-scheme: dark)" />
+    <meta property="og:type" content="website" />
+<meta property="og:locale" content="id_ID">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="ar_AR">
+<meta property="og:locale:alternate" content="de_DE">
+<meta property="og:locale:alternate" content="es_ES">
+<meta property="og:locale:alternate" content="fr_FR">
+<meta property="og:locale:alternate" content="hi_IN">
+<meta property="og:locale:alternate" content="it_IT">
+<meta property="og:locale:alternate" content="ja_JP">
+<meta property="og:locale:alternate" content="ko_KR">
+<meta property="og:locale:alternate" content="nl_NL">
+<meta property="og:locale:alternate" content="pl_PL">
+<meta property="og:locale:alternate" content="pt_BR">
+<meta property="og:locale:alternate" content="pt_PT">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta property="og:locale:alternate" content="sv_SE">
+<meta property="og:locale:alternate" content="th_TH">
+<meta property="og:locale:alternate" content="tr_TR">
+<meta property="og:locale:alternate" content="uk_UA">
+<meta property="og:locale:alternate" content="vi_VN">
+<meta property="og:locale:alternate" content="zh_CN">
+<meta property="og:locale:alternate" content="zh_TW">
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Plain Wallet" />
+    <meta property="og:url" content="https://plainwallet.app/id/tools/gas-fee/" />
+    <meta property="og:title" content="Kalkulator biaya gas Ethereum" />
+    <meta property="og:description" content="Harga gas dalam gwei dikali gas terpakai adalah biayanya. Lihat dalam ETH dan dolar untuk Ethereum atau Base, di peramban Anda." />
+    <meta property="og:image" content="https://plainwallet.app/og/id/gas-fee.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Plain Wallet: kalkulator biaya gas Ethereum, dengan harga gas dalam gwei dan biaya dalam ETH dan dolar." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Kalkulator biaya gas Ethereum" />
+    <meta name="twitter:description" content="Harga gas dalam gwei dikali gas terpakai adalah biayanya. Lihat dalam ETH dan dolar untuk Ethereum atau Base, di peramban Anda." />
+    <meta name="twitter:image" content="https://plainwallet.app/og/id/gas-fee.jpg" />
+    <meta name="twitter:image:alt" content="Plain Wallet: kalkulator biaya gas Ethereum, dengan harga gas dalam gwei dan biaya dalam ETH dan dolar." />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "WebApplication",
+ "name": "Kalkulator biaya gas Ethereum",
+ "url": "https://plainwallet.app/id/tools/gas-fee/",
+ "inLanguage": "id",
+ "description": "Ubah harga gas (gwei) dan gas terpakai menjadi biaya dalam ETH dan dolar. Membaca biaya dasar Ethereum atau Base dari node publik, dengan contoh swap.",
+ "applicationCategory": "DeveloperApplication",
+ "operatingSystem": "Any",
+ "offers": {
+  "@type": "Offer",
+  "price": "0",
+  "priceCurrency": "USD"
+ },
+ "image": "https://plainwallet.app/og/id/gas-fee.jpg",
+ "publisher": {
+  "@type": "Organization",
+  "name": "Plain Wallet",
+  "url": "https://plainwallet.app/id/"
+ }
+}
+</script>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --paper: light-dark(#f7f8fa, #151929);
+        --sheet: light-dark(#ffffff, #1c2136);
+        --ink: light-dark(#1b2340, #e6e9f5);
+        --muted: light-dark(#5a6382, #a4acc8);
+        --rule: light-dark(#d5d9e3, #2c3350);
+        --pen: light-dark(#2443c4, #8fa4ff);
+        --stamp: light-dark(#b3241a, #ff8c7e);
+        --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font: 16px/1.55 system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: var(--ink); background: var(--paper); }
+      main, header, footer { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+      a { color: var(--pen); text-underline-offset: 3px; }
+      :focus-visible { outline: 2px solid var(--pen); outline-offset: 3px; border-radius: 4px; }
+      header { display: flex; align-items: center; gap: 10px; padding-block: 20px; }
+      header img { width: 28px; height: 28px; }
+      header a { font-weight: 650; text-decoration: none; color: var(--ink); }
+      h1 { margin: 8px 0 12px; font-size: clamp(30px, 6vw, 42px); line-height: 1.1; letter-spacing: -0.03em; }
+      h2 { margin: 40px 0 8px; font-size: 24px; letter-spacing: -0.02em; }
+      .lede { margin: 0 0 24px; color: var(--muted); font-size: 18px; }
+      label { display: block; margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+      .row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+      .row > div { flex: 1 1 200px; }
+      input, select, button { width: 100%; min-height: 44px; padding: 8px 12px; font: 16px var(--mono); color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
+      button { font-family: system-ui, sans-serif; font-weight: 600; cursor: pointer; color: var(--pen); }
+      table { width: 100%; border-collapse: collapse; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
+      th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--rule); font-size: 15px; }
+      td { font-family: var(--mono); overflow-wrap: anywhere; }
+      tr:last-child th, tr:last-child td { border-bottom: 0; }
+      .out { min-height: 1.6em; margin: 8px 0 0; font: 15px var(--mono); overflow-wrap: anywhere; }
+      .note { color: var(--muted); font-size: 15px; }
+      .bad { color: var(--stamp); }
+      .big { margin: 8px 0 16px; padding: 16px 20px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; font: 600 20px/1.4 var(--mono); overflow-wrap: anywhere; }
+      .cta { margin-top: 40px; padding: 20px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; }
+      .cta p { margin: 0 0 8px; }
+      footer { padding-block: 32px 48px; color: var(--muted); font-size: 14px; }
+      @media (max-width: 560px) {
+        thead { display: none; }
+        th, td { display: block; width: auto; padding: 4px 12px; border: 0; }
+        td::before { content: attr(data-label) ': '; font-family: system-ui, sans-serif; color: var(--muted); }
+        tr { display: block; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+        tr:last-child { border-bottom: 0; }
+      }
+          nav.langs{font-size:16px;display:flex;flex-wrap:wrap;gap:4px 8px;margin:24px 0 0;padding:0;flex:0 0 100%}nav.langs a{display:inline-block;padding:4px 8px;min-height:32px;border-radius:6px}nav.langs a[aria-current]{font-weight:700;text-decoration:none;color:inherit}footer>a{display:inline-block;padding:5px 0;min-height:24px}h1,h2,h3,p,li{overflow-wrap:break-word;hyphens:auto}
+    </style>
+  </head>
+  <body>
+    <header>
+      <img src="/icon.svg" alt="" width="28" height="28" />
+      <a href="/id/">Plain Wallet</a>
+    </header>
+    <main>
+      <h1>Kalkulator biaya gas Ethereum</h1>
+      <p class="lede">Biaya transaksi adalah gas yang dipakainya dikalikan harga setiap unit gas, dan harga itu dinyatakan dalam gwei. Transfer ETH biasa memakai 21 000 gas, jadi pada 30 gwei biayanya 630 000 gwei, yaitu 0.00063 ETH. Pilih Ethereum atau Base, baca biaya terkini dari node publik atau ketik sendiri, lalu lihat biayanya dalam gwei, ETH, dan dolar.</p>
+
+      <div class="row">
+        <div>
+          <label for="net">Jaringan</label>
+          <select id="net">
+            <option value="eth" selected>Ethereum</option>
+            <option value="base">Base</option>
+          </select>
+        </div>
+        <div>
+          <label for="refresh">Biaya terkini</label>
+          <button id="refresh" type="button">Baca biaya terkini</button>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="base">Biaya dasar (gwei)</label>
+          <input id="base" inputmode="decimal" autocomplete="off" value="30" />
+        </div>
+        <div>
+          <label for="tip">Biaya prioritas, yaitu tip (gwei)</label>
+          <input id="tip" inputmode="decimal" autocomplete="off" value="1" />
+        </div>
+        <div>
+          <label for="usd">Harga ETH (USD)</label>
+          <input id="usd" inputmode="decimal" autocomplete="off" value="3000" />
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="gas">Gas terpakai</label>
+          <input id="gas" inputmode="numeric" autocomplete="off" value="21000" />
+        </div>
+      </div>
+      <p id="status" class="out note" role="status">Kolom berisi angka contoh sampai Anda membaca biaya terkini atau mengubahnya.</p>
+      <p id="error" class="out bad" role="alert"></p>
+      <div class="big" id="total" aria-live="polite"></div>
+
+      <h2>Transaksi umum pada harga ini</h2>
+      <table>
+        <thead><tr><th scope="col">Transaksi</th><th scope="col">Gas terpakai</th><th scope="col">Biaya dalam ETH</th><th scope="col">Biaya dalam USD</th></tr></thead>
+        <tbody id="presets"></tbody>
+      </table>
+      <p class="note">Transfer ETH biasa selalu memakai 21 000 gas. Dua lainnya adalah angka kasar yang dibulatkan: transfer token umumnya memakai sekitar 45 000 sampai 65 000 gas, dan swap di bursa terdesentralisasi sekitar 120 000 sampai 200 000 gas, tergantung kontraknya. Dompet Anda menampilkan perkiraan sebenarnya sebelum Anda mengonfirmasi.</p>
+
+      <h2>Cara biaya dihitung</h2>
+      <p>Sejak upgrade London (EIP-1559), setiap blok memiliki biaya dasar yang ditetapkan oleh protokol berdasarkan seberapa penuh blok-blok sebelumnya, dan biaya itu dibakar. Di atasnya Anda dapat menawarkan biaya prioritas, yang diberikan kepada produsen blok. Yang Anda bayar per unit gas adalah biaya dasar ditambah biaya prioritas, dan biayanya adalah harga itu dikalikan gas yang benar-benar dipakai transaksi. Angka yang ditampilkan dompet sebelum Anda mengirim biasanya adalah batas maksimum: transaksi membayar biaya dasar dari bloknya sendiri, yang bisa lebih rendah daripada batas yang Anda tetapkan, dan selisihnya tidak dikenakan.</p>
+      <p>Halaman ini mengalikan bilangan bulat yang tepat: nilai gwei Anda diubah menjadi bilangan bulat wei, dan biayanya ditampilkan dalam gwei, ETH, dan dolar, memakai harga ETH di kotak. Angka dolar hanya perkiraan karena harganya bergerak; ubah ke harga mana pun yang ingin Anda uji.</p>
+
+      <h2>Dari mana biaya terkini berasal</h2>
+      <p>Tombol itu meminta kepada node publik, <a href="https://www.publicnode.com/">PublicNode</a>, biaya dasar blok terbaru dan biaya prioritas yang disarankannya, lalu meminta harga dari feed harga ETH/USD Chainlink milik jaringan tersebut (dibaca dengan panggilan kontrak biasa di node yang sama). Itu permintaan baca saja dari peramban Anda: tidak ada dompet, alamat, atau apa pun yang Anda ketik yang dikirim, tetapi node memang melihat alamat IP Anda, seperti situs web mana pun. Jika node tidak menjawab dalam lima detik, kolom tetap berisi angka Anda dan Anda bisa mengetik sendiri.</p>
+      <p><strong>Base</strong> adalah layer 2, dan biayanya punya bagian kedua yang tidak dihitung halaman ini: ongkos mengirim data transaksi ke Ethereum, yang ditambahkan ke biaya di atas jumlah yang ditampilkan di sini dan biasanya kecil dibandingkan biaya Ethereum. Biaya di kedua jaringan bisa berubah dari satu blok ke blok berikutnya, dan angkanya adalah perkiraan, bukan penawaran harga.</p>
+
+      <h2>Contoh perhitungan</h2>
+      <p>Saya menjalankan contoh-contoh ini melalui kode halaman ini sendiri pada 15 November 2026 dengan harga rekaan 30 gwei (biaya dasar 29 ditambah tip 1) dan ETH seharga $3 000. Angka-angka ini hanya contoh, bukan biaya hari ini.</p>
+      <ul>
+        <li><strong>Transfer ETH, 21 000 gas:</strong> 630 000 gwei, yaitu 0.00063 ETH, atau $1.89.</li>
+        <li><strong>Transfer token, 65 000 gas:</strong> 1 950 000 gwei, yaitu 0.00195 ETH, atau $5.85.</li>
+        <li><strong>Swap, 150 000 gas:</strong> 4 500 000 gwei, yaitu 0.0045 ETH, atau $13.50.</li>
+        <li><strong>Transfer ETH yang sama pada 0.01 gwei</strong>, harga yang sering ada di Base dan jaringan layer 2 lainnya: 210 gwei, yaitu 0.00000021 ETH, atau kurang dari $0.001.</li>
+      </ul>
+      <p>Untuk mengubah gwei dan ETH saja, gunakan <a href="/id/tools/eth-units/">konverter wei, gwei, dan ETH</a>.</p>
+
+      <div class="cta">
+        <p><strong>Plain Wallet</strong> menampilkan biaya sebelum Anda menandatangani: dompet Ethereum sumber terbuka untuk Chrome, Android, dan Mac dalam sekitar 2 850 baris TypeScript yang bisa Anda baca.</p>
+        <p><a href="/id/?utm_source=tool&amp;utm_campaign=gas-fee">Lihat Plain Wallet</a></p>
+      </div>
+    </main>
+    <footer>
+      <a href="/id/">plainwallet.app</a> · MIT ·<a href="https://github.com/backmeupplz/plainwallet">GitHub</a>
+      <nav class="langs" aria-label="Bahasa"><a href="/tools/gas-fee/" hreflang="en" lang="en">English</a> <a href="/ar/tools/gas-fee/" hreflang="ar" lang="ar">العربية</a> <a href="/de/tools/gas-fee/" hreflang="de" lang="de">Deutsch</a> <a href="/es/tools/gas-fee/" hreflang="es" lang="es">Español</a> <a href="/fr/tools/gas-fee/" hreflang="fr" lang="fr">Français</a> <a href="/hi/tools/gas-fee/" hreflang="hi" lang="hi">हिन्दी</a> <a href="/id/tools/gas-fee/" hreflang="id" lang="id" aria-current="page">Bahasa Indonesia</a> <a href="/it/tools/gas-fee/" hreflang="it" lang="it">Italiano</a> <a href="/ja/tools/gas-fee/" hreflang="ja" lang="ja">日本語</a> <a href="/ko/tools/gas-fee/" hreflang="ko" lang="ko">한국어</a> <a href="/nl/tools/gas-fee/" hreflang="nl" lang="nl">Nederlands</a> <a href="/pl/tools/gas-fee/" hreflang="pl" lang="pl">Polski</a> <a href="/pt-br/tools/gas-fee/" hreflang="pt-BR" lang="pt-BR">Português (Brasil)</a> <a href="/pt-pt/tools/gas-fee/" hreflang="pt-PT" lang="pt-PT">Português (Portugal)</a> <a href="/ru/tools/gas-fee/" hreflang="ru" lang="ru">Русский</a> <a href="/sv/tools/gas-fee/" hreflang="sv" lang="sv">Svenska</a> <a href="/th/tools/gas-fee/" hreflang="th" lang="th">ไทย</a> <a href="/tr/tools/gas-fee/" hreflang="tr" lang="tr">Türkçe</a> <a href="/uk/tools/gas-fee/" hreflang="uk" lang="uk">Українська</a> <a href="/vi/tools/gas-fee/" hreflang="vi" lang="vi">Tiếng Việt</a> <a href="/zh-hans/tools/gas-fee/" hreflang="zh-Hans" lang="zh-Hans">简体中文</a> <a href="/zh-hant/tools/gas-fee/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a></nav>
+    </footer>
+    <script>
+// Decimal string to a whole number of units at `decimals` places, exactly. Returns null when it is not a plain
+// non-negative decimal or has more places than that.
+function toUnits(text, decimals) {
+  const m = /^(\d*)(?:\.(\d*))?$/.exec(text.trim().replace(/[,_\s]/g, ''))
+  if (!m || (m[1] === '' && !m[2])) return null
+  const frac = m[2] || ''
+  if (frac.length > decimals && /[1-9]/.test(frac.slice(decimals))) return null
+  return BigInt((m[1] || '0') + frac.slice(0, decimals).padEnd(decimals, '0'))
+}
+
+// A whole number of units as a decimal string, exactly, without trailing zeros, with thousands separators in the integer part.
+const GROUP = ' '
+const grp = (s) => s.replace(/,/g, GROUP)
+function fromUnits(n, decimals, group = GROUP) {
+  const s = n.toString().padStart(decimals + 1, '0')
+  const whole = s.slice(0, s.length - decimals).replace(/\B(?=(\d{3})+(?!\d))/g, group)
+  const frac = s.slice(s.length - decimals).replace(/0+$/, '')
+  return frac ? whole + '.' + frac : whole
+}
+
+// Fee in wei and in USD micro-units (1e-6 dollar) for a gas price (wei), gas used and ETH price (USD, 6 places).
+function fee(priceWei, gas, usdMicro) {
+  const wei = priceWei * gas
+  return { wei, gwei: wei, usdMicro: (wei * usdMicro) / 10n ** 18n }
+}
+
+function fmtUsd(micro) {
+  if (micro === 0n) return '$0'
+  if (micro < 1000n) return '<$0.001'
+  const v = Number(micro) / 1e6
+  return '$' + grp(v.toLocaleString('en-US', v >= 1 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumSignificantDigits: 3 }))
+}
+
+const fmtGwei = (wei) => fromUnits(wei, 9)
+const fmtEth = (wei) => fromUnits(wei, 18)
+
+const PRESETS = [['Transfer ETH', 21000n], ['Transfer token', 65000n], ['Swap di bursa terdesentralisasi', 150000n]]
+const NETS = {
+  eth: { rpc: 'https://ethereum-rpc.publicnode.com', feed: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419', name: 'Ethereum' },
+  base: { rpc: 'https://base-rpc.publicnode.com', feed: '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70', name: 'Base' },
+}
+
+      const $ = (id) => document.getElementById(id)
+      function render() {
+        const base = toUnits($('base').value, 9)
+        const tip = toUnits($('tip').value, 9)
+        const usd = toUnits($('usd').value, 6)
+        const gas = /^[\d,_\s]+$/.test($('gas').value) ? BigInt($('gas').value.replace(/[,_\s]/g, '')) : null
+        const presets = $('presets')
+        presets.replaceChildren()
+        $('total').textContent = ''
+        if (base === null || tip === null || usd === null || gas === null) {
+          $('error').textContent = 'Masukkan angka biasa: biaya dalam gwei dengan maksimal 9 desimal, harga ETH dalam dolar, dan gas sebagai bilangan bulat.'
+          return
+        }
+        $('error').textContent = ''
+        const price = base + tip
+        const f = fee(price, gas, usd)
+        $('total').textContent = '{gwei} gwei = {eth} ETH = {usd}'.replace('{gwei}', fmtGwei(f.wei)).replace('{eth}', fmtEth(f.wei)).replace('{usd}', fmtUsd(f.usdMicro))
+        for (const [name, g] of PRESETS) {
+          const p = fee(price, g, usd)
+          const tr = presets.insertRow()
+          tr.insertCell().outerHTML = '<th scope="row">' + name + '</th>'
+          for (const [label, text] of [['Gas terpakai', grp(g.toLocaleString('en-US'))], ['Biaya dalam ETH', fmtEth(p.wei)], ['Biaya dalam USD', fmtUsd(p.usdMicro)]]) {
+            const td = tr.insertCell()
+            td.dataset.label = label
+            td.textContent = text
+          }
+        }
+      }
+
+      async function rpc(url, method, params) {
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+          redirect: 'error',
+          credentials: 'omit',
+          signal: AbortSignal.timeout(5000),
+        })
+        const j = await r.json()
+        if (j.error || typeof j.result === 'undefined') throw new Error('bad answer')
+        return j.result
+      }
+
+      async function readCurrent() {
+        const net = NETS[$('net').value]
+        $('status').textContent = 'Membaca {net}…'.replace('{net}', net.name)
+        try {
+          const [block, tip, round] = await Promise.all([
+            rpc(net.rpc, 'eth_getBlockByNumber', ['latest', false]),
+            rpc(net.rpc, 'eth_maxPriorityFeePerGas', []),
+            rpc(net.rpc, 'eth_call', [{ to: net.feed, data: '0xfeaf968c' }, 'latest']),
+          ])
+          const answer = BigInt('0x' + round.slice(2).slice(64, 128))
+          const updated = Number(BigInt('0x' + round.slice(2).slice(192, 256)))
+          if (answer <= 0n || !block.baseFeePerGas) throw new Error('bad answer')
+          $('base').value = fromUnits(BigInt(block.baseFeePerGas), 9, '')
+          $('tip').value = fromUnits(BigInt(tip), 9, '')
+          $('usd').value = fromUnits(answer * 10n ** 6n / 10n ** 8n, 6, '')
+          const ageMin = Math.max(0, Math.round((Date.now() / 1000 - updated) / 60))
+          $('status').textContent = 'Biaya dasar {net} pada blok {block}, tip yang disarankan node-nya, dan harga ETH/USD Chainlink dari {min} menit lalu. Ubah angka mana pun.'.replace('{net}', net.name).replace('{block}', grp(BigInt(block.number).toLocaleString('en-US'))).replace('{min}', ageMin)
+        } catch {
+          $('status').textContent = 'Tidak dapat membaca {net} dari node publik. Ketik angka Anda sendiri; kalkulator tetap berfungsi tanpanya.'.replace('{net}', net.name)
+        }
+        render()
+      }
+
+      for (const id of ['base', 'tip', 'usd', 'gas']) $(id).oninput = render
+      $('refresh').onclick = readCurrent
+      $('net').onchange = readCurrent
+      render()
+    </script>
+  </body>
+</html>

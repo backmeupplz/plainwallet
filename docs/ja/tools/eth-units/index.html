@@ -277,7 +277,7 @@ function checksum(address) {
         results.replaceChildren()
         error.textContent = ''
         if (wei === null) {
-          error.textContent = amount.value.trim() ? '単位の小数桁数を超えない、ふつうの数値を入力してください。' : ''
+          error.textContent = amount.value.trim() ? '単位の小数桁数を超えない、半角の数字で入力してください。' : ''
           return
         }
         for (const [name, d] of UNITS) {
