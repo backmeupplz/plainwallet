@@ -23,7 +23,7 @@ Simpan dompet dingin sebagai akun hanya pantau: pakai untuk saldo, pengiriman, d
 
 Frasa pemulihan dan kunci Anda dienkripsi dengan kata sandi Anda dan tetap berada di perangkat Anda, serta Plain Wallet tidak pernah mengirimkannya ke server mana pun. Dompet terkunci setelah 15 menit tidak digunakan. Di iPhone, dompet juga terkunci setelah satu menit Anda meninggalkan aplikasi, dan Anda bisa membukanya dengan Face ID atau Touch ID jika mau.
 
-Plain Wallet tidak punya server, akun, iklan, analitik, atau pelacakan, dan pengembangnya tidak menerima data apa pun darinya. Kodenya sekitar 2.850 baris TypeScript dengan tiga dependensi runtime, bersumber terbuka dengan lisensi MIT di https://git.borodutch.com/backmeupplz/plainwallet. Plain Wallet belum diaudit, jadi jangan simpan dana yang tidak sanggup Anda relakan hilang.
+Plain Wallet tidak punya server, akun, iklan, analitik, atau pelacakan, dan pengembangnya tidak menerima data apa pun darinya. Kodenya sekitar 3.200 baris TypeScript dengan tiga dependensi runtime, bersumber terbuka dengan lisensi MIT di https://git.borodutch.com/backmeupplz/plainwallet. Plain Wallet belum diaudit, jadi jangan simpan dana yang tidak sanggup Anda relakan hilang.
 
 ## Screenshot captions
 1. Dompet kecil untuk Ethereum dan EVM

@@ -23,7 +23,7 @@ Keep a cold wallet as a watch-only account: use it with balances, sending and si
 
 Your seed phrases and keys are encrypted with your password and stay on your device, and Plain Wallet never sends them to any server. The wallet locks after 15 minutes without use. On iPhone it also locks after a minute away from the app, and you can unlock it with Face ID or Touch ID if you like.
 
-Plain Wallet has no servers, accounts, ads, analytics or tracking, and its developer receives no data from it. It's about 2,850 lines of TypeScript with three runtime dependencies, open source under the MIT licence at https://git.borodutch.com/backmeupplz/plainwallet. It hasn't been audited, so please don't keep funds in it that you can't afford to lose.
+Plain Wallet has no servers, accounts, ads, analytics or tracking, and its developer receives no data from it. It's about 3,200 lines of TypeScript with three runtime dependencies, open source under the MIT licence at https://git.borodutch.com/backmeupplz/plainwallet. It hasn't been audited, so please don't keep funds in it that you can't afford to lose.
 
 ## Screenshot captions
 1. A small wallet for Ethereum and EVM

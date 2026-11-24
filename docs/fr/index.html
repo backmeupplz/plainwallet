@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Plain Wallet : portefeuille crypto Ethereum et EVM</title>
-    <meta name="description" content="Un portefeuille EVM très minimal pour Chrome, Firefox, Safari, Android, iPhone et Mac. Environ 2 850 lignes de TypeScript à lire en une soirée." />
+    <meta name="description" content="Un portefeuille EVM très minimal pour Chrome, Firefox, Safari, Android, iPhone et Mac. Environ 3 200 lignes de TypeScript à lire en une soirée." />
     <link rel="canonical" href="https://plainwallet.app/fr/" />
 <link rel="alternate" hreflang="en" href="https://plainwallet.app/">
 <link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/">
@@ -58,7 +58,7 @@
     <meta property="og:site_name" content="Plain Wallet" />
     <meta property="og:url" content="https://plainwallet.app/fr/" />
     <meta property="og:title" content="Plain Wallet — un portefeuille que vous pouvez lire" />
-    <meta property="og:description" content="Un portefeuille EVM très minimal pour Chrome, Firefox, Safari, Android, iPhone et Mac. Environ 2 850 lignes de TypeScript, trois dépendances d’exécution, MIT." />
+    <meta property="og:description" content="Un portefeuille EVM très minimal pour Chrome, Firefox, Safari, Android, iPhone et Mac. Environ 3 200 lignes de TypeScript, trois dépendances d’exécution, MIT." />
     <meta property="og:image" content="https://plainwallet.app/og/fr/home.jpg" />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
@@ -67,7 +67,7 @@
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Plain Wallet — un portefeuille que vous pouvez lire" />
-    <meta name="twitter:description" content="Un portefeuille EVM très minimal pour Chrome, Firefox, Safari, Android, iPhone et Mac. Environ 2 850 lignes de TypeScript, trois dépendances d’exécution, MIT." />
+    <meta name="twitter:description" content="Un portefeuille EVM très minimal pour Chrome, Firefox, Safari, Android, iPhone et Mac. Environ 3 200 lignes de TypeScript, trois dépendances d’exécution, MIT." />
     <meta name="twitter:image" content="https://plainwallet.app/og/fr/home.jpg" />
     <meta name="twitter:image:alt" content="Plain Wallet : un portefeuille que vous pouvez lire. La fenêtre de l’extension affichant des soldes de jetons, tamponnée NON AUDITÉ." />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
@@ -186,7 +186,7 @@
  "name": "Plain Wallet",
  "url": "https://plainwallet.app/fr/",
  "inLanguage": "fr",
- "description": "Un portefeuille EVM très minimal pour Chrome, Firefox, Safari, Android, iPhone et Mac. Environ 2 850 lignes de TypeScript, trois dépendances d’exécution, MIT.",
+ "description": "Un portefeuille EVM très minimal pour Chrome, Firefox, Safari, Android, iPhone et Mac. Environ 3 200 lignes de TypeScript, trois dépendances d’exécution, MIT.",
  "applicationCategory": "FinanceApplication",
  "operatingSystem": "Chrome, Android 11+, iOS 18+, macOS 14+",
  "offers": {
@@ -220,7 +220,7 @@
       <div class="hero">
         <div>
           <h1>Un portefeuille que vous pouvez <em>lire</em>.</h1>
-          <p class="lede">Un portefeuille EVM très minimal pour Chrome, Firefox, Safari, Android, iPhone et Mac. Environ 2 850 lignes de TypeScript, assez courtes pour être lues en une soirée, ou par votre agent en une minute.</p>
+          <p class="lede">Un portefeuille EVM très minimal pour Chrome, Firefox, Safari, Android, iPhone et Mac. Environ 3 200 lignes de TypeScript, assez courtes pour être lues en une soirée, ou par votre agent en une minute.</p>
           <ul class="facts">
             <li>3 dépendances d’exécution</li>
             <li>aucun serveur</li>
@@ -326,7 +326,7 @@ npm ci && npx wxt zip -b firefox --mv3   # → .output/plainwallet-&lt;version&g
             <pre id="prompt">Installez pour moi l’extension de navigateur Plain Wallet depuis https://github.com/backmeupplz/plainwallet — mais examinez le code avant d’installer ou de compiler quoi que ce soit.
 
 1. Clonez le dépôt. N’exécutez pas encore npm install : les dépendances ont des scripts d’installation.
-2. Lisez tout le code source : entrypoints/, lib/, wxt.config.ts, package.json et package-lock.json. Cela représente environ 2 850 lignes de TypeScript.
+2. Lisez tout le code source : entrypoints/, lib/, wxt.config.ts, package.json et package-lock.json. Cela représente environ 3 200 lignes de TypeScript.
 3. Cherchez tout ce qui pourrait divulguer des phrases de récupération ou des clés privées, envoyer des données ailleurs que vers le RPC choisi par l’utilisateur, affaiblir le chiffrement du coffre, ou signer sans approbation explicite. Vérifiez si les dépendances contiennent quoi que ce soit d’inattendu.
 4. Faites-moi un rapport de ce que tu as trouvé, avec des références de fichier et de ligne. Si quelque chose est suspect, arrêtez-vous et demandez-moi.
 5. Si tout est propre : npm ci &amp;&amp; npm test &amp;&amp; npm run build

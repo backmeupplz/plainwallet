@@ -23,7 +23,7 @@ Führen Sie eine Cold Wallet als beobachtetes Konto: Sie nutzen es wie gewohnt f
 
 Ihre Seed-Phrasen und Schlüssel werden mit Ihrem Passwort verschlüsselt und bleiben auf Ihrem Gerät, und Plain Wallet sendet sie nie an einen Server. Die Wallet sperrt sich nach 15 Minuten Inaktivität. Auf dem iPhone sperrt sie sich außerdem, wenn Sie die App eine Minute lang verlassen, und auf Wunsch entsperren Sie sie mit Face ID oder Touch ID.
 
-Plain Wallet hat keine Server, keine Benutzerkonten, keine Werbung, keine Analysen und kein Tracking, und der Entwickler erhält keinerlei Daten daraus. Sie besteht aus rund 2.850 Zeilen TypeScript mit drei Laufzeitabhängigkeiten und ist Open Source unter der MIT-Lizenz: https://git.borodutch.com/backmeupplz/plainwallet. Sie wurde nicht auditiert, bewahren Sie darin also bitte kein Geld auf, dessen Verlust Sie sich nicht leisten können.
+Plain Wallet hat keine Server, keine Benutzerkonten, keine Werbung, keine Analysen und kein Tracking, und der Entwickler erhält keinerlei Daten daraus. Sie besteht aus rund 3.200 Zeilen TypeScript mit drei Laufzeitabhängigkeiten und ist Open Source unter der MIT-Lizenz: https://git.borodutch.com/backmeupplz/plainwallet. Sie wurde nicht auditiert, bewahren Sie darin also bitte kein Geld auf, dessen Verlust Sie sich nicht leisten können.
 
 ## Screenshot captions
 1. Eine kleine Wallet für Ethereum und EVM

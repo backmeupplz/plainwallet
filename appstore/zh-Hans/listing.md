@@ -23,7 +23,7 @@ Plain Wallet 是一款极简、开源的钱包，支持以太坊和其他 EVM �
 
 您的助记词和密钥会用您的密码加密，保存在您的设备上，Plain Wallet 绝不会将它们发送到任何服务器。钱包闲置 15 分钟后会自动锁定。在 iPhone 上，离开 App 一分钟后也会锁定，您还可以选择用面容 ID 或触控 ID 解锁。
 
-Plain Wallet 没有服务器、注册账号、广告、数据分析或跟踪，开发者不会从中收到任何数据。它约有 2,850 行 TypeScript 代码，只有三个运行时依赖，基于 MIT 许可证开源：https://git.borodutch.com/backmeupplz/plainwallet 。它尚未经过安全审计，所以请不要在其中存放您无法承受损失的资金。
+Plain Wallet 没有服务器、注册账号、广告、数据分析或跟踪，开发者不会从中收到任何数据。它约有 3,200 行 TypeScript 代码，只有三个运行时依赖，基于 MIT 许可证开源：https://git.borodutch.com/backmeupplz/plainwallet 。它尚未经过安全审计，所以请不要在其中存放您无法承受损失的资金。
 
 ## Screenshot captions
 1. 以太坊与 EVM 的轻量钱包

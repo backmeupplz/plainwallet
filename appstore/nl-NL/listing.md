@@ -23,7 +23,7 @@ Houd een cold wallet als alleen-bekijken-account: je gebruikt hem zoals altijd v
 
 Je herstelzinnen en sleutels worden versleuteld met je wachtwoord en blijven op je apparaat, en Plain Wallet stuurt ze nooit naar een server. De wallet vergrendelt na 15 minuten zonder gebruik. Op de iPhone vergrendelt hij ook als je de app een minuut hebt verlaten, en als je wilt, ontgrendel je hem met Face ID of Touch ID.
 
-Plain Wallet heeft geen servers, accounts, advertenties, analytics of tracking, en de ontwikkelaar ontvangt er geen gegevens van. Het zijn ongeveer 2.850 regels TypeScript met drie runtime-afhankelijkheden, open source onder de MIT-licentie op https://git.borodutch.com/backmeupplz/plainwallet. Plain Wallet is niet geaudit, dus bewaar er geen geld in dat je niet kunt missen.
+Plain Wallet heeft geen servers, accounts, advertenties, analytics of tracking, en de ontwikkelaar ontvangt er geen gegevens van. Het zijn ongeveer 3.200 regels TypeScript met drie runtime-afhankelijkheden, open source onder de MIT-licentie op https://git.borodutch.com/backmeupplz/plainwallet. Plain Wallet is niet geaudit, dus bewaar er geen geld in dat je niet kunt missen.
 
 ## Screenshot captions
 1. Een kleine wallet voor Ethereum en EVM

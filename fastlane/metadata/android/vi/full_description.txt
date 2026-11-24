@@ -6,4 +6,4 @@ Mỗi lần phê duyệt đều cho thấy trang, mạng, tài khoản, và vớ
 
 Ví tự khóa sau 15 phút không sử dụng, sau một phút bạn rời khỏi ứng dụng và mỗi khi Android đóng ứng dụng. Khóa, kho bảo mật và cài đặt của bạn nằm trên điện thoại, trong vùng lưu trữ mà các trang web không truy cập được, và không có gì được sao lưu lên đám mây.
 
-Plain Wallet không có máy chủ, tài khoản người dùng, phân tích hay đo lường từ xa, và nhà phát triển không nhận được dữ liệu nào từ ví. Ví gồm khoảng 2.850 dòng TypeScript với ba thư viện phụ thuộc khi chạy, mã nguồn mở theo giấy phép MIT.
+Plain Wallet không có máy chủ, tài khoản người dùng, phân tích hay đo lường từ xa, và nhà phát triển không nhận được dữ liệu nào từ ví. Ví gồm khoảng 3.200 dòng TypeScript với ba thư viện phụ thuộc khi chạy, mã nguồn mở theo giấy phép MIT.

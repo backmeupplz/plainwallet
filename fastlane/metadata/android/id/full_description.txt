@@ -6,4 +6,4 @@ Setiap persetujuan menampilkan situs, jaringan, dan akun, dan untuk transaksi ju
 
 Dompet terkunci setelah 15 menit tidak digunakan, setelah satu menit Anda meninggalkan aplikasi, dan setiap kali Android menutup aplikasi. Kunci, vault, dan pengaturan Anda tetap di ponsel Anda, di penyimpanan yang tidak bisa dijangkau situs, dan tidak ada yang dicadangkan ke cloud.
 
-Plain Wallet tidak punya server, akun, analitik, atau telemetri, dan pengembangnya tidak menerima data apa pun darinya. Kodenya sekitar 2.850 baris TypeScript dengan tiga dependensi runtime, open source dengan lisensi MIT.
+Plain Wallet tidak punya server, akun, analitik, atau telemetri, dan pengembangnya tidak menerima data apa pun darinya. Kodenya sekitar 3.200 baris TypeScript dengan tiga dependensi runtime, open source dengan lisensi MIT.

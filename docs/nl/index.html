@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Plain Wallet: open-source Ethereum- en EVM-wallet</title>
-    <meta name="description" content="Een uiterst minimalistische EVM-wallet voor Chrome, Firefox, Safari, Android, iPhone en Mac. Zo'n 2.850 regels TypeScript die je in één avond leest." />
+    <meta name="description" content="Een uiterst minimalistische EVM-wallet voor Chrome, Firefox, Safari, Android, iPhone en Mac. Zo'n 3.200 regels TypeScript die je in één avond leest." />
     <link rel="canonical" href="https://plainwallet.app/nl/" />
 <link rel="alternate" hreflang="en" href="https://plainwallet.app/">
 <link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/">
@@ -58,7 +58,7 @@
     <meta property="og:site_name" content="Plain Wallet" />
     <meta property="og:url" content="https://plainwallet.app/nl/" />
     <meta property="og:title" content="Plain Wallet: een wallet die je kunt lezen" />
-    <meta property="og:description" content="Een uiterst minimalistische EVM-wallet voor Chrome, Firefox, Safari, Android, iPhone en Mac. Zo'n 2.850 regels TypeScript, drie runtime-afhankelijkheden, MIT." />
+    <meta property="og:description" content="Een uiterst minimalistische EVM-wallet voor Chrome, Firefox, Safari, Android, iPhone en Mac. Zo'n 3.200 regels TypeScript, drie runtime-afhankelijkheden, MIT." />
     <meta property="og:image" content="https://plainwallet.app/og/nl/home.jpg" />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
@@ -67,7 +67,7 @@
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Plain Wallet: een wallet die je kunt lezen" />
-    <meta name="twitter:description" content="Een uiterst minimalistische EVM-wallet voor Chrome, Firefox, Safari, Android, iPhone en Mac. Zo'n 2.850 regels TypeScript, drie runtime-afhankelijkheden, MIT." />
+    <meta name="twitter:description" content="Een uiterst minimalistische EVM-wallet voor Chrome, Firefox, Safari, Android, iPhone en Mac. Zo'n 3.200 regels TypeScript, drie runtime-afhankelijkheden, MIT." />
     <meta name="twitter:image" content="https://plainwallet.app/og/nl/home.jpg" />
     <meta name="twitter:image:alt" content="Plain Wallet: een wallet die je kunt lezen. De extensiepopup met tokensaldo's, afgestempeld met NIET GEAUDIT." />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
@@ -186,7 +186,7 @@
  "name": "Plain Wallet",
  "url": "https://plainwallet.app/nl/",
  "inLanguage": "nl",
- "description": "Een uiterst minimalistische EVM-wallet voor Chrome, Firefox, Safari, Android, iPhone en Mac. Zo'n 2.850 regels TypeScript, drie runtime-afhankelijkheden, MIT.",
+ "description": "Een uiterst minimalistische EVM-wallet voor Chrome, Firefox, Safari, Android, iPhone en Mac. Zo'n 3.200 regels TypeScript, drie runtime-afhankelijkheden, MIT.",
  "applicationCategory": "FinanceApplication",
  "operatingSystem": "Chrome, Android 11+, iOS 18+, macOS 14+",
  "offers": {
@@ -220,7 +220,7 @@
       <div class="hero">
         <div>
           <h1>Een wallet die je kunt <em>lezen</em>.</h1>
-          <p class="lede">Een uiterst minimalistische EVM-wallet voor Chrome, Firefox, Safari, Android, iPhone en Mac. Zo'n 2.850 regels TypeScript, klein genoeg om in één avond door te lezen, of door je agent in één minuut te laten lezen.</p>
+          <p class="lede">Een uiterst minimalistische EVM-wallet voor Chrome, Firefox, Safari, Android, iPhone en Mac. Zo'n 3.200 regels TypeScript, klein genoeg om in één avond door te lezen, of door je agent in één minuut te laten lezen.</p>
           <ul class="facts">
             <li>3 runtime-afhankelijkheden</li>
             <li>geen servers</li>
@@ -326,7 +326,7 @@ npm ci && npx wxt zip -b firefox --mv3   # → .output/plainwallet-&lt;version&g
             <pre id="prompt">Installeer de browserextensie Plain Wallet voor me vanaf https://github.com/backmeupplz/plainwallet, maar bekijk de code eerst voordat je iets installeert of bouwt.
 
 1. Clone de repo. Draai nog geen npm install: afhankelijkheden hebben installatiescripts.
-2. Lees alle broncode: entrypoints/, lib/, wxt.config.ts, package.json en package-lock.json. Het zijn zo'n 2.850 regels TypeScript.
+2. Lees alle broncode: entrypoints/, lib/, wxt.config.ts, package.json en package-lock.json. Het zijn zo'n 3.200 regels TypeScript.
 3. Zoek naar alles wat herstelzinnen of privésleutels kan lekken, gegevens kan versturen naar een andere plek dan de RPC die de gebruiker heeft gekozen, de versleuteling van de vault kan verzwakken, of kan ondertekenen zonder uitdrukkelijke goedkeuring. Controleer de afhankelijkheden op alles wat onverwacht is.
 4. Meld wat je hebt gevonden, met verwijzingen naar bestand en regel. Stop en vraag het me als iets verdacht is.
 5. Als alles in orde is: npm ci &amp;&amp; npm test &amp;&amp; npm run build

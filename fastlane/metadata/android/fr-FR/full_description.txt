@@ -6,4 +6,4 @@ Chaque approbation indique le site, le réseau, le compte et, pour une transacti
 
 Le portefeuille se verrouille après 15 minutes d’inactivité, au bout d’une minute hors de l’app et chaque fois qu’Android ferme l’app. Vos clés, votre coffre et vos réglages restent sur votre téléphone, dans un stockage auquel les sites n’ont pas accès, et rien n’est sauvegardé dans le cloud.
 
-Plain Wallet n’a ni serveurs, ni comptes utilisateur, ni statistiques, ni télémétrie, et son développeur ne reçoit aucune donnée. Il compte environ 2 850 lignes de TypeScript et trois dépendances d’exécution, et son code est open source sous licence MIT.
+Plain Wallet n’a ni serveurs, ni comptes utilisateur, ni statistiques, ni télémétrie, et son développeur ne reçoit aucune donnée. Il compte environ 3 200 lignes de TypeScript et trois dépendances d’exécution, et son code est open source sous licence MIT.

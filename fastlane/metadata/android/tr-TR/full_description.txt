@@ -6,4 +6,4 @@ Her onay siteyi, ağı ve hesabı, bir işlemde ise ayrıca alıcıyı, tutarı 
 
 Cüzdan 15 dakika kullanılmadığında, uygulamadan bir dakika uzak kaldığınızda ve Android uygulamayı her kapattığında kilitlenir. Anahtarlarınız, kasanız ve ayarlarınız telefonunuzda, sitelerin erişemediği bir depolama alanında kalır ve hiçbir şey buluta yedeklenmez.
 
-Plain Wallet'ta sunucu, üyelik, analitik veya telemetri yoktur ve geliştiricisi ondan hiçbir veri almaz. Yaklaşık 2.850 satır TypeScript ve üç çalışma zamanı bağımlılığından oluşur ve MIT lisansıyla açık kaynaktır.
+Plain Wallet'ta sunucu, üyelik, analitik veya telemetri yoktur ve geliştiricisi ondan hiçbir veri almaz. Yaklaşık 3.200 satır TypeScript ve üç çalışma zamanı bağımlılığından oluşur ve MIT lisansıyla açık kaynaktır.

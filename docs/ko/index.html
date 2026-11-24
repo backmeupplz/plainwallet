@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Plain Wallet: 읽을 수 있는 이더리움·EVM 지갑</title>
-    <meta name="description" content="Chrome, Firefox, Safari, Android, iPhone, Mac용 아주 단순한 EVM 지갑입니다. 하룻저녁이면 읽을 수 있는 TypeScript 약 2850줄입니다." />
+    <meta name="description" content="Chrome, Firefox, Safari, Android, iPhone, Mac용 아주 단순한 EVM 지갑입니다. 하룻저녁이면 읽을 수 있는 TypeScript 약 3200줄입니다." />
     <link rel="canonical" href="https://plainwallet.app/ko/" />
 <link rel="alternate" hreflang="en" href="https://plainwallet.app/">
 <link rel="alternate" hreflang="ar" href="https://plainwallet.app/ar/">
@@ -58,7 +58,7 @@
     <meta property="og:site_name" content="Plain Wallet" />
     <meta property="og:url" content="https://plainwallet.app/ko/" />
     <meta property="og:title" content="Plain Wallet: 읽을 수 있는 지갑" />
-    <meta property="og:description" content="Chrome, Firefox, Safari, Android, iPhone, Mac용 아주 단순한 EVM 지갑. TypeScript 약 2850줄, 런타임 의존성 3개, MIT." />
+    <meta property="og:description" content="Chrome, Firefox, Safari, Android, iPhone, Mac용 아주 단순한 EVM 지갑. TypeScript 약 3200줄, 런타임 의존성 3개, MIT." />
     <meta property="og:image" content="https://plainwallet.app/og/ko/home.jpg" />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
@@ -67,7 +67,7 @@
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Plain Wallet: 읽을 수 있는 지갑" />
-    <meta name="twitter:description" content="Chrome, Firefox, Safari, Android, iPhone, Mac용 아주 단순한 EVM 지갑. TypeScript 약 2850줄, 런타임 의존성 3개, MIT." />
+    <meta name="twitter:description" content="Chrome, Firefox, Safari, Android, iPhone, Mac용 아주 단순한 EVM 지갑. TypeScript 약 3200줄, 런타임 의존성 3개, MIT." />
     <meta name="twitter:image" content="https://plainwallet.app/og/ko/home.jpg" />
     <meta name="twitter:image:alt" content="Plain Wallet: 읽을 수 있는 지갑. 토큰 잔액이 보이는 확장 프로그램 팝업에 '감사 받지 않음' 도장이 찍혀 있습니다." />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
@@ -186,7 +186,7 @@
  "name": "Plain Wallet",
  "url": "https://plainwallet.app/ko/",
  "inLanguage": "ko",
- "description": "Chrome, Firefox, Safari, Android, iPhone, Mac용 아주 단순한 EVM 지갑. TypeScript 약 2850줄, 런타임 의존성 3개, MIT.",
+ "description": "Chrome, Firefox, Safari, Android, iPhone, Mac용 아주 단순한 EVM 지갑. TypeScript 약 3200줄, 런타임 의존성 3개, MIT.",
  "applicationCategory": "FinanceApplication",
  "operatingSystem": "Chrome, Android 11+, iOS 18+, macOS 14+",
  "offers": {
@@ -220,7 +220,7 @@
       <div class="hero">
         <div>
           <h1><em>읽을 수 있는</em> 지갑.</h1>
-          <p class="lede">Chrome, Firefox, Safari, Android, iPhone, Mac에서 쓸 수 있는 아주 단순한 EVM 지갑입니다. TypeScript 약 2850줄로, 하룻저녁이면 직접 읽을 수 있고 에이전트에게 맡기면 1분이면 읽습니다.</p>
+          <p class="lede">Chrome, Firefox, Safari, Android, iPhone, Mac에서 쓸 수 있는 아주 단순한 EVM 지갑입니다. TypeScript 약 3200줄로, 하룻저녁이면 직접 읽을 수 있고 에이전트에게 맡기면 1분이면 읽습니다.</p>
           <ul class="facts">
             <li>런타임 의존성 3개</li>
             <li>서버 없음</li>
@@ -326,7 +326,7 @@ npm ci && npx wxt zip -b firefox --mv3   # → .output/plainwallet-&lt;version&g
             <pre id="prompt">https://github.com/backmeupplz/plainwallet 에 있는 Plain Wallet 브라우저 확장 프로그램을 나 대신 설치해 줘. 단, 설치나 빌드를 하기 전에 먼저 코드를 검토해 줘.
 
 1. 저장소를 clone해. 아직 npm install은 실행하지 마. 의존성에 install 스크립트가 있어.
-2. 소스 전체를 읽어: entrypoints/, lib/, wxt.config.ts, package.json, package-lock.json. TypeScript 약 2850줄이야.
+2. 소스 전체를 읽어: entrypoints/, lib/, wxt.config.ts, package.json, package-lock.json. TypeScript 약 3200줄이야.
 3. 시드 구문이나 개인 키를 유출할 수 있는 부분, 사용자가 고른 RPC 외의 곳으로 데이터를 보내는 부분, 금고 암호화를 약하게 만드는 부분, 명시적인 승인 없이 서명하는 부분이 있는지 찾아봐. 의존성에도 예상 밖의 것이 없는지 확인해.
 4. 찾은 내용을 파일과 줄 번호와 함께 보고해. 수상한 점이 있으면 멈추고 나에게 물어봐.
 5. 문제가 없으면: npm ci &amp;&amp; npm test &amp;&amp; npm run build

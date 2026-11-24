@@ -23,7 +23,7 @@ Guarda una billetera fría (cold wallet) como cuenta de solo lectura: la usas co
 
 Tus frases semilla y claves se cifran con tu contraseña y se quedan en tu dispositivo, y Plain Wallet nunca las envía a ningún servidor. La billetera se bloquea tras 15 minutos sin uso. En el iPhone también se bloquea tras un minuto fuera de la app, y si quieres puedes desbloquearla con Face ID o Touch ID.
 
-Plain Wallet no tiene servidores, cuentas de usuario, anuncios, analíticas ni rastreo, y su desarrollador no recibe ningún dato. Son unas 2,850 líneas de TypeScript con tres dependencias de ejecución, de código abierto con licencia MIT en https://git.borodutch.com/backmeupplz/plainwallet. No ha pasado ninguna auditoría, así que no guardes en ella fondos que no puedas darte el lujo de perder.
+Plain Wallet no tiene servidores, cuentas de usuario, anuncios, analíticas ni rastreo, y su desarrollador no recibe ningún dato. Son unas 3,200 líneas de TypeScript con tres dependencias de ejecución, de código abierto con licencia MIT en https://git.borodutch.com/backmeupplz/plainwallet. No ha pasado ninguna auditoría, así que no guardes en ella fondos que no puedas darte el lujo de perder.
 
 ## Screenshot captions
 1. Billetera pequeña para Ethereum y EVM

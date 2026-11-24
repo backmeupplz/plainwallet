@@ -23,7 +23,7 @@ Lägg till en kall plånbok som ett bevakningskonto: du använder den som vanlig
 
 Dina återställningsfraser och nycklar krypteras med ditt lösenord och stannar på din enhet, och Plain Wallet skickar dem aldrig till någon server. Plånboken låses efter 15 minuter utan användning. På iPhone låses den också när du har varit borta från appen i en minut, och du kan låsa upp den med Face ID eller Touch ID om du vill.
 
-Plain Wallet har inga servrar, konton, annonser, analyser eller spårning, och utvecklaren får inga data från den. Den består av ungefär 2 850 rader TypeScript med tre beroenden vid körning och är öppen källkod under MIT-licensen på https://git.borodutch.com/backmeupplz/plainwallet. Den har inte säkerhetsgranskats, så förvara inga pengar i den som du inte har råd att förlora.
+Plain Wallet har inga servrar, konton, annonser, analyser eller spårning, och utvecklaren får inga data från den. Den består av ungefär 3 200 rader TypeScript med tre beroenden vid körning och är öppen källkod under MIT-licensen på https://git.borodutch.com/backmeupplz/plainwallet. Den har inte säkerhetsgranskats, så förvara inga pengar i den som du inte har råd att förlora.
 
 ## Screenshot captions
 1. En liten plånbok för Ethereum och EVM

@@ -6,4 +6,4 @@ Jede Genehmigung zeigt die Website, das Netzwerk und das Konto, bei einer Transa
 
 Die Wallet sperrt sich nach 15 Minuten Inaktivität, eine Minute nachdem Sie die App verlassen haben, und immer dann, wenn Android die App beendet. Ihre Schlüssel, Ihr Tresor und Ihre Einstellungen bleiben auf Ihrem Telefon in einem Speicher, auf den Websites nicht zugreifen können, und nichts wird in der Cloud gesichert.
 
-Plain Wallet hat keine Server, keine Benutzerkonten, keine Analysen und keine Telemetrie, und der Entwickler erhält keinerlei Daten daraus. Sie besteht aus rund 2.850 Zeilen TypeScript mit drei Laufzeitabhängigkeiten und ist Open Source unter der MIT-Lizenz.
+Plain Wallet hat keine Server, keine Benutzerkonten, keine Analysen und keine Telemetrie, und der Entwickler erhält keinerlei Daten daraus. Sie besteht aus rund 3.200 Zeilen TypeScript mit drei Laufzeitabhängigkeiten und ist Open Source unter der MIT-Lizenz.

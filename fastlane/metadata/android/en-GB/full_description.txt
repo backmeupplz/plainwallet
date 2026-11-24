@@ -6,4 +6,4 @@ Every approval shows the site, the network, the account, and for a transaction t
 
 The wallet locks after 15 minutes without use, after a minute away from the app and whenever Android ends the app. Your keys, vault and settings stay on your phone in storage that sites can't reach, and nothing is backed up to the cloud.
 
-Plain Wallet has no servers, accounts, analytics or telemetry, and its developer receives no data from it. It's about 2,850 lines of TypeScript with three runtime dependencies, open source under the MIT licence.
+Plain Wallet has no servers, accounts, analytics or telemetry, and its developer receives no data from it. It's about 3,200 lines of TypeScript with three runtime dependencies, open source under the MIT licence.

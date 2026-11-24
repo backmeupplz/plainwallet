@@ -23,7 +23,7 @@ Tieni un portafoglio freddo (cold wallet) come account in sola lettura: lo usi c
 
 Le tue frasi di recupero e le tue chiavi sono cifrate con la tua password e restano sul tuo dispositivo, e Plain Wallet non le invia mai a nessun server. Il wallet si blocca dopo 15 minuti di inattività. Su iPhone si blocca anche dopo un minuto fuori dall’app, e se vuoi puoi sbloccarlo con Face ID o Touch ID.
 
-Plain Wallet non ha server, account, pubblicità, analisi né tracciamento, e il suo sviluppatore non riceve alcun dato. Sono circa 2.850 righe di TypeScript con tre dipendenze di runtime, open source con licenza MIT su https://git.borodutch.com/backmeupplz/plainwallet. Non è stato sottoposto ad audit, quindi non tenerci fondi che non puoi permetterti di perdere.
+Plain Wallet non ha server, account, pubblicità, analisi né tracciamento, e il suo sviluppatore non riceve alcun dato. Sono circa 3.200 righe di TypeScript con tre dipendenze di runtime, open source con licenza MIT su https://git.borodutch.com/backmeupplz/plainwallet. Non è stato sottoposto ad audit, quindi non tenerci fondi che non puoi permetterti di perdere.
 
 ## Screenshot captions
 1. Un piccolo wallet per Ethereum ed EVM

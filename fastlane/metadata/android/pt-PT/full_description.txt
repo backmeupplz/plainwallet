@@ -6,4 +6,4 @@ Cada aprovação mostra o site, a rede, a conta e, numa transação, o destinat�
 
 A carteira bloqueia-se após 15 minutos de inatividade, ao fim de um minuto fora da aplicação e sempre que o Android encerra a aplicação. As suas chaves, o cofre e as definições ficam no seu telemóvel, num armazenamento a que os sites não conseguem aceder, e nada é copiado para a nuvem.
 
-A Plain Wallet não tem servidores, contas, análises nem telemetria, e o seu programador não recebe dela quaisquer dados. São cerca de 2850 linhas de TypeScript com três dependências de execução, de código aberto sob a licença MIT.
+A Plain Wallet não tem servidores, contas, análises nem telemetria, e o seu programador não recebe dela quaisquer dados. São cerca de 3200 linhas de TypeScript com três dependências de execução, de código aberto sob a licença MIT.

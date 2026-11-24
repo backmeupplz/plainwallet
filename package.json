@@ -11,6 +11,7 @@
     "build": "wxt build",
     "zip": "wxt zip",
     "test": "node --test test*.js",
+    "lines": "find entrypoints lib wxt.config.ts -name '*.ts' -exec cat {} + | wc -l | tr -d ' '",
     "build:android": "wxt build -b android",
     "build:macos": "wxt build -b android && wxt build -b safari --mv3 && rm -rf macos/web macos/safari && cp -R .output/android-mv3 macos/web && cp -R .output/safari-mv3 macos/safari"
   },

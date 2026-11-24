@@ -23,7 +23,7 @@ Zimny portfel możesz trzymać jako konto tylko do podglądu: używasz go jak zw
 
 Twoje frazy seed i klucze są zaszyfrowane twoim hasłem i zostają na twoim urządzeniu, a Plain Wallet nigdy nie wysyła ich na żaden serwer. Portfel blokuje się po 15 minutach bezczynności. Na iPhonie blokuje się też po minucie poza aplikacją, a jeśli chcesz, możesz go odblokować za pomocą Face ID lub Touch ID.
 
-Plain Wallet nie ma serwerów, kont, reklam, analityki ani śledzenia, a jego twórca nie dostaje z niego żadnych danych. To około 2850 linii TypeScriptu z trzema zależnościami w czasie działania, udostępnionych jako open source na licencji MIT pod adresem https://git.borodutch.com/backmeupplz/plainwallet. Portfel nie przeszedł audytu, więc nie trzymaj w nim środków, na których utratę nie możesz sobie pozwolić.
+Plain Wallet nie ma serwerów, kont, reklam, analityki ani śledzenia, a jego twórca nie dostaje z niego żadnych danych. To około 3200 linii TypeScriptu z trzema zależnościami w czasie działania, udostępnionych jako open source na licencji MIT pod adresem https://git.borodutch.com/backmeupplz/plainwallet. Portfel nie przeszedł audytu, więc nie trzymaj w nim środków, na których utratę nie możesz sobie pozwolić.
 
 ## Screenshot captions
 1. Mały portfel dla Ethereum i EVM

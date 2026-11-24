@@ -6,4 +6,4 @@ Elke goedkeuring laat de site, het netwerk en het account zien, en bij een trans
 
 De wallet vergrendelt na 15 minuten zonder gebruik, nadat je de app een minuut hebt verlaten en telkens wanneer Android de app afsluit. Je sleutels, kluis en instellingen blijven op je telefoon, in opslag waar sites niet bij kunnen, en er gaat niets als back-up naar de cloud.
 
-Plain Wallet heeft geen servers, accounts, analytics of telemetrie, en de ontwikkelaar ontvangt er geen gegevens van. Het zijn ongeveer 2.850 regels TypeScript met drie runtime-afhankelijkheden, open source onder de MIT-licentie.
+Plain Wallet heeft geen servers, accounts, analytics of telemetrie, en de ontwikkelaar ontvangt er geen gegevens van. Het zijn ongeveer 3.200 regels TypeScript met drie runtime-afhankelijkheden, open source onder de MIT-licentie.

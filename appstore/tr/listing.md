@@ -23,7 +23,7 @@ Soğuk cüzdanınızı yalnızca izleme hesabı olarak tutun: bakiyeler, gönder
 
 Seed ifadeleriniz ve anahtarlarınız şifrenizle şifrelenir ve cihazınızda kalır; Plain Wallet bunları hiçbir sunucuya göndermez. Cüzdan 15 dakika kullanılmadığında kilitlenir. iPhone'da ayrıca uygulamadan bir dakika uzak kaldığınızda da kilitlenir ve dilerseniz kilidini Face ID veya Touch ID ile açabilirsiniz.
 
-Plain Wallet'ta sunucu, üyelik, reklam, analitik veya takip yoktur ve geliştiricisi ondan hiçbir veri almaz. Yaklaşık 2.850 satır TypeScript ve üç çalışma zamanı bağımlılığından oluşur ve MIT lisansıyla https://git.borodutch.com/backmeupplz/plainwallet adresinde açık kaynaktır. Henüz denetimden geçmediği için lütfen kaybetmeyi göze alamayacağınız fonları bu cüzdanda tutmayın.
+Plain Wallet'ta sunucu, üyelik, reklam, analitik veya takip yoktur ve geliştiricisi ondan hiçbir veri almaz. Yaklaşık 3.200 satır TypeScript ve üç çalışma zamanı bağımlılığından oluşur ve MIT lisansıyla https://git.borodutch.com/backmeupplz/plainwallet adresinde açık kaynaktır. Henüz denetimden geçmediği için lütfen kaybetmeyi göze alamayacağınız fonları bu cüzdanda tutmayın.
 
 ## Screenshot captions
 1. Ethereum ve EVM için küçük bir cüzdan

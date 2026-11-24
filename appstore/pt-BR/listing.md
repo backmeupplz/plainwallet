@@ -23,7 +23,7 @@ Use uma carteira fria como conta somente leitura: ela funciona com saldos, envio
 
 Suas frases de recuperação e chaves são criptografadas com a sua senha e ficam no seu dispositivo, e a Plain Wallet nunca as envia para nenhum servidor. A carteira é bloqueada após 15 minutos sem uso. No iPhone, ela também é bloqueada depois de um minuto fora do app, e você pode desbloqueá-la com Face ID ou Touch ID, se quiser.
 
-A Plain Wallet não tem servidores, contas, anúncios, análises nem rastreamento, e o desenvolvedor não recebe nenhum dado dela. São cerca de 2.850 linhas de TypeScript com três dependências de execução, de código aberto sob a licença MIT em https://git.borodutch.com/backmeupplz/plainwallet. Ela não passou por auditoria, então não guarde nela fundos que você não pode perder.
+A Plain Wallet não tem servidores, contas, anúncios, análises nem rastreamento, e o desenvolvedor não recebe nenhum dado dela. São cerca de 3.200 linhas de TypeScript com três dependências de execução, de código aberto sob a licença MIT em https://git.borodutch.com/backmeupplz/plainwallet. Ela não passou por auditoria, então não guarde nela fundos que você não pode perder.
 
 ## Screenshot captions
 1. Uma carteira pequena para Ethereum e EVM

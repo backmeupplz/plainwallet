@@ -23,7 +23,7 @@ Plain Wallet은 이더리움과 다른 EVM 네트워크를 위한 아주 미니�
 
 시드 구문과 키는 비밀번호로 암호화되어 내 기기에 보관되며, Plain Wallet은 이를 어떤 서버로도 전송하지 않습니다. 지갑은 15분 동안 사용하지 않으면 잠깁니다. iPhone에서는 앱을 떠난 지 1분이 지나도 잠기며, 원한다면 Face ID나 Touch ID로 잠금을 해제할 수 있습니다.
 
-Plain Wallet에는 서버, 회원 가입, 광고, 분석, 추적이 없으며, 개발자는 앱에서 어떤 데이터도 받지 않습니다. 약 2,850줄의 TypeScript 코드와 세 개의 런타임 의존성으로 이루어져 있으며, MIT 라이선스의 오픈소스로 https://git.borodutch.com/backmeupplz/plainwallet 에 공개되어 있습니다. 아직 보안 감사를 받지 않았으니, 잃어도 괜찮은 금액 이상의 자금은 보관하지 마세요.
+Plain Wallet에는 서버, 회원 가입, 광고, 분석, 추적이 없으며, 개발자는 앱에서 어떤 데이터도 받지 않습니다. 약 3,200줄의 TypeScript 코드와 세 개의 런타임 의존성으로 이루어져 있으며, MIT 라이선스의 오픈소스로 https://git.borodutch.com/backmeupplz/plainwallet 에 공개되어 있습니다. 아직 보안 감사를 받지 않았으니, 잃어도 괜찮은 금액 이상의 자금은 보관하지 마세요.
 
 ## Screenshot captions
 1. 이더리움과 EVM을 위한 작은 지갑

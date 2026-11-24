@@ -23,7 +23,7 @@ Gardez un portefeuille froid (cold wallet) comme compte en lecture seule : vous 
 
 Vos phrases de récupération et vos clés sont chiffrées avec votre mot de passe et restent sur votre appareil, et Plain Wallet ne les envoie jamais à aucun serveur. Le portefeuille se verrouille après 15 minutes d’inactivité. Sur iPhone, il se verrouille aussi au bout d’une minute hors de l’app, et vous pouvez le déverrouiller avec Face ID ou Touch ID si vous le souhaitez.
 
-Plain Wallet n’a ni serveurs, ni comptes utilisateur, ni publicités, ni statistiques, ni pistage, et son développeur ne reçoit aucune donnée. Il compte environ 2 850 lignes de TypeScript et trois dépendances d’exécution, et son code est open source sous licence MIT sur https://git.borodutch.com/backmeupplz/plainwallet. Il n’a pas été audité : n’y gardez donc pas de fonds que vous ne pouvez pas vous permettre de perdre.
+Plain Wallet n’a ni serveurs, ni comptes utilisateur, ni publicités, ni statistiques, ni pistage, et son développeur ne reçoit aucune donnée. Il compte environ 3 200 lignes de TypeScript et trois dépendances d’exécution, et son code est open source sous licence MIT sur https://git.borodutch.com/backmeupplz/plainwallet. Il n’a pas été audité : n’y gardez donc pas de fonds que vous ne pouvez pas vous permettre de perdre.
 
 ## Screenshot captions
 1. Un petit portefeuille Ethereum et EVM

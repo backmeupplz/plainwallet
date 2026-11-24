@@ -6,4 +6,4 @@ Ogni approvazione mostra il sito, la rete, l’account e, per una transazione, i
 
 Il wallet si blocca dopo 15 minuti di inattività, dopo un minuto fuori dall’app e ogni volta che Android chiude l’app. Le tue chiavi, la cassaforte e le impostazioni restano sul telefono, in uno spazio a cui i siti non possono accedere, e non viene fatto alcun backup nel cloud.
 
-Plain Wallet non ha server, account, analisi né telemetria, e il suo sviluppatore non riceve alcun dato. Sono circa 2.850 righe di TypeScript con tre dipendenze di runtime, open source con licenza MIT.
+Plain Wallet non ha server, account, analisi né telemetria, e il suo sviluppatore non riceve alcun dato. Sono circa 3.200 righe di TypeScript con tre dipendenze di runtime, open source con licenza MIT.

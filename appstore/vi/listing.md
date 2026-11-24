@@ -23,7 +23,7 @@ Hãy giữ một ví lạnh dưới dạng tài khoản chỉ xem: dùng nó đ�
 
 Cụm từ khôi phục và khóa của bạn được mã hóa bằng mật khẩu của bạn và nằm trên thiết bị của bạn. Plain Wallet không bao giờ gửi chúng tới bất kỳ máy chủ nào. Ví tự khóa sau 15 phút không sử dụng. Trên iPhone, ví còn khóa sau một phút bạn rời khỏi ứng dụng, và bạn có thể mở khóa bằng Face ID hoặc Touch ID nếu muốn.
 
-Plain Wallet không có máy chủ, tài khoản người dùng, quảng cáo, phân tích hay theo dõi, và nhà phát triển không nhận được dữ liệu nào từ ví. Ví gồm khoảng 2.850 dòng TypeScript với ba thư viện phụ thuộc khi chạy, mã nguồn mở theo giấy phép MIT tại https://git.borodutch.com/backmeupplz/plainwallet. Ví chưa được kiểm toán, vì vậy xin đừng giữ trong đó số tiền mà bạn không thể chấp nhận mất.
+Plain Wallet không có máy chủ, tài khoản người dùng, quảng cáo, phân tích hay theo dõi, và nhà phát triển không nhận được dữ liệu nào từ ví. Ví gồm khoảng 3.200 dòng TypeScript với ba thư viện phụ thuộc khi chạy, mã nguồn mở theo giấy phép MIT tại https://git.borodutch.com/backmeupplz/plainwallet. Ví chưa được kiểm toán, vì vậy xin đừng giữ trong đó số tiền mà bạn không thể chấp nhận mất.
 
 ## Screenshot captions
 1. Ví nhỏ gọn cho Ethereum và EVM

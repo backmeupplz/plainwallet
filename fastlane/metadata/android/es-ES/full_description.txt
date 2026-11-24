@@ -6,4 +6,4 @@ Cada aprobación muestra el sitio, la red, la cuenta y, en una transacción, el 
 
 La cartera se bloquea tras 15 minutos sin uso, tras un minuto fuera de la app y siempre que Android cierra la app. Tus claves, tu bóveda y tus ajustes se quedan en tu teléfono, en un almacenamiento al que los sitios no pueden acceder, y no se guarda ninguna copia en la nube.
 
-Plain Wallet no tiene servidores, cuentas de usuario, analíticas ni telemetría, y su desarrollador no recibe ningún dato. Son unas 2850 líneas de TypeScript con tres dependencias de ejecución, de código abierto con licencia MIT.
+Plain Wallet no tiene servidores, cuentas de usuario, analíticas ni telemetría, y su desarrollador no recibe ningún dato. Son unas 3200 líneas de TypeScript con tres dependencias de ejecución, de código abierto con licencia MIT.

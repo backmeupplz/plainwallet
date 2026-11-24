@@ -6,4 +6,4 @@ Każde zatwierdzenie pokazuje stronę, sieć i konto, a przy transakcji także o
 
 Portfel blokuje się po 15 minutach bezczynności, po minucie poza aplikacją i za każdym razem, gdy Android zamknie aplikację. Twoje klucze, sejf i ustawienia zostają na telefonie, w pamięci, do której strony nie mają dostępu, a nic nie trafia do kopii zapasowej w chmurze.
 
-Plain Wallet nie ma serwerów, kont, analityki ani telemetrii, a jego twórca nie dostaje z niego żadnych danych. To około 2850 linii TypeScriptu z trzema zależnościami w czasie działania, udostępnionych jako open source na licencji MIT.
+Plain Wallet nie ma serwerów, kont, analityki ani telemetrii, a jego twórca nie dostaje z niego żadnych danych. To około 3200 linii TypeScriptu z trzema zależnościami w czasie działania, udostępnionych jako open source na licencji MIT.
