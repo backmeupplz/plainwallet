@@ -125,7 +125,7 @@
     </header>
     <main>
       <h1>Wei to ETH and gwei converter</h1>
-      <p class="lede">One ETH is 1,000,000,000 gwei, which is 1,000,000,000,000,000,000 (10<sup>18</sup>) wei. To turn wei into ETH, move the decimal point 18 places to the left; to turn gwei into ETH, move it 9 places. Type an amount in any Ethereum unit below and see it in all the others, worked out with integers so no digit is rounded. Nothing you type leaves this page.</p>
+      <p class="lede">One ETH equals 1,000,000,000 gwei, or 1,000,000,000,000,000,000 (10<sup>18</sup>) wei. Shift the decimal 18 places left to convert wei to ETH, or 9 places left from gwei to ETH. Type any Ethereum unit below to get exact integer conversions with zero rounding. Everything stays in your browser.</p>
 
       <div class="row">
         <div>
@@ -151,29 +151,29 @@
       </table>
 
       <h2>How the conversion works</h2>
-      <p>Everything on the chain is counted in wei, the smallest unit. One ether is 10<sup>18</sup> wei and one gwei is 10<sup>9</sup> wei, so converting is moving a decimal point. This page reads what you type as a decimal string, turns it into a whole number of wei with BigInt, and prints each unit by placing the point in that whole number. It never uses floating-point numbers, which cannot hold 18 decimal places: in JavaScript, <code>0.1 + 0.2</code> is already <code>0.30000000000000004</code>.</p>
-      <p>An amount with more decimals than its unit allows, such as 0.5 wei, is not a whole number of wei and is refused rather than rounded. Commas, spaces and underscores in the number are ignored.</p>
-      <p>Names: kwei is 10<sup>3</sup> wei (babbage), mwei is 10<sup>6</sup> (lovelace), szabo is 10<sup>12</sup> and finney is 10<sup>15</sup>. Wallets and block explorers mostly show gwei for gas prices and ETH for balances.</p>
+      <p>On-chain values are always stored in wei, the smallest Ethereum unit. One ether is 10<sup>18</sup> wei and one gwei is 10<sup>9</sup> wei, so converting between units is just shifting a decimal point. This tool parses your input as a decimal string, converts it to an exact BigInt count of wei, and places the decimal point back for every row. Floating-point math never touches the number, because floats drop precision well before 18 decimals: in JavaScript, <code>0.1 + 0.2</code> already gives <code>0.30000000000000004</code>.</p>
+      <p>If you enter more decimals than a unit supports, like 0.5 wei, the tool rejects it instead of silently rounding. Commas, spaces, and underscores are stripped automatically.</p>
+      <p>The less common units are kwei at 10<sup>3</sup> wei (babbage), mwei at 10<sup>6</sup> (lovelace), szabo at 10<sup>12</sup>, and finney at 10<sup>15</sup>. In practice, wallets and explorers stick to gwei for gas prices and ETH for balances.</p>
 
       <h2>Worked examples</h2>
-      <p>I ran each of these through this page's own conversion code on November 10, 2026, and you can retype any of them in the box above.</p>
+      <p>I checked each of these through the converter on November 10, 2026; paste any of them above to verify.</p>
       <ul>
         <li><strong>1 gwei in ETH:</strong> 0.000000001 ETH.</li>
-        <li><strong>30 gwei in ETH:</strong> 0.00000003 ETH, a gas price you may see on a busy day.</li>
-        <li><strong>1,500,000,000,000,000 wei in ETH:</strong> 0.0015 ETH, which is 1,500,000 gwei.</li>
-        <li><strong>0.05 ETH in gwei:</strong> 50,000,000 gwei, or 50,000,000,000,000,000 wei.</li>
-        <li><strong>A plain ETH transfer at 30 gwei:</strong> it uses 21,000 gas, and 21,000 × 30 gwei is 630,000 gwei, which is 0.00063 ETH.</li>
+        <li><strong>30 gwei in ETH:</strong> 0.00000003 ETH (a typical busy-network gas price).</li>
+        <li><strong>1,500,000,000,000,000 wei in ETH:</strong> 0.0015 ETH, or 1,500,000 gwei.</li>
+        <li><strong>0.05 ETH in gwei:</strong> 50,000,000 gwei, which is 50,000,000,000,000,000 wei.</li>
+        <li><strong>A standard ETH transfer at 30 gwei:</strong> 21,000 gas × 30 gwei comes to 630,000 gwei, or 0.00063 ETH.</li>
       </ul>
-      <p>The fee example works because gas prices are quoted in gwei per unit of gas: multiply the gas used by the price to get the fee in gwei, then move the decimal point 9 places to get ETH.</p>
+      <p>Gas prices are quoted in gwei per gas unit, so multiply gas used by the gwei price and shift the decimal 9 places left to get ETH.</p>
       <h2>Check an address checksum</h2>
-      <p>An Ethereum address is 40 hex digits. <a href="https://eips.ethereum.org/EIPS/eip-55">EIP-55</a> spells some of its letters in capitals, chosen by the Keccak-256 hash of the lowercase address, so a mistyped character is very likely to be caught. Paste an address to see its correct form and whether yours matches.</p>
+      <p>Ethereum addresses are 40 hex characters. <a href="https://eips.ethereum.org/EIPS/eip-55">EIP-55</a> capitalizes specific letters based on the Keccak-256 hash of the lowercase address, catching most single-character typos. Paste an address below to check it and get the checksummed version.</p>
       <label for="address">Address</label>
       <input id="address" autocomplete="off" spellcheck="false" placeholder="0x…" />
       <p id="check" class="out" role="status"></p>
-      <p>An all-lowercase or all-uppercase address carries no checksum, so it is reported as unchecked and the checksummed form is shown for you to copy. The hash runs in your browser too.</p>
+      <p>All-lowercase and all-uppercase addresses have no checksum, so they show up as unchecked alongside the checksummed spelling ready to copy. The Keccak-256 hash runs locally in your browser.</p>
 
       <div class="cta">
-        <p><strong>Plain Wallet</strong> shows amounts like this: an open-source Ethereum wallet for Chrome, Android and Mac in about 3,200 lines of TypeScript you can read.</p>
+        <p><strong>Plain Wallet</strong> uses this same exact math in an open-source Ethereum wallet for Chrome, Android, and Mac: about 3,200 lines of TypeScript you can read yourself.</p>
         <p><a href="/?utm_source=tool&amp;utm_campaign=eth-units">See Plain Wallet</a></p>
       </div>
     </main>
